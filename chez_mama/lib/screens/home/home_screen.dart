@@ -7,6 +7,7 @@ import '../../ui/chezmama_theme.dart';
 import '../../widgets/fly_to_cart.dart';
 import '../../widgets/shimmer_skeleton.dart';
 import '../meal/meal_details_screen.dart';
+import 'hero_carousel.dart';
 import 'meal_card.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -119,14 +120,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   Positioned(
                     left: 16,
                     right: 16,
-                    bottom: 72,
-                    child: Text(
-                      'Qu’est-ce qu’on mange aujourd’hui ?',
-                      style: t.textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -0.2,
-                      ),
-                    ),
+                    bottom: 64,
+                    child: const HeroCarousel(height: 86),
                   ),
                 ],
               ),
