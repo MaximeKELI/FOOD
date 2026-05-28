@@ -7,6 +7,7 @@ import '../social/shorts_screen.dart';
 import '../social/videos_screen.dart';
 import '../cart/cart_screen.dart';
 import '../profile/my_publications_screen.dart';
+import '../profile/received_orders_screen.dart';
 import '../tracking/tracking_screen.dart';
 import '../auth/login_screen.dart';
 
@@ -40,6 +41,13 @@ class _AppShellState extends State<AppShell> {
               MaterialPageRoute(builder: (_) => const MyPublicationsScreen()),
             ),
             icon: const Icon(Icons.video_library_rounded),
+          ),
+          IconButton(
+            tooltip: 'Commandes reçues',
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const ReceivedOrdersScreen()),
+            ),
+            icon: const Icon(Icons.inbox_rounded),
           ),
           IconButton(
             tooltip: 'Déconnexion',
