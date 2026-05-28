@@ -70,7 +70,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    final t = Theme.of(context);
     final meals = _visibleMeals;
 
     return Scaffold(

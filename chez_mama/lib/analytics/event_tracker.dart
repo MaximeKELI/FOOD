@@ -10,29 +10,37 @@ class EventTracker {
 
   Database? _db;
   bool _ready = false;
+  bool _disabled = false;
   bool get ready => _ready;
+  bool get disabled => _disabled;
 
   Future<void> init() async {
     if (_ready) return;
-    final dbPath = await getDatabasesPath();
-    final path = p.join(dbPath, 'food_analytics.db');
-    _db = await openDatabase(
-      path,
-      version: 1,
-      onCreate: (db, version) async {
-        await db.execute('''
-          CREATE TABLE events (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            ts INTEGER NOT NULL,
-            name TEXT NOT NULL,
-            screen TEXT,
-            element TEXT,
-            meta TEXT
-          )
-        ''');
-      },
-    );
-    _ready = true;
+    try {
+      final dbPath = await getDatabasesPath();
+      final path = p.join(dbPath, 'food_analytics.db');
+      _db = await openDatabase(
+        path,
+        version: 1,
+        onCreate: (db, version) async {
+          await db.execute('''
+            CREATE TABLE events (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              ts INTEGER NOT NULL,
+              name TEXT NOT NULL,
+              screen TEXT,
+              element TEXT,
+              meta TEXT
+            )
+          ''');
+        },
+      );
+      _ready = true;
+    } catch (e) {
+      // sqflite isn't available in some runtimes (e.g. pure dart VM tests).
+      _disabled = true;
+      _ready = true;
+    }
   }
 
   Future<void> track(
@@ -45,6 +53,7 @@ class EventTracker {
       if (!_ready) {
         await init();
       }
+      if (_disabled) return;
       final db = _db;
       if (db == null) return;
       await db.insert('events', {
@@ -64,6 +73,7 @@ class EventTracker {
 
   Future<Map<String, int>> countsByName({int lastHours = 24}) async {
     if (!_ready) await init();
+    if (_disabled) return {};
     final db = _db;
     if (db == null) return {};
     final since = DateTime.now()
