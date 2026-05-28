@@ -1,5 +1,3 @@
-import 'package:flutter/material.dart';
-
 import '../models/meal.dart';
 import '../ui/chezmama_theme.dart';
 import 'api_client.dart';

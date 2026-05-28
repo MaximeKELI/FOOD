@@ -5,7 +5,7 @@ import 'package:flutter/foundation.dart';
 ///
 /// - Android emulator reaches the host machine via 10.0.2.2
 /// - iOS simulator / desktop use localhost
-/// - For a real device, set [overrideBaseUrl] to http://<PC_IP>:8000
+/// - For a real device, set [overrideBaseUrl] to `http://<PC_IP>:8000`
 class ApiConfig {
   static String? overrideBaseUrl;
 
