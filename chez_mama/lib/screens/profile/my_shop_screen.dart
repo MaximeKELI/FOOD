@@ -242,7 +242,7 @@ class _MyShopScreenState extends State<MyShopScreen> {
           value: _acceptsPickup,
           onChanged: (v) => setState(() => _acceptsPickup = v),
           title: const Text('Retrait sur place'),
-          activeThumbColor: ChezMamaTheme.brandOrange,
+          activeColor: ChezMamaTheme.brandOrange,
           contentPadding: EdgeInsets.zero,
         ),
         const SizedBox(height: 16),
