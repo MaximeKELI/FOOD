@@ -72,11 +72,34 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     return _allMeals.where((m) => m.category == activeCategory).toList();
   }
 
+  Future<void> _publishMeal() async {
+    final created = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (_) => const PublishMealSheet(),
+    );
+    if (created == true) {
+      await _loadMeals();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Plat publié avec succès')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final meals = _visibleMeals;
 
     return Scaffold(
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _publishMeal,
+        backgroundColor: ChezMamaTheme.brandOrange,
+        foregroundColor: Colors.white,
+        icon: const Icon(Icons.add_rounded),
+        label: const Text('Publier un plat'),
+      ),
       body: CustomScrollView(
         controller: scroll,
         slivers: [
