@@ -38,6 +38,54 @@ class _HeroCarouselState extends State<HeroCarousel> {
       gradient: [Color(0xFFE2A83B), Color(0xFFFF7A18), Color(0xFFFFFBF6)],
       asset: 'assets/images/food_hero_suya.png',
     ),
+    _HeroItem(
+      title: 'Thiéboudienne maison',
+      subtitle: 'Le goût local, livré rapidement',
+      gradient: [Color(0xFFFF7A18), Color(0xFF6E3B1F), Color(0xFFFFFBF6)],
+      asset: 'assets/images/food_hero_thieboudienne.png',
+    ),
+    _HeroItem(
+      title: 'Ndolé gourmand',
+      subtitle: 'Trouve les meilleurs vendeurs autour de toi',
+      gradient: [Color(0xFF5BBF72), Color(0xFF6E3B1F), Color(0xFFFFFBF6)],
+      asset: 'assets/images/food_hero_ndole.png',
+    ),
+    _HeroItem(
+      title: 'Jollof & poulet braisé',
+      subtitle: 'Commande, like, partage',
+      gradient: [Color(0xFFFF7A18), Color(0xFFFFC24C), Color(0xFF6E3B1F)],
+      asset: 'assets/images/food_hero_jollof.png',
+    ),
+    _HeroItem(
+      title: 'Attiéké poisson',
+      subtitle: 'Les saveurs côtières près de toi',
+      gradient: [Color(0xFFFFC24C), Color(0xFFFF7A18), Color(0xFFFFFBF6)],
+      asset: 'assets/images/food_hero_attieke.png',
+    ),
+    _HeroItem(
+      title: 'Plantains dorés',
+      subtitle: 'Sauces piquantes et vendeurs favoris',
+      gradient: [Color(0xFFE2A83B), Color(0xFFFF7A18), Color(0xFFFFFBF6)],
+      asset: 'assets/images/food_hero_plantain.png',
+    ),
+    _HeroItem(
+      title: 'Egusi & fufu',
+      subtitle: 'Découvre, commente, abonne-toi',
+      gradient: [Color(0xFF6E3B1F), Color(0xFFB85C38), Color(0xFFFFFBF6)],
+      asset: 'assets/images/food_hero_egusi.png',
+    ),
+    _HeroItem(
+      title: 'Brochettes fumées',
+      subtitle: 'Des shorts appétissants à partager',
+      gradient: [Color(0xFF1B1B1F), Color(0xFFFF7A18), Color(0xFFFFFBF6)],
+      asset: 'assets/images/food_hero_brochettes.png',
+    ),
+    _HeroItem(
+      title: 'Bissap & gingembre',
+      subtitle: 'Boissons fraîches disponibles maintenant',
+      gradient: [Color(0xFFE2A83B), Color(0xFFFF7A18), Color(0xFFFFFBF6)],
+      asset: 'assets/images/food_hero_drinks.png',
+    ),
   ];
 
   @override
