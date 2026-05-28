@@ -66,12 +66,24 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   void dispose() {
     _stagger.dispose();
     scroll.dispose();
+    _searchCtrl.dispose();
     super.dispose();
   }
 
   List<Meal> get _visibleMeals {
-    if (activeCategory == 'Popular') return _allMeals;
-    return _allMeals.where((m) => m.category == activeCategory).toList();
+    var meals = _allMeals;
+    if (activeCategory != 'Popular') {
+      meals = meals.where((m) => m.category == activeCategory).toList();
+    }
+    final q = _query.trim().toLowerCase();
+    if (q.isNotEmpty) {
+      meals = meals.where((m) {
+        return m.name.toLowerCase().contains(q) ||
+            m.subtitle.toLowerCase().contains(q) ||
+            m.sellerName.toLowerCase().contains(q);
+      }).toList();
+    }
+    return meals;
   }
 
   Future<void> _publishMeal() async {
@@ -175,6 +187,37 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               ),
             ),
           ),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(14, 14, 14, 0),
+              child: TextField(
+                controller: _searchCtrl,
+                onChanged: (v) => setState(() => _query = v),
+                textInputAction: TextInputAction.search,
+                decoration: InputDecoration(
+                  hintText: 'Rechercher un plat, un vendeur…',
+                  prefixIcon: const Icon(Icons.search_rounded),
+                  suffixIcon: _query.isEmpty
+                      ? null
+                      : IconButton(
+                          icon: const Icon(Icons.close_rounded),
+                          onPressed: () {
+                            _searchCtrl.clear();
+                            setState(() => _query = '');
+                          },
+                        ),
+                  filled: true,
+                  fillColor: Colors.white,
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+              ),
+            ),
+          ),
           SliverPadding(
             padding: const EdgeInsets.fromLTRB(14, 14, 14, 110),
             sliver: loading
@@ -191,10 +234,15 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     : meals.isEmpty
                         ? SliverToBoxAdapter(
                             child: _HomeMessage(
-                              icon: Icons.restaurant_menu_rounded,
-                              title: 'Aucun plat pour le moment',
-                              subtitle:
-                                  'Les plats publiés par les vendeurs apparaîtront ici.',
+                              icon: _query.isNotEmpty
+                                  ? Icons.search_off_rounded
+                                  : Icons.restaurant_menu_rounded,
+                              title: _query.isNotEmpty
+                                  ? 'Aucun résultat'
+                                  : 'Aucun plat pour le moment',
+                              subtitle: _query.isNotEmpty
+                                  ? 'Aucun plat ne correspond à « $_query ».'
+                                  : 'Les plats publiés par les vendeurs apparaîtront ici.',
                               onRetry: _loadMeals,
                             ),
                           )
