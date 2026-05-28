@@ -41,6 +41,26 @@ class CatalogApi {
     await _dio.delete('/catalog/meals/$id/');
   }
 
+  Future<List<MealReview>> fetchReviews(String mealId) async {
+    final res = await _dio.get('/catalog/meals/$mealId/reviews/');
+    final list = (res.data as List?) ?? const [];
+    return list
+        .map((e) => MealReview.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<MealReview> addReview(
+    String mealId, {
+    required int rating,
+    String comment = '',
+  }) async {
+    final res = await _dio.post(
+      '/catalog/meals/$mealId/reviews/',
+      data: {'rating': rating, 'comment': comment},
+    );
+    return MealReview.fromJson(res.data as Map<String, dynamic>);
+  }
+
   Future<Meal> createMeal({
     required String name,
     required int categoryId,
