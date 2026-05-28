@@ -57,6 +57,13 @@ class _AppShellState extends State<AppShell> {
         title: const Text('Food'),
         actions: [
           IconButton(
+            tooltip: 'Ma boutique',
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const MyShopScreen()),
+            ),
+            icon: const Icon(Icons.storefront_rounded),
+          ),
+          IconButton(
             tooltip: 'Mes publications',
             onPressed: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const MyPublicationsScreen()),

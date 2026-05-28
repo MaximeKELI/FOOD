@@ -235,7 +235,7 @@ class _MyShopScreenState extends State<MyShopScreen> {
           value: _acceptsDelivery,
           onChanged: (v) => setState(() => _acceptsDelivery = v),
           title: const Text('Livraison'),
-          activeThumbColor: ChezMamaTheme.brandOrange,
+          activeColor: ChezMamaTheme.brandOrange,
           contentPadding: EdgeInsets.zero,
         ),
         SwitchListTile(
