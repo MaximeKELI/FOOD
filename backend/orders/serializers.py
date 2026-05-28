@@ -29,6 +29,7 @@ class OrderItemInputSerializer(serializers.Serializer):
 class OrderSerializer(serializers.ModelSerializer):
     items = OrderItemSerializer(many=True, read_only=True)
     status_label = serializers.CharField(source="get_status_display", read_only=True)
+    customer_name = serializers.CharField(source="customer.name", read_only=True)
 
     class Meta:
         model = Order
@@ -41,6 +42,7 @@ class OrderSerializer(serializers.ModelSerializer):
             "phone",
             "note",
             "total",
+            "customer_name",
             "items",
             "created_at",
         )
