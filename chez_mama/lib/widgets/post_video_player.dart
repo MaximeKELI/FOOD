@@ -23,10 +23,12 @@ class PostVideoPlayer extends StatefulWidget {
     super.key,
     required this.path,
     this.autoPlay = false,
+    this.isRemote = false,
   });
 
   final String path;
   final bool autoPlay;
+  final bool isRemote;
 
   @override
   State<PostVideoPlayer> createState() => _PostVideoPlayerState();
@@ -47,6 +49,7 @@ class _PostVideoPlayerState extends State<PostVideoPlayer> {
   }
 
   Future<void> _checkFile() async {
+    if (widget.isRemote) return;
     if (!await File(widget.path).exists()) {
       if (!mounted) return;
       setState(() => _error = 'Fichier vidéo introuvable');
@@ -54,14 +57,18 @@ class _PostVideoPlayerState extends State<PostVideoPlayer> {
   }
 
   Future<void> _initInlinePlayer() async {
-    final file = File(widget.path);
-    if (!await file.exists()) {
-      if (!mounted) return;
-      setState(() => _error = 'Fichier vidéo introuvable');
-      return;
+    final VideoPlayerController controller;
+    if (widget.isRemote) {
+      controller = VideoPlayerController.networkUrl(Uri.parse(widget.path));
+    } else {
+      final file = File(widget.path);
+      if (!await file.exists()) {
+        if (!mounted) return;
+        setState(() => _error = 'Fichier vidéo introuvable');
+        return;
+      }
+      controller = VideoPlayerController.file(file);
     }
-
-    final controller = VideoPlayerController.file(file);
     try {
       await controller.initialize();
       if (widget.autoPlay) {
@@ -93,7 +100,7 @@ class _PostVideoPlayerState extends State<PostVideoPlayer> {
     }
 
     if (isDesktopPlatform) {
-      return _DesktopVideoPreview(path: widget.path);
+      return _DesktopVideoPreview(path: widget.path, isRemote: widget.isRemote);
     }
 
     final c = _controller;
@@ -133,12 +140,15 @@ class _PostVideoPlayerState extends State<PostVideoPlayer> {
 }
 
 class _DesktopVideoPreview extends StatelessWidget {
-  const _DesktopVideoPreview({required this.path});
+  const _DesktopVideoPreview({required this.path, this.isRemote = false});
   final String path;
+  final bool isRemote;
 
   @override
   Widget build(BuildContext context) {
-    final name = path.split(Platform.pathSeparator).last;
+    final name = isRemote
+        ? Uri.parse(path).pathSegments.last
+        : path.split(Platform.pathSeparator).last;
     return Material(
       color: const Color(0xFF1B1B1F),
       child: InkWell(
