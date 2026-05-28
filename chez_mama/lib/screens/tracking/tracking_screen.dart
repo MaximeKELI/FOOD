@@ -50,7 +50,9 @@ class _TrackingScreenState extends State<TrackingScreen> {
       }
 
       final initial = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+        ),
       );
       setState(() {
         _position = initial;
