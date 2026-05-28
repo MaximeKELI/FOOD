@@ -58,6 +58,9 @@ class _MealCardState extends State<MealCard> {
                           m.image,
                           fit: BoxFit.cover,
                           filterQuality: FilterQuality.low,
+                          errorBuilder: (context, error, stackTrace) {
+                            return _ImageFallback(accent: m.accent);
+                          },
                         ),
                       ),
                     ),
@@ -141,6 +144,35 @@ class _MealCardState extends State<MealCard> {
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ImageFallback extends StatelessWidget {
+  const _ImageFallback({required this.accent});
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            accent.withValues(alpha: 0.22),
+            ChezMamaTheme.surface2,
+            Colors.white,
+          ],
+        ),
+      ),
+      child: Center(
+        child: Icon(
+          Icons.restaurant_rounded,
+          size: 42,
+          color: ChezMamaTheme.brandBrown.withValues(alpha: 0.75),
         ),
       ),
     );

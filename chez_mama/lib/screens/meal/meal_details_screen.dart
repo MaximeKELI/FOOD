@@ -29,6 +29,27 @@ class MealDetailsScreen extends StatelessWidget {
                       meal.image,
                       fit: BoxFit.cover,
                       filterQuality: FilterQuality.low,
+                      errorBuilder: (context, error, stackTrace) {
+                        return const DecoratedBox(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [
+                                Color(0xFFFFE3C3),
+                                Color(0xFFFFFBF6),
+                              ],
+                            ),
+                          ),
+                          child: Center(
+                            child: Icon(
+                              Icons.restaurant_rounded,
+                              size: 54,
+                              color: ChezMamaTheme.brandOrange,
+                            ),
+                          ),
+                        );
+                      },
                     ),
                     DecoratedBox(
                       decoration: BoxDecoration(
