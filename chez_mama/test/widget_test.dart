@@ -15,7 +15,7 @@ void main() {
     await tester.pumpWidget(const ChezMamaApp());
     await tester.pump(const Duration(milliseconds: 20));
 
-    expect(find.text('ChezMama'), findsWidgets);
+    expect(find.text('Food'), findsWidgets);
     expect(find.byType(MaterialApp), findsOneWidget);
   });
 }
