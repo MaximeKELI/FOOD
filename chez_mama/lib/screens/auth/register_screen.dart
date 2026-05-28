@@ -12,13 +12,72 @@ class RegisterScreen extends StatefulWidget {
 }
 
 class _RegisterScreenState extends State<RegisterScreen> {
+  static const countries = [
+    'Cameroun',
+    'Sénégal',
+    'Côte d’Ivoire',
+    'Nigeria',
+    'Ghana',
+    'Mali',
+    'Bénin',
+    'Togo',
+    'France',
+    'Autre',
+  ];
+  static const citiesByCountry = {
+    'Cameroun': ['Douala', 'Yaoundé', 'Bafoussam', 'Garoua', 'Bamenda'],
+    'Sénégal': ['Dakar', 'Thiès', 'Saint-Louis', 'Mbour'],
+    'Côte d’Ivoire': ['Abidjan', 'Bouaké', 'Yamoussoukro', 'San Pedro'],
+    'Nigeria': ['Lagos', 'Abuja', 'Kano', 'Port Harcourt'],
+    'Ghana': ['Accra', 'Kumasi', 'Tamale'],
+    'Mali': ['Bamako', 'Sikasso', 'Mopti'],
+    'Bénin': ['Cotonou', 'Porto-Novo', 'Parakou'],
+    'Togo': ['Lomé', 'Sokodé', 'Kara'],
+    'France': ['Paris', 'Lyon', 'Marseille', 'Toulouse'],
+    'Autre': ['Autre'],
+  };
+  static const genders = ['Non précisé', 'Femme', 'Homme', 'Autre'];
+  static const shopCategories = [
+    'Restaurant',
+    'Traiteur',
+    'Street food',
+    'Pâtisserie',
+    'Boissons',
+    'Épicerie locale',
+    'Chef à domicile',
+  ];
+  static const cuisines = [
+    'Africaine',
+    'Camerounaise',
+    'Sénégalaise',
+    'Ivoirienne',
+    'Nigériane',
+    'Ghanéenne',
+    'Fusion',
+    'Végétarienne',
+  ];
+  static const hours = [
+    '06:00',
+    '07:00',
+    '08:00',
+    '09:00',
+    '10:00',
+    '11:00',
+    '12:00',
+    '18:00',
+    '20:00',
+    '22:00',
+    '00:00',
+  ];
+  static const deliveryRadii = ['1', '2', '3', '5', '8', '10', '15', '20'];
+
   final name = TextEditingController();
   final phone = TextEditingController();
   final country = TextEditingController(text: 'Cameroun');
-  final city = TextEditingController();
+  final city = TextEditingController(text: 'Douala');
   final neighborhood = TextEditingController();
   final birthYear = TextEditingController();
-  final gender = TextEditingController();
+  final gender = TextEditingController(text: 'Non précisé');
 
   final shopName = TextEditingController();
   final shopCategory = TextEditingController(text: 'Restaurant');
@@ -32,6 +91,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final email = TextEditingController();
   final password = TextEditingController();
   bool busy = false;
+
+  List<String> get _cityOptions {
+    return citiesByCountry[country.text] ?? const ['Autre'];
+  }
 
   @override
   void dispose() {
@@ -168,26 +231,27 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   Row(
                     children: [
                       Expanded(
-                        child: TextField(
-                          controller: country,
-                          textInputAction: TextInputAction.next,
-                          decoration: const InputDecoration(
-                            labelText: 'Pays',
-                            prefixIcon: Icon(Icons.public_rounded),
-                            border: OutlineInputBorder(),
-                          ),
+                        child: _DropdownField(
+                          label: 'Pays',
+                          icon: Icons.public_rounded,
+                          value: country.text,
+                          items: countries,
+                          onChanged: (value) {
+                            setState(() {
+                              country.text = value;
+                              city.text = citiesByCountry[value]?.first ?? 'Autre';
+                            });
+                          },
                         ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
-                        child: TextField(
-                          controller: city,
-                          textInputAction: TextInputAction.next,
-                          decoration: const InputDecoration(
-                            labelText: 'Ville',
-                            prefixIcon: Icon(Icons.location_city_rounded),
-                            border: OutlineInputBorder(),
-                          ),
+                        child: _DropdownField(
+                          label: 'Ville',
+                          icon: Icons.location_city_rounded,
+                          value: city.text,
+                          items: _cityOptions,
+                          onChanged: (value) => setState(() => city.text = value),
                         ),
                       ),
                     ],
@@ -219,14 +283,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       ),
                       const SizedBox(width: 12),
                       Expanded(
-                        child: TextField(
-                          controller: gender,
-                          textInputAction: TextInputAction.next,
-                          decoration: const InputDecoration(
-                            labelText: 'Genre (optionnel)',
-                            prefixIcon: Icon(Icons.person_rounded),
-                            border: OutlineInputBorder(),
-                          ),
+                        child: _DropdownField(
+                          label: 'Genre',
+                          icon: Icons.person_rounded,
+                          value: gender.text,
+                          items: genders,
+                          onChanged: (value) => setState(() => gender.text = value),
                         ),
                       ),
                     ],
@@ -252,26 +314,23 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   Row(
                     children: [
                       Expanded(
-                        child: TextField(
-                          controller: shopCategory,
-                          textInputAction: TextInputAction.next,
-                          decoration: const InputDecoration(
-                            labelText: 'Type (Restaurant, Traiteur, …)',
-                            prefixIcon: Icon(Icons.category_rounded),
-                            border: OutlineInputBorder(),
-                          ),
+                        child: _DropdownField(
+                          label: 'Type',
+                          icon: Icons.category_rounded,
+                          value: shopCategory.text,
+                          items: shopCategories,
+                          onChanged: (value) =>
+                              setState(() => shopCategory.text = value),
                         ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
-                        child: TextField(
-                          controller: cuisine,
-                          textInputAction: TextInputAction.next,
-                          decoration: const InputDecoration(
-                            labelText: 'Cuisine (Africaine, …)',
-                            prefixIcon: Icon(Icons.restaurant_menu_rounded),
-                            border: OutlineInputBorder(),
-                          ),
+                        child: _DropdownField(
+                          label: 'Cuisine',
+                          icon: Icons.restaurant_menu_rounded,
+                          value: cuisine.text,
+                          items: cuisines,
+                          onChanged: (value) => setState(() => cuisine.text = value),
                         ),
                       ),
                     ],
@@ -280,40 +339,34 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   Row(
                     children: [
                       Expanded(
-                        child: TextField(
-                          controller: opensAt,
-                          textInputAction: TextInputAction.next,
-                          decoration: const InputDecoration(
-                            labelText: 'Ouverture',
-                            prefixIcon: Icon(Icons.schedule_rounded),
-                            border: OutlineInputBorder(),
-                          ),
+                        child: _DropdownField(
+                          label: 'Ouverture',
+                          icon: Icons.schedule_rounded,
+                          value: opensAt.text,
+                          items: hours,
+                          onChanged: (value) => setState(() => opensAt.text = value),
                         ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
-                        child: TextField(
-                          controller: closesAt,
-                          textInputAction: TextInputAction.next,
-                          decoration: const InputDecoration(
-                            labelText: 'Fermeture',
-                            prefixIcon: Icon(Icons.schedule_rounded),
-                            border: OutlineInputBorder(),
-                          ),
+                        child: _DropdownField(
+                          label: 'Fermeture',
+                          icon: Icons.schedule_rounded,
+                          value: closesAt.text,
+                          items: hours,
+                          onChanged: (value) => setState(() => closesAt.text = value),
                         ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 12),
-                  TextField(
-                    controller: deliveryRadiusKm,
-                    keyboardType: TextInputType.number,
-                    textInputAction: TextInputAction.next,
-                    decoration: const InputDecoration(
-                      labelText: 'Rayon de livraison (km)',
-                      prefixIcon: Icon(Icons.route_rounded),
-                      border: OutlineInputBorder(),
-                    ),
+                  _DropdownField(
+                    label: 'Rayon de livraison (km)',
+                    icon: Icons.route_rounded,
+                    value: deliveryRadiusKm.text,
+                    items: deliveryRadii,
+                    onChanged: (value) =>
+                        setState(() => deliveryRadiusKm.text = value),
                   ),
                   const SizedBox(height: 12),
                   ValueListenableBuilder<bool>(
@@ -388,6 +441,50 @@ class _RegisterScreenState extends State<RegisterScreen> {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _DropdownField extends StatelessWidget {
+  const _DropdownField({
+    required this.label,
+    required this.icon,
+    required this.value,
+    required this.items,
+    required this.onChanged,
+  });
+
+  final String label;
+  final IconData icon;
+  final String value;
+  final List<String> items;
+  final ValueChanged<String> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final resolvedValue = items.contains(value) ? value : items.first;
+    return DropdownButtonFormField<String>(
+      value: resolvedValue,
+      isExpanded: true,
+      decoration: InputDecoration(
+        labelText: label,
+        prefixIcon: Icon(icon),
+        border: const OutlineInputBorder(),
+      ),
+      borderRadius: BorderRadius.circular(16),
+      items: [
+        for (final item in items)
+          DropdownMenuItem<String>(
+            value: item,
+            child: Text(
+              item,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+      ],
+      onChanged: (value) {
+        if (value != null) onChanged(value);
+      },
     );
   }
 }
