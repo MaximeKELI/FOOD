@@ -26,18 +26,24 @@ class OrderItemView {
 class OrderView {
   OrderView({
     required this.id,
+    required this.status,
     required this.statusLabel,
     required this.fulfillment,
     required this.address,
+    required this.phone,
+    required this.customerName,
     required this.total,
     required this.createdAt,
     required this.items,
   });
 
   final int id;
+  final String status;
   final String statusLabel;
   final String fulfillment;
   final String address;
+  final String phone;
+  final String customerName;
   final int total;
   final String createdAt;
   final List<OrderItemView> items;
@@ -46,9 +52,12 @@ class OrderView {
     final items = (json['items'] as List?) ?? const [];
     return OrderView(
       id: json['id'] as int,
+      status: json['status'] as String? ?? 'pending',
       statusLabel: json['status_label'] as String? ?? '',
       fulfillment: json['fulfillment'] as String? ?? '',
       address: json['address'] as String? ?? '',
+      phone: json['phone'] as String? ?? '',
+      customerName: json['customer_name'] as String? ?? '',
       total: json['total'] as int? ?? 0,
       createdAt: json['created_at'] as String? ?? '',
       items: items
@@ -57,6 +66,15 @@ class OrderView {
     );
   }
 }
+
+/// Order status values used by the API.
+const Map<String, String> kOrderStatuses = {
+  'pending': 'En attente',
+  'preparing': 'En préparation',
+  'on_the_way': 'En route',
+  'delivered': 'Livrée',
+  'cancelled': 'Annulée',
+};
 
 class OrdersApi {
   OrdersApi._();
@@ -87,5 +105,21 @@ class OrdersApi {
     return results
         .map((e) => OrderView.fromJson(e as Map<String, dynamic>))
         .toList();
+  }
+
+  Future<List<OrderView>> fetchReceivedOrders() async {
+    final res = await _dio.get('/orders/received/');
+    final results = (res.data['results'] as List?) ?? const [];
+    return results
+        .map((e) => OrderView.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<OrderView> updateStatus(int orderId, String status) async {
+    final res = await _dio.patch(
+      '/orders/$orderId/status/',
+      data: {'status': status},
+    );
+    return OrderView.fromJson(res.data as Map<String, dynamic>);
   }
 }
