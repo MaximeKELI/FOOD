@@ -59,7 +59,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
     final origin = box.localToGlobal(Offset.zero) & box.size;
     final overlay = Overlay.of(context);
-    if (overlay == null) return;
 
     FlyToCartController(overlay).flyFromRect(
       from: origin,

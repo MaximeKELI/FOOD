@@ -3,10 +3,9 @@ import 'package:flutter/material.dart';
 class AppPageRoute<T> extends PageRouteBuilder<T> {
   AppPageRoute({
     required Widget page,
-    RouteSettings? settings,
+    super.settings,
     AppTransition transition = AppTransition.fadeUp,
   }) : super(
-          settings: settings,
           pageBuilder: (_, __, ___) => page,
           transitionDuration: const Duration(milliseconds: 260),
           reverseTransitionDuration: const Duration(milliseconds: 240),
