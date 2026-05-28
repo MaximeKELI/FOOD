@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../api/api_client.dart';
 import '../../api/orders_api.dart';
 import '../../cart/cart_service.dart';
+import '../../cart/received_orders_notifier.dart';
 import '../../ui/chezmama_theme.dart';
 
 class CheckoutSheet extends StatefulWidget {
@@ -44,6 +45,7 @@ class _CheckoutSheetState extends State<CheckoutSheet> {
         items: _cart.toOrderItems(),
       );
       _cart.clear();
+      ReceivedOrdersNotifier.instance.refresh();
       if (!mounted) return;
       Navigator.of(context).pop();
       ScaffoldMessenger.of(context).showSnackBar(

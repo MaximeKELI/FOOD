@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../auth/auth_scope.dart';
 import '../../cart/cart_service.dart';
+import '../../cart/received_orders_notifier.dart';
 import '../../ui/chezmama_theme.dart';
 import '../home/home_screen.dart';
 import '../social/shorts_screen.dart';
@@ -30,6 +31,12 @@ class _AppShellState extends State<AppShell> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    ReceivedOrdersNotifier.instance.refresh();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
@@ -42,12 +49,28 @@ class _AppShellState extends State<AppShell> {
             ),
             icon: const Icon(Icons.video_library_rounded),
           ),
-          IconButton(
-            tooltip: 'Commandes reçues',
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const ReceivedOrdersScreen()),
-            ),
-            icon: const Icon(Icons.inbox_rounded),
+          AnimatedBuilder(
+            animation: ReceivedOrdersNotifier.instance,
+            builder: (context, _) {
+              final count = ReceivedOrdersNotifier.instance.activeCount;
+              return IconButton(
+                tooltip: 'Commandes reçues',
+                onPressed: () async {
+                  await Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => const ReceivedOrdersScreen(),
+                    ),
+                  );
+                  ReceivedOrdersNotifier.instance.refresh();
+                },
+                icon: count > 0
+                    ? Badge.count(
+                        count: count,
+                        child: const Icon(Icons.inbox_rounded),
+                      )
+                    : const Icon(Icons.inbox_rounded),
+              );
+            },
           ),
           IconButton(
             tooltip: 'Déconnexion',
