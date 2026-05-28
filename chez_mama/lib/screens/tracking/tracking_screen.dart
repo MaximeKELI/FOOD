@@ -25,6 +25,17 @@ class _TrackingScreenState extends State<TrackingScreen> {
     _startLocation();
   }
 
+  Future<void> _retry() async {
+    await _positionSub?.cancel();
+    if (!mounted) return;
+    setState(() {
+      _position = null;
+      _error = null;
+      _loading = true;
+    });
+    await _startLocation();
+  }
+
   Future<void> _startLocation() async {
     try {
       final serviceEnabled = await Geolocator.isLocationServiceEnabled();
@@ -70,7 +81,7 @@ class _TrackingScreenState extends State<TrackingScreen> {
       });
     } catch (e) {
       setState(() {
-        _error = 'Erreur localisation: $e';
+        _error = 'Erreur localisation: $e\n\nSur Linux Desktop, la localisation peut nécessiter GeoClue activé.';
         _loading = false;
       });
     }
@@ -137,9 +148,40 @@ class _TrackingScreenState extends State<TrackingScreen> {
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(18),
-          child: Text(
-            _error!,
-            textAlign: TextAlign.center,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.location_off_rounded, size: 40),
+              const SizedBox(height: 10),
+              Text(_error!, textAlign: TextAlign.center),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 10,
+                runSpacing: 10,
+                alignment: WrapAlignment.center,
+                children: [
+                  OutlinedButton.icon(
+                    onPressed: () => Geolocator.openLocationSettings(),
+                    icon: const Icon(Icons.settings_rounded),
+                    label: const Text('Réglages'),
+                  ),
+                  OutlinedButton.icon(
+                    onPressed: () => Geolocator.openAppSettings(),
+                    icon: const Icon(Icons.app_settings_alt_rounded),
+                    label: const Text('Paramètres app'),
+                  ),
+                  FilledButton.icon(
+                    onPressed: _retry,
+                    icon: const Icon(Icons.refresh_rounded),
+                    label: const Text('Réessayer'),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: ChezMamaTheme.brandOrange,
+                      foregroundColor: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
         ),
       );
