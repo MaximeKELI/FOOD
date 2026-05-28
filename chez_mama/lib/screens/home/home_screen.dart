@@ -80,7 +80,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             pinned: true,
             expandedHeight: 170,
             automaticallyImplyLeading: false,
-            title: const Text('ChezMama'),
+            title: const Text('Food'),
             actions: [
               Padding(
                 padding: const EdgeInsets.only(right: 8),
