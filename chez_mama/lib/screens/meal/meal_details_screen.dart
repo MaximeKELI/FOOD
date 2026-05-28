@@ -1,16 +1,81 @@
 import 'package:flutter/material.dart';
+import '../../api/api_client.dart';
+import '../../api/catalog_api.dart';
 import '../../cart/cart_service.dart';
 import '../../models/meal.dart';
 import '../../ui/chezmama_theme.dart';
 import '../../widgets/primary_button.dart';
 import '../profile/seller_profile_screen.dart';
 
-class MealDetailsScreen extends StatelessWidget {
+class MealDetailsScreen extends StatefulWidget {
   const MealDetailsScreen({super.key, required this.meal});
 
   final Meal meal;
 
+  @override
+  State<MealDetailsScreen> createState() => _MealDetailsScreenState();
+}
+
+class _MealDetailsScreenState extends State<MealDetailsScreen> {
+  List<MealReview> _reviews = [];
+  bool _loadingReviews = true;
+  double _avg = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _avg = widget.meal.rating;
+    _loadReviews();
+  }
+
+  Future<void> _loadReviews() async {
+    try {
+      final reviews =
+          await CatalogApi.instance.fetchReviews(widget.meal.id);
+      if (!mounted) return;
+      setState(() {
+        _reviews = reviews;
+        _loadingReviews = false;
+        if (reviews.isNotEmpty) {
+          _avg = reviews.map((r) => r.rating).reduce((a, b) => a + b) /
+              reviews.length;
+        }
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _loadingReviews = false);
+    }
+  }
+
+  Future<void> _addReview() async {
+    final result = await showModalBottomSheet<({int rating, String comment})>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (_) => const _AddReviewSheet(),
+    );
+    if (result == null) return;
+    try {
+      await CatalogApi.instance.addReview(
+        widget.meal.id,
+        rating: result.rating,
+        comment: result.comment,
+      );
+      await _loadReviews();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Merci pour ton avis !')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(apiErrorMessage(e))),
+      );
+    }
+  }
+
   Widget _buildHeroImage() {
+    final meal = widget.meal;
     if (meal.image.startsWith('assets/')) {
       return Image.asset(
         meal.image,
@@ -28,10 +93,7 @@ class MealDetailsScreen extends StatelessWidget {
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [
-                Color(0xFFFFE3C3),
-                Color(0xFFFFFBF6),
-              ],
+              colors: [Color(0xFFFFE3C3), Color(0xFFFFFBF6)],
             ),
           ),
           child: Center(
@@ -49,6 +111,7 @@ class MealDetailsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context);
+    final meal = widget.meal;
     return Scaffold(
       body: CustomScrollView(
         slivers: [
@@ -75,7 +138,7 @@ class MealDetailsScreen extends StatelessWidget {
                           ],
                         ),
                       ),
-                    )
+                    ),
                   ],
                 ),
               ),
@@ -102,6 +165,8 @@ class MealDetailsScreen extends StatelessWidget {
                       fontWeight: FontWeight.w600,
                     ),
                   ),
+                  const SizedBox(height: 10),
+                  _RatingSummary(avg: _avg, count: _reviews.length),
                   if (meal.sellerId != null && meal.sellerName.isNotEmpty) ...[
                     const SizedBox(height: 12),
                     InkWell(
@@ -135,51 +200,68 @@ class MealDetailsScreen extends StatelessWidget {
                     ),
                   ],
                   const SizedBox(height: 16),
-                  TweenAnimationBuilder<double>(
-                    tween: Tween(begin: 0, end: 1),
-                    duration: const Duration(milliseconds: 420),
-                    curve: Curves.easeOutCubic,
-                    builder: (context, v, _) {
-                      return Transform.translate(
-                        offset: Offset(0, 10 * (1 - v)),
-                        child: Opacity(
-                          opacity: v,
-                          child: Container(
-                            padding: const EdgeInsets.all(14),
-                            decoration: BoxDecoration(
-                              color: ChezMamaTheme.surface2,
-                              borderRadius: BorderRadius.circular(18),
-                            ),
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    '${meal.price.toStringAsFixed(0)} FCFA',
-                                    style: t.textTheme.titleLarge?.copyWith(
-                                      fontWeight: FontWeight.w900,
-                                    ),
-                                  ),
-                                ),
-                                PrimaryButton(
-                                  label: 'Ajouter au panier',
-                                  onPressed: () {
-                                    CartService.instance.addMeal(meal);
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text('${meal.name} ajouté au panier'),
-                                        duration:
-                                            const Duration(milliseconds: 900),
-                                      ),
-                                    );
-                                  },
-                                ),
-                              ],
+                  Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: ChezMamaTheme.surface2,
+                      borderRadius: BorderRadius.circular(18),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            '${meal.price.toStringAsFixed(0)} FCFA',
+                            style: t.textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.w900,
                             ),
                           ),
                         ),
-                      );
-                    },
+                        PrimaryButton(
+                          label: 'Ajouter au panier',
+                          onPressed: () {
+                            CartService.instance.addMeal(meal);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content:
+                                    Text('${meal.name} ajouté au panier'),
+                                duration: const Duration(milliseconds: 900),
+                              ),
+                            );
+                          },
+                        ),
+                      ],
+                    ),
                   ),
+                  const SizedBox(height: 24),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'Avis (${_reviews.length})',
+                          style: t.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ),
+                      TextButton.icon(
+                        onPressed: _addReview,
+                        icon: const Icon(Icons.rate_review_rounded),
+                        label: const Text('Donner mon avis'),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  if (_loadingReviews)
+                    const Center(child: CircularProgressIndicator())
+                  else if (_reviews.isEmpty)
+                    Text(
+                      'Aucun avis pour le moment. Sois le premier !',
+                      style: t.textTheme.bodyMedium?.copyWith(
+                        color: ChezMamaTheme.ink.withValues(alpha: 0.6),
+                      ),
+                    )
+                  else
+                    ..._reviews.map((r) => _ReviewTile(review: r)),
                 ],
               ),
             ),
@@ -190,3 +272,176 @@ class MealDetailsScreen extends StatelessWidget {
   }
 }
 
+class _RatingSummary extends StatelessWidget {
+  const _RatingSummary({required this.avg, required this.count});
+  final double avg;
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = Theme.of(context);
+    if (count == 0) {
+      return Text(
+        'Pas encore noté',
+        style: t.textTheme.bodySmall?.copyWith(
+          color: ChezMamaTheme.ink.withValues(alpha: 0.6),
+        ),
+      );
+    }
+    return Row(
+      children: [
+        _Stars(value: avg),
+        const SizedBox(width: 8),
+        Text(
+          '${avg.toStringAsFixed(1)} ($count)',
+          style: t.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w800),
+        ),
+      ],
+    );
+  }
+}
+
+class _Stars extends StatelessWidget {
+  const _Stars({required this.value, this.size = 18});
+  final double value;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: List.generate(5, (i) {
+        final filled = i < value.round();
+        return Icon(
+          filled ? Icons.star_rounded : Icons.star_outline_rounded,
+          size: size,
+          color: ChezMamaTheme.brandAmber,
+        );
+      }),
+    );
+  }
+}
+
+class _ReviewTile extends StatelessWidget {
+  const _ReviewTile({required this.review});
+  final MealReview review;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = Theme.of(context);
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: ChezMamaTheme.softShadow(opacity: 0.06),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  review.userName.isEmpty ? 'Client' : review.userName,
+                  style: t.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+              _Stars(value: review.rating.toDouble(), size: 15),
+            ],
+          ),
+          if (review.comment.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Text(review.comment, style: t.textTheme.bodyMedium),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _AddReviewSheet extends StatefulWidget {
+  const _AddReviewSheet();
+
+  @override
+  State<_AddReviewSheet> createState() => _AddReviewSheetState();
+}
+
+class _AddReviewSheetState extends State<_AddReviewSheet> {
+  int _rating = 5;
+  final _comment = TextEditingController();
+
+  @override
+  void dispose() {
+    _comment.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final t = Theme.of(context);
+    return Padding(
+      padding: EdgeInsets.only(
+        left: 16,
+        right: 16,
+        top: 8,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Donner mon avis',
+            style: t.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: List.generate(5, (i) {
+              final star = i + 1;
+              return IconButton(
+                onPressed: () => setState(() => _rating = star),
+                icon: Icon(
+                  star <= _rating
+                      ? Icons.star_rounded
+                      : Icons.star_outline_rounded,
+                  size: 36,
+                  color: ChezMamaTheme.brandAmber,
+                ),
+              );
+            }),
+          ),
+          const SizedBox(height: 8),
+          TextField(
+            controller: _comment,
+            maxLines: 3,
+            decoration: const InputDecoration(
+              labelText: 'Commentaire (optionnel)',
+              border: OutlineInputBorder(),
+            ),
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            height: 50,
+            child: FilledButton.icon(
+              onPressed: () => Navigator.of(context).pop(
+                (rating: _rating, comment: _comment.text.trim()),
+              ),
+              icon: const Icon(Icons.send_rounded),
+              label: const Text('Publier mon avis'),
+              style: FilledButton.styleFrom(
+                backgroundColor: ChezMamaTheme.brandOrange,
+                foregroundColor: Colors.white,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
