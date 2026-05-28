@@ -10,6 +10,24 @@ class SellerProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = SellerProfile
         exclude = ("id", "user")
+        read_only_fields = ("is_verified", "created_at", "updated_at")
+
+
+class SellerLocationSerializer(serializers.ModelSerializer):
+    id = serializers.IntegerField(source="user.id", read_only=True)
+    name = serializers.CharField(source="user.name", read_only=True)
+
+    class Meta:
+        model = SellerProfile
+        fields = (
+            "id",
+            "name",
+            "shop_name",
+            "cuisine",
+            "city",
+            "latitude",
+            "longitude",
+        )
 
 
 class UserSerializer(serializers.ModelSerializer):

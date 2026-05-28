@@ -9,6 +9,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from .models import Follow, SellerProfile
 from .serializers import (
     RegisterSerializer,
+    SellerLocationSerializer,
     SellerProfileSerializer,
     UserSerializer,
 )
@@ -44,6 +45,19 @@ class SellerDetailView(generics.RetrieveAPIView):
     serializer_class = UserSerializer
     permission_classes = [AllowAny]
     queryset = User.objects.all()
+
+
+class SellerLocationListView(generics.ListAPIView):
+    """Public list of sellers that have set a map location."""
+
+    serializer_class = SellerLocationSerializer
+    permission_classes = [AllowAny]
+    pagination_class = None
+
+    def get_queryset(self):
+        return SellerProfile.objects.filter(
+            latitude__isnull=False, longitude__isnull=False
+        ).select_related("user")
 
 
 class MeView(generics.RetrieveUpdateAPIView):

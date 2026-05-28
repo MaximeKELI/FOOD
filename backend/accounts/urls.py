@@ -10,6 +10,7 @@ from .views import (
     MyProfileView,
     RegisterView,
     SellerDetailView,
+    SellerLocationListView,
 )
 
 urlpatterns = [
@@ -18,6 +19,7 @@ urlpatterns = [
     path("token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
     path("me/", MeView.as_view(), name="me"),
     path("me/profile/", MyProfileView.as_view(), name="my_profile"),
+    path("sellers/", SellerLocationListView.as_view(), name="sellers_map"),
     path("sellers/<int:pk>/", SellerDetailView.as_view(), name="seller_detail"),
     path("sellers/<int:seller_id>/follow/", FollowToggleView.as_view(), name="follow"),
 ]
