@@ -57,6 +57,38 @@ class SellerProfileView {
   }
 }
 
+class SellerLocation {
+  SellerLocation({
+    required this.id,
+    required this.name,
+    required this.shopName,
+    required this.cuisine,
+    required this.city,
+    required this.latitude,
+    required this.longitude,
+  });
+
+  final int id;
+  final String name;
+  final String shopName;
+  final String cuisine;
+  final String city;
+  final double latitude;
+  final double longitude;
+
+  factory SellerLocation.fromJson(Map<String, dynamic> json) {
+    return SellerLocation(
+      id: json['id'] as int,
+      name: json['name'] as String? ?? '',
+      shopName: json['shop_name'] as String? ?? '',
+      cuisine: json['cuisine'] as String? ?? '',
+      city: json['city'] as String? ?? '',
+      latitude: (json['latitude'] as num).toDouble(),
+      longitude: (json['longitude'] as num).toDouble(),
+    );
+  }
+}
+
 class AccountsApi {
   AccountsApi._();
   static final AccountsApi instance = AccountsApi._();
@@ -71,5 +103,30 @@ class AccountsApi {
   Future<bool> toggleFollow(int sellerId) async {
     final res = await _dio.post('/auth/sellers/$sellerId/follow/');
     return res.data['following'] as bool? ?? false;
+  }
+
+  /// Returns the raw seller profile map for the current user.
+  Future<Map<String, dynamic>> fetchMyProfile() async {
+    final res = await _dio.get('/auth/me/profile/');
+    return Map<String, dynamic>.from(res.data as Map);
+  }
+
+  Future<void> updateMyProfile(Map<String, dynamic> data) async {
+    await _dio.patch('/auth/me/profile/', data: data);
+  }
+
+  Future<void> updateMe({String? displayName, String? phone}) async {
+    await _dio.patch('/auth/me/', data: {
+      if (displayName != null) 'display_name': displayName,
+      if (phone != null) 'phone': phone,
+    });
+  }
+
+  Future<List<SellerLocation>> fetchSellersWithLocation() async {
+    final res = await _dio.get('/auth/sellers/');
+    final list = (res.data as List?) ?? const [];
+    return list
+        .map((e) => SellerLocation.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 }
