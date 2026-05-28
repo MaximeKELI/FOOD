@@ -1,8 +1,9 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
+import '../../api/api_client.dart';
+import '../../api/social_api.dart';
 import '../../analytics/event_tracker.dart';
-import '../../auth/auth_scope.dart';
 import '../../services/app_media_picker.dart';
 import '../../services/platform_utils.dart';
 import '../../ui/chezmama_theme.dart';
@@ -19,58 +20,131 @@ class SocialFeedScreen extends StatefulWidget {
   State<SocialFeedScreen> createState() => _SocialFeedScreenState();
 }
 
-class _SocialFeedScreenState extends State<SocialFeedScreen>
-    with SingleTickerProviderStateMixin {
-  late final TabController _tabController;
-  final List<_UserPost> _videos = [];
-  final List<_UserPost> _shorts = [];
-  final Set<String> _followingSellers = {};
+class _SocialFeedScreenState extends State<SocialFeedScreen> {
+  final _api = SocialApi.instance;
+  List<ApiPost> _posts = [];
+  bool _loading = true;
+  String? _error;
+
+  bool get _isShort => widget.initialTab == SocialTab.shorts;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
-    _tabController.index = widget.initialTab == SocialTab.shorts ? 1 : 0;
+    _load();
   }
 
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
+  Future<void> _load() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final posts = await _api.fetchPosts(isShort: _isShort);
+      if (!mounted) return;
+      setState(() {
+        _posts = posts;
+        _loading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = apiErrorMessage(e);
+        _loading = false;
+      });
+    }
   }
 
-  void _publishPost(bool isShort) async {
-    final post = await showModalBottomSheet<_UserPost>(
+  Future<void> _publishPost() async {
+    final draft = await showModalBottomSheet<_PostDraft>(
       context: context,
       isScrollControlled: true,
       showDragHandle: true,
-      builder: (_) => _CreatePostSheet(
-        isShort: isShort,
-        sellerName: AuthScope.of(context).userName ?? 'Utilisateur',
-      ),
+      builder: (_) => _CreatePostSheet(isShort: _isShort),
     );
-    if (post == null) return;
+    if (draft == null) return;
     if (!mounted) return;
-    setState(() {
-      if (isShort) {
-        _shorts.insert(0, post);
-      } else {
-        _videos.insert(0, post);
-      }
-    });
+
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          isShort ? 'Short publié avec succès' : 'Vidéo publiée avec succès',
+      const SnackBar(content: Text('Publication en cours…')),
+    );
+    try {
+      await _api.createPost(
+        caption: draft.caption,
+        isShort: _isShort,
+        isVideo: draft.isVideo,
+        mediaPath: draft.mediaPath,
+      );
+      EventTracker.instance.track(
+        'post_publish',
+        screen: 'SocialFeedScreen',
+        meta: draft.caption,
+      );
+      await _load();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            _isShort ? 'Short publié avec succès' : 'Vidéo publiée avec succès',
+          ),
         ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Échec de la publication: ${apiErrorMessage(e)}')),
+      );
+    }
+  }
+
+  Future<void> _toggleLike(ApiPost post) async {
+    try {
+      final result = await _api.toggleLike(post.id);
+      if (!mounted) return;
+      setState(() {
+        post.likedByMe = result.liked;
+        post.likeCount = result.likeCount;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(apiErrorMessage(e))),
+      );
+    }
+  }
+
+  Future<void> _toggleFavorite(ApiPost post) async {
+    try {
+      final fav = await _api.toggleFavorite(post.id);
+      if (!mounted) return;
+      setState(() => post.favoritedByMe = fav);
+    } catch (_) {}
+  }
+
+  Future<void> _toggleFollow(ApiPost post) async {
+    try {
+      await _api.toggleFollow(post.authorId);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(apiErrorMessage(e))),
+      );
+    }
+  }
+
+  void _openComments(ApiPost post) {
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-    );
-    EventTracker.instance.track(
-      'post_publish',
-      screen: 'SocialFeedScreen',
-      element: post.id,
-      meta: post.caption,
-    );
+      builder: (context) => _CommentsSheet(post: post),
+    ).then((_) {
+      if (mounted) setState(() {});
+    });
   }
 
   @override
@@ -85,7 +159,7 @@ class _SocialFeedScreenState extends State<SocialFeedScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  _tabController.index == 1 ? 'Shorts' : 'Vidéos',
+                  _isShort ? 'Shorts' : 'Vidéos',
                   style: t.textTheme.headlineSmall?.copyWith(
                     fontWeight: FontWeight.w900,
                     letterSpacing: -0.4,
@@ -102,33 +176,59 @@ class _SocialFeedScreenState extends State<SocialFeedScreen>
               ],
             ),
           ),
-          Expanded(
-            child: _tabController.index == 1
-                ? _FeedList(
-                    posts: _shorts,
-                    emptyTitle: 'Aucun short publié',
-                    emptySubtitle: 'Publie un short pour attirer les clients.',
-                    followingSellers: _followingSellers,
-                  )
-                : _FeedList(
-                    posts: _videos,
-                    emptyTitle: 'Aucune vidéo publiée',
-                    emptySubtitle: 'Publie la première vidéo de ton plat.',
-                    followingSellers: _followingSellers,
-                  ),
-          ),
+          Expanded(child: _buildBody()),
         ],
       ),
-      floatingActionButton: AnimatedBuilder(
-        animation: _tabController,
-        builder: (context, _) {
-          final isShort = _tabController.index == 1;
-          return FloatingActionButton.extended(
-            onPressed: () => _publishPost(isShort),
-            backgroundColor: ChezMamaTheme.brandOrange,
-            foregroundColor: Colors.white,
-            icon: Icon(isShort ? Icons.bolt_rounded : Icons.videocam_rounded),
-            label: Text(isShort ? 'Publier short' : 'Publier vidéo'),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _publishPost,
+        backgroundColor: ChezMamaTheme.brandOrange,
+        foregroundColor: Colors.white,
+        icon: Icon(_isShort ? Icons.bolt_rounded : Icons.videocam_rounded),
+        label: Text(_isShort ? 'Publier short' : 'Publier vidéo'),
+      ),
+    );
+  }
+
+  Widget _buildBody() {
+    if (_loading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (_error != null) {
+      return _ErrorState(message: _error!, onRetry: _load);
+    }
+    if (_posts.isEmpty) {
+      return RefreshIndicator(
+        onRefresh: _load,
+        child: ListView(
+          children: [
+            SizedBox(height: MediaQuery.sizeOf(context).height * 0.18),
+            _EmptyState(
+              title: _isShort ? 'Aucun short publié' : 'Aucune vidéo publiée',
+              subtitle: _isShort
+                  ? 'Publie un short pour attirer les clients.'
+                  : 'Publie la première vidéo de ton plat.',
+            ),
+          ],
+        ),
+      );
+    }
+    return RefreshIndicator(
+      onRefresh: _load,
+      child: ListView.separated(
+        padding: const EdgeInsets.fromLTRB(14, 0, 14, 110),
+        itemCount: _posts.length,
+        separatorBuilder: (_, __) => const SizedBox(height: 14),
+        itemBuilder: (context, i) {
+          final post = _posts[i];
+          return _SocialPostCard(
+            post: post,
+            onLike: () => _toggleLike(post),
+            onFollow: () => _toggleFollow(post),
+            onFavorite: () => _toggleFavorite(post),
+            onShare: () => ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Partage ouvert')),
+            ),
+            onComments: () => _openComments(post),
           );
         },
       ),
@@ -136,109 +236,20 @@ class _SocialFeedScreenState extends State<SocialFeedScreen>
   }
 }
 
-class _FeedList extends StatefulWidget {
-  const _FeedList({
-    required this.posts,
-    required this.emptyTitle,
-    required this.emptySubtitle,
-    required this.followingSellers,
-  });
-
-  final List<_UserPost> posts;
-  final String emptyTitle;
-  final String emptySubtitle;
-  final Set<String> followingSellers;
-
-  @override
-  State<_FeedList> createState() => _FeedListState();
-}
-
-class _FeedListState extends State<_FeedList> {
-  void _openComments(_UserPost post) {
-    showModalBottomSheet<void>(
-      context: context,
-      showDragHandle: true,
-      isScrollControlled: true,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (context) => _CommentsSheet(post: post),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (widget.posts.isEmpty) {
-      return _EmptyState(
-        title: widget.emptyTitle,
-        subtitle: widget.emptySubtitle,
-      );
-    }
-    return ListView.separated(
-      padding: const EdgeInsets.fromLTRB(14, 0, 14, 110),
-      itemCount: widget.posts.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 14),
-      itemBuilder: (context, i) {
-        final post = widget.posts[i];
-        final followed = widget.followingSellers.contains(post.sellerName);
-        return _SocialPostCard(
-          post: post,
-          followed: followed,
-          onFollow: () {
-            setState(() {
-              if (followed) {
-                widget.followingSellers.remove(post.sellerName);
-              } else {
-                widget.followingSellers.add(post.sellerName);
-              }
-            });
-            EventTracker.instance.track(
-              'seller_subscribe_toggle',
-              screen: 'SocialFeedScreen',
-              element: post.id,
-              meta: post.sellerName,
-            );
-          },
-          onLike: () {
-            setState(() => post.likeCount += post.likedByMe ? -1 : 1);
-            post.likedByMe = !post.likedByMe;
-            EventTracker.instance.track(
-              'video_like_toggle',
-              screen: 'SocialFeedScreen',
-              element: post.id,
-            );
-          },
-          onFavorite: () => setState(() => post.favorite = !post.favorite),
-          onDownload: () => setState(() => post.downloaded = true),
-          onShare: () => ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Partage ouvert')),
-          ),
-          onComments: () => _openComments(post),
-        );
-      },
-    );
-  }
-}
-
 class _SocialPostCard extends StatelessWidget {
   const _SocialPostCard({
     required this.post,
-    required this.followed,
     required this.onLike,
     required this.onFollow,
     required this.onFavorite,
-    required this.onDownload,
     required this.onShare,
     required this.onComments,
   });
 
-  final _UserPost post;
-  final bool followed;
+  final ApiPost post;
   final VoidCallback onLike;
   final VoidCallback onFollow;
   final VoidCallback onFavorite;
-  final VoidCallback onDownload;
   final VoidCallback onShare;
   final VoidCallback onComments;
 
@@ -261,10 +272,10 @@ class _SocialPostCard extends StatelessWidget {
               child: Stack(
                 fit: StackFit.expand,
                 children: [
-                  if (post.mediaPath.isNotEmpty)
+                  if (post.mediaUrl.isNotEmpty)
                     _PostMedia(post: post)
                   else
-                    _PostPlaceholder(post: post),
+                    const _PostPlaceholder(),
                   DecoratedBox(
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
@@ -277,22 +288,6 @@ class _SocialPostCard extends StatelessWidget {
                       ),
                     ),
                   ),
-                  if (post.mediaType == _MediaType.image)
-                    Center(
-                      child: Container(
-                        width: 58,
-                        height: 58,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.88),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.image_rounded,
-                          color: ChezMamaTheme.brandOrange,
-                          size: 32,
-                        ),
-                      ),
-                    ),
                   Positioned(
                     left: 14,
                     right: 14,
@@ -306,7 +301,7 @@ class _SocialPostCard extends StatelessWidget {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Text(
-                                post.sellerName,
+                                post.authorName,
                                 style: t.textTheme.titleMedium?.copyWith(
                                   color: Colors.white,
                                   fontWeight: FontWeight.w900,
@@ -329,13 +324,11 @@ class _SocialPostCard extends StatelessWidget {
                         FilledButton(
                           onPressed: onFollow,
                           style: FilledButton.styleFrom(
-                            backgroundColor:
-                                followed ? Colors.white : ChezMamaTheme.brandOrange,
-                            foregroundColor:
-                                followed ? ChezMamaTheme.brandBrown : Colors.white,
+                            backgroundColor: ChezMamaTheme.brandOrange,
+                            foregroundColor: Colors.white,
                             visualDensity: VisualDensity.compact,
                           ),
-                          child: Text(followed ? 'Abonné' : 'S’abonner'),
+                          child: const Text('S’abonner'),
                         ),
                       ],
                     ),
@@ -357,16 +350,16 @@ class _SocialPostCard extends StatelessWidget {
                   ),
                   _ActionButton(
                     icon: Icons.mode_comment_outlined,
-                    label: '${post.comments.length}',
+                    label: '${post.commentCount}',
                     active: false,
                     onTap: onComments,
                   ),
                   _ActionButton(
-                    icon: post.favorite
+                    icon: post.favoritedByMe
                         ? Icons.bookmark_rounded
                         : Icons.bookmark_border_rounded,
                     label: 'Favori',
-                    active: post.favorite,
+                    active: post.favoritedByMe,
                     onTap: onFavorite,
                   ),
                   const Spacer(),
@@ -374,15 +367,6 @@ class _SocialPostCard extends StatelessWidget {
                     tooltip: 'Partager',
                     onPressed: onShare,
                     icon: const Icon(Icons.ios_share_rounded),
-                  ),
-                  IconButton(
-                    tooltip: 'Télécharger',
-                    onPressed: onDownload,
-                    icon: Icon(
-                      post.downloaded
-                          ? Icons.download_done_rounded
-                          : Icons.download_rounded,
-                    ),
                   ),
                 ],
               ),
@@ -394,48 +378,48 @@ class _SocialPostCard extends StatelessWidget {
   }
 }
 
-class _PostPlaceholder extends StatelessWidget {
-  const _PostPlaceholder({required this.post});
-  final _UserPost post;
+class _PostMedia extends StatelessWidget {
+  const _PostMedia({required this.post});
+  final ApiPost post;
 
   @override
   Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: const BoxDecoration(
+    if (!post.isVideo) {
+      return Image.network(
+        post.mediaUrl,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => const _PostPlaceholder(),
+        loadingBuilder: (context, child, progress) {
+          if (progress == null) return child;
+          return const Center(child: CircularProgressIndicator());
+        },
+      );
+    }
+    return PostVideoPlayer(path: post.mediaUrl, isRemote: true);
+  }
+}
+
+class _PostPlaceholder extends StatelessWidget {
+  const _PostPlaceholder();
+
+  @override
+  Widget build(BuildContext context) {
+    return const DecoratedBox(
+      decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            Color(0xFFFFE3C3),
-            Color(0xFFFFFBF6),
-          ],
+          colors: [Color(0xFFFFE3C3), Color(0xFFFFFBF6)],
         ),
       ),
       child: Center(
         child: Icon(
-          post.isShort ? Icons.bolt_rounded : Icons.videocam_rounded,
+          Icons.play_circle_outline_rounded,
           size: 54,
           color: ChezMamaTheme.brandOrange,
         ),
       ),
     );
-  }
-}
-
-class _PostMedia extends StatelessWidget {
-  const _PostMedia({required this.post});
-  final _UserPost post;
-
-  @override
-  Widget build(BuildContext context) {
-    if (post.mediaType == _MediaType.image) {
-      return Image.file(
-        File(post.mediaPath),
-        fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) => _PostPlaceholder(post: post),
-      );
-    }
-    return PostVideoPlayer(path: post.mediaPath);
   }
 }
 
@@ -472,14 +456,23 @@ class _ActionButton extends StatelessWidget {
   }
 }
 
-class _CreatePostSheet extends StatefulWidget {
-  const _CreatePostSheet({
-    required this.isShort,
-    required this.sellerName,
+/// Draft returned by the create sheet; the parent uploads it to the backend.
+class _PostDraft {
+  _PostDraft({
+    required this.caption,
+    required this.mediaPath,
+    required this.isVideo,
   });
 
+  final String caption;
+  final String mediaPath;
+  final bool isVideo;
+}
+
+class _CreatePostSheet extends StatefulWidget {
+  const _CreatePostSheet({required this.isShort});
+
   final bool isShort;
-  final String sellerName;
 
   @override
   State<_CreatePostSheet> createState() => _CreatePostSheetState();
@@ -489,7 +482,7 @@ class _CreatePostSheetState extends State<_CreatePostSheet> {
   final captionController = TextEditingController();
   final _mediaPicker = AppMediaPicker.instance;
   String? mediaPath;
-  _MediaType? pickedType;
+  bool? isVideo;
 
   @override
   void dispose() {
@@ -510,7 +503,7 @@ class _CreatePostSheetState extends State<_CreatePostSheet> {
       if (!mounted || media == null) return;
       setState(() {
         mediaPath = media.path;
-        pickedType = _MediaType.video;
+        isVideo = true;
       });
     } on FormatException catch (e) {
       if (!mounted) return;
@@ -534,7 +527,7 @@ class _CreatePostSheetState extends State<_CreatePostSheet> {
       if (!mounted || media == null) return;
       setState(() {
         mediaPath = media.path;
-        pickedType = _MediaType.video;
+        isVideo = true;
       });
     } catch (e) {
       _showPickError(e);
@@ -547,7 +540,7 @@ class _CreatePostSheetState extends State<_CreatePostSheet> {
       if (!mounted || media == null) return;
       setState(() {
         mediaPath = media.path;
-        pickedType = _MediaType.image;
+        isVideo = false;
       });
     } catch (e) {
       _showPickError(e);
@@ -555,32 +548,21 @@ class _CreatePostSheetState extends State<_CreatePostSheet> {
   }
 
   void _submit() {
-    if (mediaPath == null || pickedType == null) {
+    if (mediaPath == null || isVideo == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Choisis d’abord une photo ou une vidéo.'),
-        ),
+        const SnackBar(content: Text('Choisis d’abord une photo ou une vidéo.')),
       );
       return;
     }
-
     var caption = captionController.text.trim();
     if (caption.isEmpty) {
-      caption = pickedType == _MediaType.video
+      caption = isVideo!
           ? (widget.isShort ? 'Mon short' : 'Ma vidéo')
           : 'Ma photo';
     }
-
-    final now = DateTime.now().millisecondsSinceEpoch;
-    final post = _UserPost(
-      id: 'p_$now',
-      sellerName: widget.sellerName,
-      caption: caption,
-      mediaPath: mediaPath!,
-      isShort: widget.isShort,
-      mediaType: pickedType!,
+    Navigator.of(context).pop(
+      _PostDraft(caption: caption, mediaPath: mediaPath!, isVideo: isVideo!),
     );
-    Navigator.of(context).pop(post);
   }
 
   @override
@@ -594,98 +576,96 @@ class _CreatePostSheetState extends State<_CreatePostSheet> {
       ),
       child: SingleChildScrollView(
         child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          TextField(
-            controller: captionController,
-            maxLines: 3,
-            decoration: InputDecoration(
-              labelText: widget.isShort ? 'Texte du short' : 'Description de la vidéo',
-              border: const OutlineInputBorder(),
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: captionController,
+              maxLines: 3,
+              decoration: InputDecoration(
+                labelText:
+                    widget.isShort ? 'Texte du short' : 'Description de la vidéo',
+                border: const OutlineInputBorder(),
+              ),
             ),
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: _pickPhoto,
+                    icon: const Icon(Icons.photo_library_rounded),
+                    label: const Text('Photo (galerie)'),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: _pickVideoFromGallery,
+                    icon: const Icon(Icons.video_library_rounded),
+                    label: const Text('Vidéo (galerie)'),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            if (isMobilePlatform)
+              SizedBox(
+                width: double.infinity,
                 child: OutlinedButton.icon(
-                  onPressed: _pickPhoto,
-                  icon: const Icon(Icons.photo_library_rounded),
-                  label: const Text('Photo (galerie)'),
+                  onPressed: _captureVideo,
+                  icon: const Icon(Icons.videocam_rounded),
+                  label: const Text('Filmer maintenant (caméra)'),
                 ),
               ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: _pickVideoFromGallery,
-                  icon: const Icon(Icons.video_library_rounded),
-                  label: const Text('Vidéo (galerie)'),
+            const SizedBox(height: 12),
+            if (mediaPath != null && isVideo == true)
+              ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: AspectRatio(
+                  aspectRatio: widget.isShort ? 9 / 16 : 16 / 9,
+                  child: PostVideoPlayer(path: mediaPath!, autoPlay: true),
                 ),
               ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          if (isMobilePlatform)
+            if (mediaPath != null && isVideo == false)
+              ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: Image.file(
+                  File(mediaPath!),
+                  height: 160,
+                  width: double.infinity,
+                  fit: BoxFit.cover,
+                ),
+              ),
+            const SizedBox(height: 12),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: ChezMamaTheme.surface2,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Text(
+                mediaPath == null
+                    ? 'Aucun média sélectionné — obligatoire pour publier'
+                    : 'Média sélectionné: ${p.basename(mediaPath!)}',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+              ),
+            ),
+            const SizedBox(height: 12),
             SizedBox(
               width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: _captureVideo,
-                icon: const Icon(Icons.videocam_rounded),
-                label: const Text('Filmer maintenant (caméra)'),
-              ),
-            ),
-          const SizedBox(height: 12),
-          if (mediaPath != null && pickedType == _MediaType.video)
-            ClipRRect(
-              borderRadius: BorderRadius.circular(16),
-              child: AspectRatio(
-                aspectRatio: widget.isShort ? 9 / 16 : 16 / 9,
-                child: PostVideoPlayer(
-                  path: mediaPath!,
-                  autoPlay: true,
+              child: FilledButton(
+                onPressed: _submit,
+                style: FilledButton.styleFrom(
+                  backgroundColor: ChezMamaTheme.brandOrange,
+                  foregroundColor: Colors.white,
                 ),
+                child: Text(widget.isShort ? 'Publier short' : 'Publier vidéo'),
               ),
             ),
-          if (mediaPath != null && pickedType == _MediaType.image)
-            ClipRRect(
-              borderRadius: BorderRadius.circular(16),
-              child: Image.file(
-                File(mediaPath!),
-                height: 160,
-                width: double.infinity,
-                fit: BoxFit.cover,
-              ),
-            ),
-          const SizedBox(height: 12),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: ChezMamaTheme.surface2,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Text(
-              mediaPath == null
-                  ? 'Aucun média sélectionné — obligatoire pour publier'
-                  : 'Média sélectionné: ${p.basename(mediaPath!)}',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
-            ),
-          ),
-          const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton(
-              onPressed: _submit,
-              style: FilledButton.styleFrom(
-                backgroundColor: ChezMamaTheme.brandOrange,
-                foregroundColor: Colors.white,
-              ),
-              child: Text(widget.isShort ? 'Publier short' : 'Publier vidéo'),
-            ),
-          ),
-        ],
+          ],
         ),
       ),
     );
@@ -694,7 +674,7 @@ class _CreatePostSheetState extends State<_CreatePostSheet> {
 
 class _CommentsSheet extends StatefulWidget {
   const _CommentsSheet({required this.post});
-  final _UserPost post;
+  final ApiPost post;
 
   @override
   State<_CommentsSheet> createState() => _CommentsSheetState();
@@ -702,6 +682,16 @@ class _CommentsSheet extends StatefulWidget {
 
 class _CommentsSheetState extends State<_CommentsSheet> {
   final controller = TextEditingController();
+  final _api = SocialApi.instance;
+  List<ApiComment> _comments = [];
+  bool _loading = true;
+  bool _sending = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
 
   @override
   void dispose() {
@@ -709,16 +699,52 @@ class _CommentsSheetState extends State<_CommentsSheet> {
     super.dispose();
   }
 
-  void _addComment() {
-    final text = controller.text.trim();
-    if (text.isEmpty) return;
-    setState(() {
-      widget.post.comments.insert(0, _CommentNode(text: text));
-      controller.clear();
-    });
+  Future<void> _load() async {
+    try {
+      final comments = await _api.fetchComments(widget.post.id);
+      if (!mounted) return;
+      setState(() {
+        _comments = comments;
+        _loading = false;
+        widget.post.commentCount = comments.length;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _loading = false);
+    }
   }
 
-  Future<void> _addReply(_CommentNode target) async {
+  List<ApiComment> get _topLevel =>
+      _comments.where((c) => c.parentId == null).toList();
+
+  List<ApiComment> _repliesOf(int id) =>
+      _comments.where((c) => c.parentId == id).toList();
+
+  Future<void> _addComment({int? parentId, TextEditingController? source}) async {
+    final ctrl = source ?? controller;
+    final text = ctrl.text.trim();
+    if (text.isEmpty || _sending) return;
+    setState(() => _sending = true);
+    try {
+      final comment =
+          await _api.addComment(widget.post.id, text, parentId: parentId);
+      if (!mounted) return;
+      setState(() {
+        _comments.add(comment);
+        widget.post.commentCount = _comments.length;
+        ctrl.clear();
+      });
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(apiErrorMessage(e))),
+      );
+    } finally {
+      if (mounted) setState(() => _sending = false);
+    }
+  }
+
+  Future<void> _replyTo(ApiComment target) async {
     final replyController = TextEditingController();
     final text = await showDialog<String>(
       context: context,
@@ -738,17 +764,21 @@ class _CommentsSheetState extends State<_CommentsSheet> {
             child: const Text('Annuler'),
           ),
           FilledButton(
-            onPressed: () => Navigator.of(context).pop(replyController.text.trim()),
+            onPressed: () =>
+                Navigator.of(context).pop(replyController.text.trim()),
             child: const Text('Envoyer'),
           ),
         ],
       ),
     );
+    final value = text;
+    replyController.text = value ?? '';
+    if (value == null || value.isEmpty) {
+      replyController.dispose();
+      return;
+    }
+    await _addComment(parentId: target.id, source: replyController);
     replyController.dispose();
-    if (text == null || text.isEmpty) return;
-    setState(() {
-      target.replies.add(_CommentNode(text: text));
-    });
   }
 
   @override
@@ -771,37 +801,56 @@ class _CommentsSheetState extends State<_CommentsSheet> {
             ),
             const SizedBox(height: 12),
             Expanded(
-              child: widget.post.comments.isEmpty
-                  ? const Center(child: Text('Aucun commentaire pour le moment.'))
-                  : ListView.separated(
-                      itemCount: widget.post.comments.length,
-                      separatorBuilder: (_, __) => const Divider(height: 22),
-                      itemBuilder: (context, i) {
-                        final comment = widget.post.comments[i];
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(comment.text, style: t.textTheme.bodyMedium),
-                            TextButton(
-                              onPressed: () => _addReply(comment),
-                              child: const Text('Répondre'),
-                            ),
-                            for (final reply in comment.replies)
-                              Padding(
-                                padding: const EdgeInsets.only(left: 18, top: 4),
-                                child: Row(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    const Icon(Icons.subdirectory_arrow_right_rounded, size: 16),
-                                    const SizedBox(width: 6),
-                                    Expanded(child: Text(reply.text)),
-                                  ],
+              child: _loading
+                  ? const Center(child: CircularProgressIndicator())
+                  : _topLevel.isEmpty
+                      ? const Center(
+                          child: Text('Aucun commentaire pour le moment.'))
+                      : ListView.separated(
+                          itemCount: _topLevel.length,
+                          separatorBuilder: (_, __) => const Divider(height: 22),
+                          itemBuilder: (context, i) {
+                            final comment = _topLevel[i];
+                            final replies = _repliesOf(comment.id);
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  comment.authorName,
+                                  style: t.textTheme.labelLarge?.copyWith(
+                                    fontWeight: FontWeight.w800,
+                                  ),
                                 ),
-                              ),
-                          ],
-                        );
-                      },
-                    ),
+                                Text(comment.text, style: t.textTheme.bodyMedium),
+                                TextButton(
+                                  onPressed: () => _replyTo(comment),
+                                  child: const Text('Répondre'),
+                                ),
+                                for (final reply in replies)
+                                  Padding(
+                                    padding:
+                                        const EdgeInsets.only(left: 18, top: 4),
+                                    child: Row(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        const Icon(
+                                          Icons.subdirectory_arrow_right_rounded,
+                                          size: 16,
+                                        ),
+                                        const SizedBox(width: 6),
+                                        Expanded(
+                                          child: Text(
+                                            '${reply.authorName}: ${reply.text}',
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                              ],
+                            );
+                          },
+                        ),
             ),
             Row(
               children: [
@@ -817,7 +866,7 @@ class _CommentsSheetState extends State<_CommentsSheet> {
                 ),
                 const SizedBox(width: 10),
                 FilledButton(
-                  onPressed: _addComment,
+                  onPressed: _sending ? null : () => _addComment(),
                   style: FilledButton.styleFrom(
                     backgroundColor: ChezMamaTheme.brandOrange,
                     foregroundColor: Colors.white,
@@ -876,35 +925,35 @@ class _EmptyState extends StatelessWidget {
   }
 }
 
-class _UserPost {
-  _UserPost({
-    required this.id,
-    required this.sellerName,
-    required this.caption,
-    required this.mediaPath,
-    required this.isShort,
-    required this.mediaType,
-  });
+class _ErrorState extends StatelessWidget {
+  const _ErrorState({required this.message, required this.onRetry});
+  final String message;
+  final VoidCallback onRetry;
 
-  final String id;
-  final String sellerName;
-  final String caption;
-  final String mediaPath;
-  final bool isShort;
-  final _MediaType mediaType;
-
-  bool likedByMe = false;
-  int likeCount = 0;
-  bool favorite = false;
-  bool downloaded = false;
-  final List<_CommentNode> comments = [];
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.cloud_off_rounded, size: 46),
+            const SizedBox(height: 10),
+            Text(message, textAlign: TextAlign.center),
+            const SizedBox(height: 12),
+            FilledButton.icon(
+              onPressed: onRetry,
+              icon: const Icon(Icons.refresh_rounded),
+              label: const Text('Réessayer'),
+              style: FilledButton.styleFrom(
+                backgroundColor: ChezMamaTheme.brandOrange,
+                foregroundColor: Colors.white,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
-
-enum _MediaType { image, video }
-
-class _CommentNode {
-  _CommentNode({required this.text});
-  final String text;
-  final List<_CommentNode> replies = [];
-}
-
