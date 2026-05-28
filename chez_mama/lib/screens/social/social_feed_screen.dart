@@ -50,6 +50,7 @@ class _SocialFeedScreenState extends State<SocialFeedScreen>
       ),
     );
     if (post == null) return;
+    if (!mounted) return;
     setState(() {
       if (isShort) {
         _shorts.insert(0, post);
@@ -57,6 +58,13 @@ class _SocialFeedScreenState extends State<SocialFeedScreen>
         _videos.insert(0, post);
       }
     });
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          isShort ? 'Short publié avec succès' : 'Vidéo publiée avec succès',
+        ),
+      ),
+    );
     EventTracker.instance.track(
       'post_publish',
       screen: 'SocialFeedScreen',
