@@ -3,6 +3,7 @@ import '../../cart/cart_service.dart';
 import '../../models/meal.dart';
 import '../../ui/chezmama_theme.dart';
 import '../../widgets/primary_button.dart';
+import '../profile/seller_profile_screen.dart';
 
 class MealDetailsScreen extends StatelessWidget {
   const MealDetailsScreen({super.key, required this.meal});
