@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import '../../api/api_client.dart';
 import '../../api/orders_api.dart';
+import '../../cart/received_orders_notifier.dart';
 import '../../ui/chezmama_theme.dart';
+
+const _activeStatuses = {'pending', 'preparing', 'on_the_way'};
 
 class ReceivedOrdersScreen extends StatefulWidget {
   const ReceivedOrdersScreen({super.key});
@@ -21,6 +24,11 @@ class _ReceivedOrdersScreenState extends State<ReceivedOrdersScreen> {
     _load();
   }
 
+  List<OrderView> get _active =>
+      _orders.where((o) => _activeStatuses.contains(o.status)).toList();
+  List<OrderView> get _done =>
+      _orders.where((o) => !_activeStatuses.contains(o.status)).toList();
+
   Future<void> _load() async {
     setState(() {
       _loading = true;
@@ -33,6 +41,7 @@ class _ReceivedOrdersScreenState extends State<ReceivedOrdersScreen> {
         _orders = orders;
         _loading = false;
       });
+      ReceivedOrdersNotifier.instance.refresh();
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -50,6 +59,7 @@ class _ReceivedOrdersScreenState extends State<ReceivedOrdersScreen> {
         final i = _orders.indexWhere((o) => o.id == order.id);
         if (i != -1) _orders[i] = updated;
       });
+      ReceivedOrdersNotifier.instance.refresh();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Statut: ${updated.statusLabel}')),
       );
@@ -63,9 +73,22 @@ class _ReceivedOrdersScreenState extends State<ReceivedOrdersScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Commandes reçues')),
-      body: _buildBody(),
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Commandes reçues'),
+          bottom: TabBar(
+            labelColor: ChezMamaTheme.brandOrange,
+            indicatorColor: ChezMamaTheme.brandOrange,
+            tabs: [
+              Tab(text: 'En cours (${_active.length})'),
+              Tab(text: 'Terminées (${_done.length})'),
+            ],
+          ),
+        ),
+        body: _buildBody(),
+      ),
     );
   }
 
@@ -98,20 +121,58 @@ class _ReceivedOrdersScreenState extends State<ReceivedOrdersScreen> {
         ),
       );
     }
-    if (_orders.isEmpty) {
-      return const Center(child: Text('Aucune commande reçue pour le moment.'));
-    }
-    return RefreshIndicator(
-      onRefresh: _load,
-      child: ListView.separated(
-        padding: const EdgeInsets.all(14),
-        itemCount: _orders.length,
-        separatorBuilder: (_, __) => const SizedBox(height: 12),
-        itemBuilder: (context, i) => _ReceivedOrderCard(
-          order: _orders[i],
-          onStatusChange: (s) => _changeStatus(_orders[i], s),
+    return TabBarView(
+      children: [
+        _OrdersList(
+          orders: _active,
+          emptyText: 'Aucune commande en cours.',
+          onRefresh: _load,
+          onStatusChange: _changeStatus,
         ),
-      ),
+        _OrdersList(
+          orders: _done,
+          emptyText: 'Aucune commande terminée.',
+          onRefresh: _load,
+          onStatusChange: _changeStatus,
+        ),
+      ],
+    );
+  }
+}
+
+class _OrdersList extends StatelessWidget {
+  const _OrdersList({
+    required this.orders,
+    required this.emptyText,
+    required this.onRefresh,
+    required this.onStatusChange,
+  });
+
+  final List<OrderView> orders;
+  final String emptyText;
+  final Future<void> Function() onRefresh;
+  final void Function(OrderView, String) onStatusChange;
+
+  @override
+  Widget build(BuildContext context) {
+    return RefreshIndicator(
+      onRefresh: onRefresh,
+      child: orders.isEmpty
+          ? ListView(
+              children: [
+                const SizedBox(height: 120),
+                Center(child: Text(emptyText)),
+              ],
+            )
+          : ListView.separated(
+              padding: const EdgeInsets.all(14),
+              itemCount: orders.length,
+              separatorBuilder: (_, __) => const SizedBox(height: 12),
+              itemBuilder: (context, i) => _ReceivedOrderCard(
+                order: orders[i],
+                onStatusChange: (s) => onStatusChange(orders[i], s),
+              ),
+            ),
     );
   }
 }
