@@ -21,22 +21,22 @@ class _HeroCarouselState extends State<HeroCarousel> {
 
   final items = const <_HeroItem>[
     _HeroItem(
-      title: 'Plats chauds, saveurs locales',
-      subtitle: 'Découvre les meilleurs vendeurs près de toi',
+      title: 'Mafé chaud près de toi',
+      subtitle: 'Découvre les vendeurs locaux les mieux notés',
       gradient: [Color(0xFFFF7A18), Color(0xFFFFC24C), Color(0xFFFFFBF6)],
-      asset: null,
+      asset: 'assets/images/food_hero_mafe.png',
     ),
     _HeroItem(
-      title: 'Shorts & vidéos',
-      subtitle: 'Like, commente, abonne-toi',
+      title: 'Yassa du jour',
+      subtitle: 'Suis les créateurs, like et commande',
       gradient: [Color(0xFF6E3B1F), Color(0xFFFF7A18), Color(0xFFFFFBF6)],
-      asset: null,
+      asset: 'assets/images/food_hero_yassa.png',
     ),
     _HeroItem(
-      title: 'Commande en 3 clics',
-      subtitle: 'Rapide, fluide et sécurisé',
+      title: 'Suya grillé maintenant',
+      subtitle: 'Vidéos, shorts et plats à proximité',
       gradient: [Color(0xFFE2A83B), Color(0xFFFF7A18), Color(0xFFFFFBF6)],
-      asset: null,
+      asset: 'assets/images/food_hero_suya.png',
     ),
   ];
 
