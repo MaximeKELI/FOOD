@@ -566,9 +566,36 @@ class _CommentsSheetState extends State<_CommentsSheet> {
     });
   }
 
-  void _addReply(_CommentNode target) {
+  Future<void> _addReply(_CommentNode target) async {
+    final replyController = TextEditingController();
+    final text = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Répondre'),
+        content: TextField(
+          controller: replyController,
+          autofocus: true,
+          decoration: const InputDecoration(
+            hintText: 'Ta réponse…',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Annuler'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(replyController.text.trim()),
+            child: const Text('Envoyer'),
+          ),
+        ],
+      ),
+    );
+    replyController.dispose();
+    if (text == null || text.isEmpty) return;
     setState(() {
-      target.replies.add(_CommentNode(text: 'Réponse ajoutée'));
+      target.replies.add(_CommentNode(text: text));
     });
   }
 
