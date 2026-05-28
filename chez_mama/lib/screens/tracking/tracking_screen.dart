@@ -270,6 +270,31 @@ class _TrackingScreenState extends State<TrackingScreen> {
         ),
         MarkerLayer(
           markers: [
+            for (final seller in _sellers)
+              Marker(
+                point: LatLng(seller.latitude, seller.longitude),
+                width: 46,
+                height: 46,
+                child: GestureDetector(
+                  onTap: () => _showSeller(seller),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: ChezMamaTheme.brandBrown,
+                        width: 2,
+                      ),
+                      boxShadow: ChezMamaTheme.softShadow(opacity: 0.18),
+                    ),
+                    child: const Icon(
+                      Icons.storefront_rounded,
+                      color: ChezMamaTheme.brandBrown,
+                      size: 22,
+                    ),
+                  ),
+                ),
+              ),
             Marker(
               point: center,
               width: 52,
@@ -289,6 +314,48 @@ class _TrackingScreenState extends State<TrackingScreen> {
           ],
         ),
       ],
+    );
+  }
+
+  void _showSeller(SellerLocation seller) {
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (_) => Padding(
+        padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              seller.shopName.isEmpty ? seller.name : seller.shopName,
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w900,
+                  ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              [seller.cuisine, seller.city].where((s) => s.isNotEmpty).join(' • '),
+            ),
+            const SizedBox(height: 14),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  _openSeller(seller);
+                },
+                icon: const Icon(Icons.storefront_rounded),
+                label: const Text('Voir la boutique'),
+                style: FilledButton.styleFrom(
+                  backgroundColor: ChezMamaTheme.brandOrange,
+                  foregroundColor: Colors.white,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

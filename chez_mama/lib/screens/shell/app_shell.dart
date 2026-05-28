@@ -9,6 +9,7 @@ import '../social/shorts_screen.dart';
 import '../social/videos_screen.dart';
 import '../cart/cart_screen.dart';
 import '../profile/my_publications_screen.dart';
+import '../profile/my_shop_screen.dart';
 import '../profile/received_orders_screen.dart';
 import '../tracking/tracking_screen.dart';
 import '../auth/login_screen.dart';
