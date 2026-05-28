@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import '../../auth/auth_scope.dart';
+import '../../cart/cart_service.dart';
 import '../../ui/chezmama_theme.dart';
 import '../home/home_screen.dart';
 import '../social/shorts_screen.dart';
 import '../social/videos_screen.dart';
 import '../cart/cart_screen.dart';
+import '../profile/my_publications_screen.dart';
 import '../tracking/tracking_screen.dart';
 import '../auth/login_screen.dart';
 
@@ -32,6 +34,13 @@ class _AppShellState extends State<AppShell> {
       appBar: AppBar(
         title: const Text('Food'),
         actions: [
+          IconButton(
+            tooltip: 'Mes publications',
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const MyPublicationsScreen()),
+            ),
+            icon: const Icon(Icons.video_library_rounded),
+          ),
           IconButton(
             tooltip: 'Déconnexion',
             onPressed: () async {
