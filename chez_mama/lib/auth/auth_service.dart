@@ -5,22 +5,26 @@ class AuthService extends ChangeNotifier {
   static const _kIsAuthed = 'auth.isAuthed';
   static const _kUserName = 'auth.userName';
   static const _kEmail = 'auth.email';
+  static const _kProfileJson = 'auth.profileJson';
 
   bool _ready = false;
   bool _isAuthed = false;
   String? _userName;
   String? _email;
+  String? _profileJson;
 
   bool get ready => _ready;
   bool get isAuthed => _isAuthed;
   String? get userName => _userName;
   String? get email => _email;
+  String? get profileJson => _profileJson;
 
   Future<void> init() async {
     final prefs = await SharedPreferences.getInstance();
     _isAuthed = prefs.getBool(_kIsAuthed) ?? false;
     _userName = prefs.getString(_kUserName);
     _email = prefs.getString(_kEmail);
+    _profileJson = prefs.getString(_kProfileJson);
     _ready = true;
     notifyListeners();
   }
@@ -45,15 +49,20 @@ class AuthService extends ChangeNotifier {
     required String name,
     required String email,
     required String password,
+    String? profileJson,
   }) async {
     await Future<void>.delayed(const Duration(milliseconds: 420));
     final prefs = await SharedPreferences.getInstance();
     _isAuthed = true;
     _userName = name.trim().isEmpty ? 'Vendeur' : name.trim();
     _email = email.trim();
+    _profileJson = profileJson;
     await prefs.setBool(_kIsAuthed, true);
     await prefs.setString(_kEmail, _email!);
     await prefs.setString(_kUserName, _userName!);
+    if (_profileJson != null) {
+      await prefs.setString(_kProfileJson, _profileJson!);
+    }
     notifyListeners();
   }
 
