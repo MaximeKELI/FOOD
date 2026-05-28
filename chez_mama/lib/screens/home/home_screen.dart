@@ -24,6 +24,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   bool loading = true;
   String? error;
   String activeCategory = DemoData.categories.first;
+  String _query = '';
+  final _searchCtrl = TextEditingController();
   List<Meal> _allMeals = [];
 
   late final AnimationController _stagger;
