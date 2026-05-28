@@ -27,12 +27,24 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _submit() async {
     if (busy) return;
+    if (email.text.trim().isEmpty || password.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Renseigne ton email et ton mot de passe.')),
+      );
+      return;
+    }
     setState(() => busy = true);
     try {
       await AuthScope.of(context).signIn(
         email: email.text,
         password: password.text,
       );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(apiErrorMessage(e))),
+        );
+      }
     } finally {
       if (mounted) setState(() => busy = false);
     }

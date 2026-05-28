@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../api/api_client.dart';
 import '../../auth/auth_scope.dart';
 import '../../analytics/event_tracker.dart';
 import '../../ui/chezmama_theme.dart';
