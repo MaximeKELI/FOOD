@@ -31,10 +31,22 @@ class _AppShellState extends State<AppShell> {
     CartScreen(),
   ];
 
+  Timer? _badgeTimer;
+
   @override
   void initState() {
     super.initState();
     ReceivedOrdersNotifier.instance.refresh();
+    _badgeTimer = Timer.periodic(
+      const Duration(seconds: 30),
+      (_) => ReceivedOrdersNotifier.instance.refresh(),
+    );
+  }
+
+  @override
+  void dispose() {
+    _badgeTimer?.cancel();
+    super.dispose();
   }
 
   @override
