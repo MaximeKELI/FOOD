@@ -8,6 +8,42 @@ class MealDetailsScreen extends StatelessWidget {
 
   final Meal meal;
 
+  Widget _buildHeroImage() {
+    if (meal.image.startsWith('assets/')) {
+      return Image.asset(
+        meal.image,
+        fit: BoxFit.cover,
+        filterQuality: FilterQuality.low,
+      );
+    }
+    return Image.network(
+      meal.image,
+      fit: BoxFit.cover,
+      filterQuality: FilterQuality.low,
+      errorBuilder: (context, error, stackTrace) {
+        return const DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Color(0xFFFFE3C3),
+                Color(0xFFFFFBF6),
+              ],
+            ),
+          ),
+          child: Center(
+            child: Icon(
+              Icons.restaurant_rounded,
+              size: 54,
+              color: ChezMamaTheme.brandOrange,
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context);
@@ -25,32 +61,7 @@ class MealDetailsScreen extends StatelessWidget {
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
-                    Image.network(
-                      meal.image,
-                      fit: BoxFit.cover,
-                      filterQuality: FilterQuality.low,
-                      errorBuilder: (context, error, stackTrace) {
-                        return const DecoratedBox(
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                              colors: [
-                                Color(0xFFFFE3C3),
-                                Color(0xFFFFFBF6),
-                              ],
-                            ),
-                          ),
-                          child: Center(
-                            child: Icon(
-                              Icons.restaurant_rounded,
-                              size: 54,
-                              color: ChezMamaTheme.brandOrange,
-                            ),
-                          ),
-                        );
-                      },
-                    ),
+                    _buildHeroImage(),
                     DecoratedBox(
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
