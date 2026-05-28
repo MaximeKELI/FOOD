@@ -59,13 +59,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
     if (busy) return;
     setState(() => busy = true);
     try {
+      final auth = AuthScope.of(context);
       final profileJson = _buildProfileJson();
       await EventTracker.instance.track(
         'register_submit',
         screen: 'RegisterScreen',
         meta: profileJson,
       );
-      await AuthScope.of(context).register(
+      await auth.register(
         name: name.text,
         email: email.text,
         password: password.text,
