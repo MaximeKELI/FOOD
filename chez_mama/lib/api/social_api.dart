@@ -82,15 +82,22 @@ class SocialApi {
 
   final _dio = ApiClient.instance.dio;
 
-  Future<List<ApiPost>> fetchPosts({required bool isShort}) async {
+  Future<List<ApiPost>> fetchPosts({required bool isShort, int? authorId}) async {
     final res = await _dio.get(
       '/social/posts/',
-      queryParameters: {'kind': isShort ? 'short' : 'video'},
+      queryParameters: {
+        'kind': isShort ? 'short' : 'video',
+        if (authorId != null) 'author': authorId,
+      },
     );
     final results = (res.data['results'] as List?) ?? const [];
     return results
         .map((e) => ApiPost.fromJson(e as Map<String, dynamic>))
         .toList();
+  }
+
+  Future<void> deletePost(int postId) async {
+    await _dio.delete('/social/posts/$postId/');
   }
 
   Future<ApiPost> createPost({

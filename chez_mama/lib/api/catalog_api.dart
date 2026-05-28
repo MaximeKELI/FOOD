@@ -25,15 +25,20 @@ class CatalogApi {
         .toList();
   }
 
-  Future<List<Meal>> fetchMeals({String? category}) async {
+  Future<List<Meal>> fetchMeals({String? category, int? sellerId}) async {
     final res = await _dio.get(
       '/catalog/meals/',
       queryParameters: {
         if (category != null && category != 'Popular') 'category': category,
+        if (sellerId != null) 'seller': sellerId,
       },
     );
     final results = (res.data['results'] as List?) ?? const [];
     return results.map((e) => _mealFromJson(e as Map<String, dynamic>)).toList();
+  }
+
+  Future<void> deleteMeal(String id) async {
+    await _dio.delete('/catalog/meals/$id/');
   }
 
   Future<Meal> createMeal({
