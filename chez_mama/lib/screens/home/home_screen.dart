@@ -4,7 +4,6 @@ import '../../data/demo_data.dart';
 import '../../models/meal.dart';
 import '../../ui/african_pattern_painter.dart';
 import '../../ui/chezmama_theme.dart';
-import '../../widgets/fly_to_cart.dart';
 import '../../widgets/shimmer_skeleton.dart';
 import '../meal/meal_details_screen.dart';
 import 'hero_carousel.dart';
@@ -18,7 +17,6 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
-  final GlobalKey cartIconKey = GlobalKey();
   final ScrollController scroll = ScrollController();
 
   bool loading = true;
@@ -54,20 +52,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     return DemoData.meals.where((m) => m.category == activeCategory).toList();
   }
 
-  void _flyToCartFrom(BuildContext cardContext, Meal meal) {
-    final box = cardContext.findRenderObject() as RenderBox?;
-    if (box == null) return;
-
-    final origin = box.localToGlobal(Offset.zero) & box.size;
-    final overlay = Overlay.of(context);
-
-    FlyToCartController(overlay).flyFromRect(
-      from: origin,
-      cartIconKey: cartIconKey,
-      color: meal.accent,
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final meals = _visibleMeals;
@@ -81,16 +65,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             expandedHeight: 170,
             automaticallyImplyLeading: false,
             title: const Text('Food'),
-            actions: [
-              Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: IconButton(
-                  key: cartIconKey,
-                  onPressed: () {},
-                  icon: const Icon(Icons.shopping_bag_rounded),
-                ),
-              ),
-            ],
             flexibleSpace: FlexibleSpaceBar(
               background: Stack(
                 fit: StackFit.expand,
@@ -188,15 +162,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                     MaterialPageRoute(
                                       builder: (_) =>
                                           MealDetailsScreen(meal: meal),
-                                    ),
-                                  );
-                                },
-                                onAdd: () {
-                                  _flyToCartFrom(cardContext, meal);
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text('${meal.name} ajouté au panier'),
-                                      duration: const Duration(milliseconds: 850),
                                     ),
                                   );
                                 },

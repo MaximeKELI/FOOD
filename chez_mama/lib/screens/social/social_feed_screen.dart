@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'dart:io';
 import '../../analytics/event_tracker.dart';
 import '../../auth/auth_scope.dart';
 import '../../ui/chezmama_theme.dart';
+import 'package:image_picker/image_picker.dart';
 
 class SocialFeedScreen extends StatefulWidget {
   const SocialFeedScreen({super.key});
@@ -259,11 +261,7 @@ class _SocialPostCard extends StatelessWidget {
                 fit: StackFit.expand,
                 children: [
                   if (post.mediaPath.isNotEmpty)
-                    Image.asset(
-                      post.mediaPath,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => _PostPlaceholder(post: post),
-                    )
+                    _PostMedia(post: post)
                   else
                     _PostPlaceholder(post: post),
                   DecoratedBox(
@@ -422,6 +420,42 @@ class _PostPlaceholder extends StatelessWidget {
   }
 }
 
+class _PostMedia extends StatelessWidget {
+  const _PostMedia({required this.post});
+  final _UserPost post;
+
+  @override
+  Widget build(BuildContext context) {
+    if (post.mediaType == _MediaType.image) {
+      return Image.file(
+        File(post.mediaPath),
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => _PostPlaceholder(post: post),
+      );
+    }
+    // Video preview placeholder (thumbnail can be added later).
+    return DecoratedBox(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color(0xFF1B1B1F),
+            Color(0xFF6E3B1F),
+          ],
+        ),
+      ),
+      child: Center(
+        child: Icon(
+          Icons.videocam_rounded,
+          color: Colors.white.withValues(alpha: 0.9),
+          size: 56,
+        ),
+      ),
+    );
+  }
+}
+
 class _ActionButton extends StatelessWidget {
   const _ActionButton({
     required this.icon,
@@ -470,25 +504,58 @@ class _CreatePostSheet extends StatefulWidget {
 
 class _CreatePostSheetState extends State<_CreatePostSheet> {
   final captionController = TextEditingController();
-  final mediaController = TextEditingController();
+  final ImagePicker _picker = ImagePicker();
+  XFile? picked;
+  _MediaType? pickedType;
 
   @override
   void dispose() {
     captionController.dispose();
-    mediaController.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickVideoFromGallery() async {
+    final x = await _picker.pickVideo(source: ImageSource.gallery);
+    if (!mounted) return;
+    if (x == null) return;
+    setState(() {
+      picked = x;
+      pickedType = _MediaType.video;
+    });
+  }
+
+  Future<void> _captureVideo() async {
+    final x = await _picker.pickVideo(source: ImageSource.camera);
+    if (!mounted) return;
+    if (x == null) return;
+    setState(() {
+      picked = x;
+      pickedType = _MediaType.video;
+    });
+  }
+
+  Future<void> _pickPhoto() async {
+    final x = await _picker.pickImage(source: ImageSource.gallery);
+    if (!mounted) return;
+    if (x == null) return;
+    setState(() {
+      picked = x;
+      pickedType = _MediaType.image;
+    });
   }
 
   void _submit() {
     final caption = captionController.text.trim();
     if (caption.isEmpty) return;
+    if (picked == null || pickedType == null) return;
     final now = DateTime.now().millisecondsSinceEpoch;
     final post = _UserPost(
       id: 'p_$now',
       sellerName: widget.sellerName,
       caption: caption,
-      mediaPath: mediaController.text.trim(),
+      mediaPath: picked!.path,
       isShort: widget.isShort,
+      mediaType: pickedType!,
     );
     Navigator.of(context).pop(post);
   }
@@ -514,12 +581,47 @@ class _CreatePostSheetState extends State<_CreatePostSheet> {
             ),
           ),
           const SizedBox(height: 12),
-          TextField(
-            controller: mediaController,
-            decoration: const InputDecoration(
-              labelText: 'Chemin image locale (optionnel)',
-              hintText: 'Ex: assets/images/food_hero_mafe.png',
-              border: OutlineInputBorder(),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: _pickPhoto,
+                  icon: const Icon(Icons.photo_library_rounded),
+                  label: const Text('Photo (galerie)'),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: _pickVideoFromGallery,
+                  icon: const Icon(Icons.video_library_rounded),
+                  label: const Text('Vidéo (galerie)'),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: _captureVideo,
+              icon: const Icon(Icons.videocam_rounded),
+              label: const Text('Filmer maintenant (camera)'),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: ChezMamaTheme.surface2,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Text(
+              picked == null ? 'Aucun média sélectionné' : 'Média sélectionné: ${picked!.name}',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
             ),
           ),
           const SizedBox(height: 12),
@@ -731,6 +833,7 @@ class _UserPost {
     required this.caption,
     required this.mediaPath,
     required this.isShort,
+    required this.mediaType,
   });
 
   final String id;
@@ -738,6 +841,7 @@ class _UserPost {
   final String caption;
   final String mediaPath;
   final bool isShort;
+  final _MediaType mediaType;
 
   bool likedByMe = false;
   int likeCount = 0;
@@ -745,6 +849,8 @@ class _UserPost {
   bool downloaded = false;
   final List<_CommentNode> comments = [];
 }
+
+enum _MediaType { image, video }
 
 class _CommentNode {
   _CommentNode({required this.text});
