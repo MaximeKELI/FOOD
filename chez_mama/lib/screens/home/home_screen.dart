@@ -153,7 +153,26 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             padding: const EdgeInsets.fromLTRB(14, 14, 14, 110),
             sliver: loading
                 ? const _HomeSkeleton()
-                : SliverList.separated(
+                : error != null
+                    ? SliverToBoxAdapter(
+                        child: _HomeMessage(
+                          icon: Icons.cloud_off_rounded,
+                          title: 'Connexion impossible',
+                          subtitle: error!,
+                          onRetry: _loadMeals,
+                        ),
+                      )
+                    : meals.isEmpty
+                        ? SliverToBoxAdapter(
+                            child: _HomeMessage(
+                              icon: Icons.restaurant_menu_rounded,
+                              title: 'Aucun plat pour le moment',
+                              subtitle:
+                                  'Les plats publiés par les vendeurs apparaîtront ici.',
+                              onRetry: _loadMeals,
+                            ),
+                          )
+                        : SliverList.separated(
                     itemCount: meals.length,
                     separatorBuilder: (_, __) => const SizedBox(height: 14),
                     itemBuilder: (context, i) {
