@@ -66,12 +66,36 @@ class CatalogApi {
       name: json['name'] as String? ?? '',
       subtitle: json['subtitle'] as String? ?? '',
       price: (json['price'] as num?)?.toDouble() ?? 0,
-      rating: 0,
+      rating: (json['rating'] as num?)?.toDouble() ?? 0,
       image: image.startsWith('http') ? image : '${ApiConfig.baseUrl}$image',
       accent: ChezMamaTheme.brandOrange,
       category: json['category_name'] as String? ?? '',
       sellerId: json['seller'] as int?,
       sellerName: json['seller_name'] as String? ?? '',
+      reviewsCount: json['reviews_count'] as int? ?? 0,
+    );
+  }
+}
+
+class MealReview {
+  MealReview({
+    required this.rating,
+    required this.comment,
+    required this.userName,
+    required this.createdAt,
+  });
+
+  final int rating;
+  final String comment;
+  final String userName;
+  final String createdAt;
+
+  factory MealReview.fromJson(Map<String, dynamic> json) {
+    return MealReview(
+      rating: json['rating'] as int? ?? 0,
+      comment: json['comment'] as String? ?? '',
+      userName: json['user_name'] as String? ?? '',
+      createdAt: json['created_at'] as String? ?? '',
     );
   }
 }

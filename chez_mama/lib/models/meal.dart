@@ -12,6 +12,7 @@ class Meal {
     required this.category,
     this.sellerId,
     this.sellerName = '',
+    this.reviewsCount = 0,
   });
 
   final String id;
@@ -24,5 +25,6 @@ class Meal {
   final String category;
   final int? sellerId;
   final String sellerName;
+  final int reviewsCount;
 }
 
