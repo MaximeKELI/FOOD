@@ -6,6 +6,7 @@ import '../../auth/auth_scope.dart';
 import '../../services/app_media_picker.dart';
 import '../../services/platform_utils.dart';
 import '../../ui/chezmama_theme.dart';
+import '../../widgets/post_video_player.dart';
 
 enum SocialTab { videos, shorts }
 
@@ -268,21 +269,22 @@ class _SocialPostCard extends StatelessWidget {
                       ),
                     ),
                   ),
-                  Center(
-                    child: Container(
-                      width: 58,
-                      height: 58,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.88),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.play_arrow_rounded,
-                        color: ChezMamaTheme.brandOrange,
-                        size: 38,
+                  if (post.mediaType == _MediaType.image)
+                    Center(
+                      child: Container(
+                        width: 58,
+                        height: 58,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.88),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.image_rounded,
+                          color: ChezMamaTheme.brandOrange,
+                          size: 32,
+                        ),
                       ),
                     ),
-                  ),
                   Positioned(
                     left: 14,
                     right: 14,
@@ -425,26 +427,7 @@ class _PostMedia extends StatelessWidget {
         errorBuilder: (_, __, ___) => _PostPlaceholder(post: post),
       );
     }
-    // Video preview placeholder (thumbnail can be added later).
-    return DecoratedBox(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Color(0xFF1B1B1F),
-            Color(0xFF6E3B1F),
-          ],
-        ),
-      ),
-      child: Center(
-        child: Icon(
-          Icons.videocam_rounded,
-          color: Colors.white.withValues(alpha: 0.9),
-          size: 56,
-        ),
-      ),
-    );
+    return PostVideoPlayer(path: post.mediaPath);
   }
 }
 
@@ -521,6 +504,11 @@ class _CreatePostSheetState extends State<_CreatePostSheet> {
         mediaPath = media.path;
         pickedType = _MediaType.video;
       });
+    } on FormatException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.message)),
+      );
     } catch (e) {
       _showPickError(e);
     }
@@ -559,9 +547,22 @@ class _CreatePostSheetState extends State<_CreatePostSheet> {
   }
 
   void _submit() {
-    final caption = captionController.text.trim();
-    if (caption.isEmpty) return;
-    if (mediaPath == null || pickedType == null) return;
+    if (mediaPath == null || pickedType == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Choisis d’abord une photo ou une vidéo.'),
+        ),
+      );
+      return;
+    }
+
+    var caption = captionController.text.trim();
+    if (caption.isEmpty) {
+      caption = pickedType == _MediaType.video
+          ? (widget.isShort ? 'Mon short' : 'Ma vidéo')
+          : 'Ma photo';
+    }
+
     final now = DateTime.now().millisecondsSinceEpoch;
     final post = _UserPost(
       id: 'p_$now',
@@ -583,7 +584,8 @@ class _CreatePostSheetState extends State<_CreatePostSheet> {
         top: 8,
         bottom: MediaQuery.of(context).viewInsets.bottom + 16,
       ),
-      child: Column(
+      child: SingleChildScrollView(
+        child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           TextField(
@@ -625,6 +627,28 @@ class _CreatePostSheetState extends State<_CreatePostSheet> {
               ),
             ),
           const SizedBox(height: 12),
+          if (mediaPath != null && pickedType == _MediaType.video)
+            ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: AspectRatio(
+                aspectRatio: widget.isShort ? 9 / 16 : 16 / 9,
+                child: PostVideoPlayer(
+                  path: mediaPath!,
+                  autoPlay: true,
+                ),
+              ),
+            ),
+          if (mediaPath != null && pickedType == _MediaType.image)
+            ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: Image.file(
+                File(mediaPath!),
+                height: 160,
+                width: double.infinity,
+                fit: BoxFit.cover,
+              ),
+            ),
+          const SizedBox(height: 12),
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(12),
@@ -634,7 +658,7 @@ class _CreatePostSheetState extends State<_CreatePostSheet> {
             ),
             child: Text(
               mediaPath == null
-                  ? 'Aucun média sélectionné'
+                  ? 'Aucun média sélectionné — obligatoire pour publier'
                   : 'Média sélectionné: ${p.basename(mediaPath!)}',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     fontWeight: FontWeight.w700,
@@ -654,6 +678,7 @@ class _CreatePostSheetState extends State<_CreatePostSheet> {
             ),
           ),
         ],
+        ),
       ),
     );
   }

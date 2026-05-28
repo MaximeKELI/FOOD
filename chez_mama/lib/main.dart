@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:media_kit/media_kit.dart';
 import 'auth/auth_scope.dart';
 import 'auth/auth_service.dart';
 import 'analytics/event_tracker.dart';
@@ -8,6 +9,7 @@ import 'screens/auth/auth_gate.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
+  MediaKit.ensureInitialized();
   runApp(const ChezMamaApp());
 }
 

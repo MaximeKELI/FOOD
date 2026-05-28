@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:video_player/video_player.dart';
+import 'package:media_kit/media_kit.dart';
+import 'package:media_kit_video/media_kit_video.dart';
 import '../ui/chezmama_theme.dart';
 
 class PostVideoPlayer extends StatefulWidget {
@@ -8,87 +9,65 @@ class PostVideoPlayer extends StatefulWidget {
     super.key,
     required this.path,
     this.autoPlay = false,
-    this.showControls = true,
   });
 
   final String path;
   final bool autoPlay;
-  final bool showControls;
 
   @override
   State<PostVideoPlayer> createState() => _PostVideoPlayerState();
 }
 
 class _PostVideoPlayerState extends State<PostVideoPlayer> {
-  VideoPlayerController? _controller;
+  late final Player _player;
+  late final VideoController _videoController;
+  bool _ready = false;
   String? _error;
 
   @override
   void initState() {
     super.initState();
-    _init();
+    _player = Player();
+    _videoController = VideoController(_player);
+    _open();
   }
 
   @override
   void didUpdateWidget(covariant PostVideoPlayer oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.path != widget.path) {
-      _disposeController();
-      _init();
+      _open();
     }
   }
 
-  Future<void> _init() async {
+  Future<void> _open() async {
+    setState(() {
+      _ready = false;
+      _error = null;
+    });
+
     final file = File(widget.path);
     if (!await file.exists()) {
       if (!mounted) return;
-      setState(() => _error = 'Fichier introuvable');
+      setState(() => _error = 'Fichier vidéo introuvable');
       return;
     }
 
-    final controller = VideoPlayerController.file(file);
     try {
-      await controller.initialize();
-      if (!mounted) {
-        await controller.dispose();
-        return;
-      }
-      if (widget.autoPlay) {
-        await controller.play();
-        controller.setLooping(true);
-      }
-      setState(() {
-        _controller = controller;
-        _error = null;
-      });
+      await _player.open(Media(widget.path), play: widget.autoPlay);
+      await _player.setPlaylistMode(PlaylistMode.loop);
+      if (!mounted) return;
+      setState(() => _ready = true);
     } catch (e) {
-      await controller.dispose();
       if (!mounted) return;
       setState(() => _error = 'Lecture impossible: $e');
     }
   }
 
-  void _disposeController() {
-    _controller?.dispose();
-    _controller = null;
-  }
-
   @override
   void dispose() {
-    _disposeController();
+    _player.dispose();
     super.dispose();
-  }
-
-  void _togglePlay() {
-    final c = _controller;
-    if (c == null || !c.value.isInitialized) return;
-    setState(() {
-      if (c.value.isPlaying) {
-        c.pause();
-      } else {
-        c.play();
-      }
-    });
   }
 
   @override
@@ -109,40 +88,44 @@ class _PostVideoPlayerState extends State<PostVideoPlayer> {
       );
     }
 
-    final c = _controller;
-    if (c == null || !c.value.isInitialized) {
+    if (!_ready) {
       return const Center(child: CircularProgressIndicator());
     }
 
     return GestureDetector(
-      onTap: widget.showControls ? _togglePlay : null,
+      onTap: () => _player.playOrPause(),
       child: Stack(
         fit: StackFit.expand,
         children: [
-          FittedBox(
+          Video(
+            controller: _videoController,
             fit: BoxFit.cover,
-            child: SizedBox(
-              width: c.value.size.width,
-              height: c.value.size.height,
-              child: VideoPlayer(c),
-            ),
+            controls: NoVideoControls,
           ),
-          if (widget.showControls && !c.value.isPlaying)
-            Center(
-              child: Container(
-                width: 52,
-                height: 52,
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.88),
-                  shape: BoxShape.circle,
+          StreamBuilder<bool>(
+            stream: _player.stream.playing,
+            initialData: false,
+            builder: (context, snapshot) {
+              if (snapshot.data == true) {
+                return const SizedBox.shrink();
+              }
+              return Center(
+                child: Container(
+                  width: 52,
+                  height: 52,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.88),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.play_arrow_rounded,
+                    color: ChezMamaTheme.brandOrange,
+                    size: 34,
+                  ),
                 ),
-                child: const Icon(
-                  Icons.play_arrow_rounded,
-                  color: ChezMamaTheme.brandOrange,
-                  size: 34,
-                ),
-              ),
-            ),
+              );
+            },
+          ),
         ],
       ),
     );
