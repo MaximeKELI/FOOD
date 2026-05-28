@@ -1,5 +1,5 @@
 import 'package:dio/dio.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'api_config.dart';
 
@@ -50,31 +50,36 @@ class ApiClient {
   static const _kAccess = 'auth.access';
   static const _kRefresh = 'auth.refresh';
 
-  final _storage = const FlutterSecureStorage();
   late final Dio _dio;
 
   Dio get dio => _dio;
+
+  Future<SharedPreferences> get _prefs => SharedPreferences.getInstance();
 
   Future<void> saveTokens({
     required String access,
     required String refresh,
   }) async {
-    await _storage.write(key: _kAccess, value: access);
-    await _storage.write(key: _kRefresh, value: refresh);
+    final prefs = await _prefs;
+    await prefs.setString(_kAccess, access);
+    await prefs.setString(_kRefresh, refresh);
   }
 
   Future<void> clearTokens() async {
-    await _storage.delete(key: _kAccess);
-    await _storage.delete(key: _kRefresh);
+    final prefs = await _prefs;
+    await prefs.remove(_kAccess);
+    await prefs.remove(_kRefresh);
   }
 
   Future<bool> hasToken() async {
-    final token = await _storage.read(key: _kAccess);
+    final prefs = await _prefs;
+    final token = prefs.getString(_kAccess);
     return token != null && token.isNotEmpty;
   }
 
   Future<bool> _tryRefresh() async {
-    final refresh = await _storage.read(key: _kRefresh);
+    final prefs = await _prefs;
+    final refresh = prefs.getString(_kRefresh);
     if (refresh == null || refresh.isEmpty) return false;
     try {
       final res = await Dio(BaseOptions(baseUrl: ApiConfig.apiUrl)).post(
@@ -83,7 +88,7 @@ class ApiClient {
       );
       final access = res.data['access'] as String?;
       if (access == null) return false;
-      await _storage.write(key: _kAccess, value: access);
+      await prefs.setString(_kAccess, access);
       return true;
     } catch (_) {
       return false;
@@ -91,7 +96,8 @@ class ApiClient {
   }
 
   Future<Response<dynamic>> _retry(RequestOptions requestOptions) async {
-    final token = await _storage.read(key: _kAccess);
+    final prefs = await _prefs;
+    final token = prefs.getString(_kAccess);
     final options = Options(
       method: requestOptions.method,
       headers: {
