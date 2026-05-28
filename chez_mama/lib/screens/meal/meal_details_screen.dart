@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../cart/cart_service.dart';
 import '../../models/meal.dart';
 import '../../ui/chezmama_theme.dart';
 import '../../widgets/primary_button.dart';
@@ -129,10 +130,12 @@ class MealDetailsScreen extends StatelessWidget {
                                 PrimaryButton(
                                   label: 'Ajouter au panier',
                                   onPressed: () {
+                                    CartService.instance.addMeal(meal);
                                     ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text('Ajouté au panier'),
-                                        duration: Duration(milliseconds: 850),
+                                      SnackBar(
+                                        content: Text('${meal.name} ajouté au panier'),
+                                        duration:
+                                            const Duration(milliseconds: 900),
                                       ),
                                     );
                                   },

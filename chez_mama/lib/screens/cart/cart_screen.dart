@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import '../../cart/cart_service.dart';
 import '../../ui/chezmama_theme.dart';
+import 'checkout_sheet.dart';
+import 'orders_screen.dart';
 
 class CartScreen extends StatefulWidget {
   const CartScreen({super.key});
@@ -9,40 +12,21 @@ class CartScreen extends StatefulWidget {
 }
 
 class _CartScreenState extends State<CartScreen> {
-  final GlobalKey<AnimatedListState> _listKey = GlobalKey<AnimatedListState>();
-  final items = <String>[
-    'Mafé Poulet',
-    'Jus de Gingembre',
-  ];
+  final _cart = CartService.instance;
 
-  void _remove(int index) {
-    final removed = items.removeAt(index);
-    _listKey.currentState?.removeItem(
-      index,
-      (context, animation) => SizeTransition(
-        sizeFactor: CurvedAnimation(parent: animation, curve: Curves.easeInOut),
-        child: FadeTransition(
-          opacity: animation,
-          child: _CartRow(
-            title: removed,
-            price: 1500,
-            onRemove: () {},
-          ),
-        ),
-      ),
-      duration: const Duration(milliseconds: 240),
+  void _openCheckout() {
+    if (_cart.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Ton panier est vide.')),
+      );
+      return;
+    }
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (_) => const CheckoutSheet(),
     );
-    setState(() {});
-  }
-
-  void _add() {
-    final index = items.length;
-    items.add('Suya');
-    _listKey.currentState?.insertItem(
-      index,
-      duration: const Duration(milliseconds: 260),
-    );
-    setState(() {});
   }
 
   @override
@@ -53,74 +37,78 @@ class _CartScreenState extends State<CartScreen> {
         title: const Text('Panier'),
         actions: [
           IconButton(
-            onPressed: _add,
-            icon: const Icon(Icons.add_rounded),
-            tooltip: 'Ajouter (demo)',
-          )
+            tooltip: 'Mes commandes',
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const OrdersScreen()),
+            ),
+            icon: const Icon(Icons.receipt_long_rounded),
+          ),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.fromLTRB(14, 14, 14, 110),
-        child: Column(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: ChezMamaTheme.surface2,
-                borderRadius: BorderRadius.circular(18),
+      body: AnimatedBuilder(
+        animation: _cart,
+        builder: (context, _) {
+          if (_cart.isEmpty) {
+            return _EmptyCart(
+              onSeeOrders: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const OrdersScreen()),
               ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      'Total: 5000 FCFA',
-                      style: t.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
+            );
+          }
+          return Padding(
+            padding: const EdgeInsets.fromLTRB(14, 14, 14, 110),
+            child: Column(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: ChezMamaTheme.surface2,
+                    borderRadius: BorderRadius.circular(18),
                   ),
-                  FilledButton(
-                    onPressed: () {},
-                    style: FilledButton.styleFrom(
-                      backgroundColor: ChezMamaTheme.brandOrange,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                    ),
-                    child: const Text('Commander'),
-                  )
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
-            Expanded(
-              child: AnimatedList(
-                key: _listKey,
-                initialItemCount: items.length,
-                itemBuilder: (context, index, animation) {
-                  return SizeTransition(
-                    sizeFactor: CurvedAnimation(
-                      parent: animation,
-                      curve: Curves.easeOutCubic,
-                    ),
-                    child: FadeTransition(
-                      opacity: animation,
-                      child: Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
-                        child: _CartRow(
-                          title: items[index],
-                          price: 1500 + (index * 700),
-                          onRemove: () => _remove(index),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'Total: ${_cart.total} FCFA',
+                          style: t.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w900,
+                          ),
                         ),
                       ),
-                    ),
-                  );
-                },
-              ),
+                      FilledButton(
+                        onPressed: _openCheckout,
+                        style: FilledButton.styleFrom(
+                          backgroundColor: ChezMamaTheme.brandOrange,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                        child: const Text('Commander'),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Expanded(
+                  child: ListView.separated(
+                    itemCount: _cart.items.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 12),
+                    itemBuilder: (context, index) {
+                      final item = _cart.items[index];
+                      return _CartRow(
+                        item: item,
+                        onAdd: () => _cart.increment(item.mealId),
+                        onRemove: () => _cart.decrement(item.mealId),
+                        onDelete: () => _cart.removeItem(item.mealId),
+                      );
+                    },
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
@@ -128,20 +116,22 @@ class _CartScreenState extends State<CartScreen> {
 
 class _CartRow extends StatelessWidget {
   const _CartRow({
-    required this.title,
-    required this.price,
+    required this.item,
+    required this.onAdd,
     required this.onRemove,
+    required this.onDelete,
   });
 
-  final String title;
-  final double price;
+  final CartItem item;
+  final VoidCallback onAdd;
   final VoidCallback onRemove;
+  final VoidCallback onDelete;
 
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context);
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(18),
@@ -149,16 +139,18 @@ class _CartRow extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: ChezMamaTheme.brandOrange.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: const Icon(
-              Icons.restaurant_rounded,
-              color: ChezMamaTheme.brandOrange,
+          ClipRRect(
+            borderRadius: BorderRadius.circular(14),
+            child: SizedBox(
+              width: 52,
+              height: 52,
+              child: item.image.startsWith('http')
+                  ? Image.network(
+                      item.image,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => const _Thumb(),
+                    )
+                  : const _Thumb(),
             ),
           ),
           const SizedBox(width: 12),
@@ -167,14 +159,16 @@ class _CartRow extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  title,
+                  item.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: t.textTheme.titleSmall?.copyWith(
                     fontWeight: FontWeight.w800,
                   ),
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  '${price.toStringAsFixed(0)} FCFA',
+                  '${item.unitPrice} FCFA',
                   style: t.textTheme.bodySmall?.copyWith(
                     color: ChezMamaTheme.ink.withValues(alpha: 0.65),
                     fontWeight: FontWeight.w600,
@@ -183,8 +177,19 @@ class _CartRow extends StatelessWidget {
               ],
             ),
           ),
+          _QtyButton(icon: Icons.remove_rounded, onTap: onRemove),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: Text(
+              '${item.quantity}',
+              style: t.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ),
+          _QtyButton(icon: Icons.add_rounded, onTap: onAdd),
           IconButton(
-            onPressed: onRemove,
+            onPressed: onDelete,
             icon: const Icon(Icons.delete_outline_rounded),
           ),
         ],
@@ -193,3 +198,73 @@ class _CartRow extends StatelessWidget {
   }
 }
 
+class _Thumb extends StatelessWidget {
+  const _Thumb();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: ChezMamaTheme.brandOrange.withValues(alpha: 0.12),
+      child: const Icon(Icons.restaurant_rounded, color: ChezMamaTheme.brandOrange),
+    );
+  }
+}
+
+class _QtyButton extends StatelessWidget {
+  const _QtyButton({required this.icon, required this.onTap});
+  final IconData icon;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(10),
+      child: Container(
+        padding: const EdgeInsets.all(4),
+        decoration: BoxDecoration(
+          color: ChezMamaTheme.surface2,
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Icon(icon, size: 20, color: ChezMamaTheme.brandBrown),
+      ),
+    );
+  }
+}
+
+class _EmptyCart extends StatelessWidget {
+  const _EmptyCart({required this.onSeeOrders});
+  final VoidCallback onSeeOrders;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = Theme.of(context);
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.shopping_bag_outlined, size: 52),
+            const SizedBox(height: 12),
+            Text(
+              'Ton panier est vide',
+              style: t.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900),
+            ),
+            const SizedBox(height: 6),
+            const Text(
+              'Ajoute des plats depuis l’accueil pour passer commande.',
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 14),
+            OutlinedButton.icon(
+              onPressed: onSeeOrders,
+              icon: const Icon(Icons.receipt_long_rounded),
+              label: const Text('Voir mes commandes'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
