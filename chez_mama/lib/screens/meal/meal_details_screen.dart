@@ -102,6 +102,38 @@ class MealDetailsScreen extends StatelessWidget {
                       fontWeight: FontWeight.w600,
                     ),
                   ),
+                  if (meal.sellerId != null && meal.sellerName.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    InkWell(
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => SellerProfileScreen(
+                            sellerId: meal.sellerId!,
+                            sellerName: meal.sellerName,
+                          ),
+                        ),
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.storefront_rounded,
+                                size: 18, color: ChezMamaTheme.brandOrange),
+                            const SizedBox(width: 6),
+                            Text(
+                              meal.sellerName,
+                              style: t.textTheme.bodyMedium?.copyWith(
+                                fontWeight: FontWeight.w800,
+                                color: ChezMamaTheme.brandBrown,
+                              ),
+                            ),
+                            const Icon(Icons.chevron_right_rounded, size: 18),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 16),
                   TweenAnimationBuilder<double>(
                     tween: Tween(begin: 0, end: 1),
