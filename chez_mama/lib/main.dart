@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'auth/auth_scope.dart';
 import 'auth/auth_service.dart';
+import 'analytics/event_tracker.dart';
+import 'analytics/tracked_widgets.dart';
 import 'ui/chezmama_theme.dart';
 import 'screens/auth/auth_gate.dart';
 
@@ -19,6 +21,7 @@ class ChezMamaApp extends StatelessWidget {
         debugShowCheckedModeBanner: false,
         title: 'Food',
         theme: ChezMamaTheme.light(),
+        navigatorObservers: [TrackedNavigatorObserver()],
         home: const AuthGate(),
       ),
     );
@@ -39,6 +42,7 @@ class _AuthBootstrapState extends State<_AuthBootstrap> {
   @override
   void initState() {
     super.initState();
+    EventTracker.instance.init();
     service.init();
   }
 
