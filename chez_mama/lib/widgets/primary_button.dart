@@ -1,0 +1,76 @@
+import 'package:flutter/material.dart';
+import '../ui/chezmama_theme.dart';
+
+class PrimaryButton extends StatefulWidget {
+  const PrimaryButton({
+    super.key,
+    required this.label,
+    required this.onPressed,
+    this.icon,
+  });
+
+  final String label;
+  final VoidCallback onPressed;
+  final IconData? icon;
+
+  @override
+  State<PrimaryButton> createState() => _PrimaryButtonState();
+}
+
+class _PrimaryButtonState extends State<PrimaryButton>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _c;
+
+  @override
+  void initState() {
+    super.initState();
+    _c = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 520),
+      lowerBound: 0,
+      upperBound: 1,
+    );
+  }
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  void _bounce() {
+    _c.forward(from: 0);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final t = Theme.of(context);
+    return AnimatedBuilder(
+      animation: _c,
+      builder: (context, child) {
+        final s = 1 + (0.06 * Curves.elasticOut.transform(_c.value));
+        return Transform.scale(scale: s, child: child);
+      },
+      child: FilledButton.icon(
+        onPressed: () {
+          _bounce();
+          widget.onPressed();
+        },
+        style: FilledButton.styleFrom(
+          backgroundColor: ChezMamaTheme.brandOrange,
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+        ),
+        icon: Icon(widget.icon ?? Icons.add_shopping_cart_rounded, size: 20),
+        label: Text(
+          widget.label,
+          style: t.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700),
+        ),
+      ),
+    );
+  }
+}
+
