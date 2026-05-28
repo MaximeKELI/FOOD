@@ -46,3 +46,26 @@ class Meal(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class Review(models.Model):
+    """A customer rating + optional comment on a meal."""
+
+    meal = models.ForeignKey(
+        Meal, on_delete=models.CASCADE, related_name="reviews"
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="reviews",
+    )
+    rating = models.PositiveSmallIntegerField()  # 1..5
+    comment = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        unique_together = ("meal", "user")
+
+    def __str__(self):
+        return f"{self.rating}/5 sur {self.meal.name}"
