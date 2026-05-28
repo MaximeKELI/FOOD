@@ -70,6 +70,8 @@ class CatalogApi {
       image: image.startsWith('http') ? image : '${ApiConfig.baseUrl}$image',
       accent: ChezMamaTheme.brandOrange,
       category: json['category_name'] as String? ?? '',
+      sellerId: json['seller'] as int?,
+      sellerName: json['seller_name'] as String? ?? '',
     );
   }
 }

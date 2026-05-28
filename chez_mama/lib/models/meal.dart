@@ -10,6 +10,8 @@ class Meal {
     required this.image,
     required this.accent,
     required this.category,
+    this.sellerId,
+    this.sellerName = '',
   });
 
   final String id;
@@ -20,5 +22,7 @@ class Meal {
   final String image;
   final Color accent;
   final String category;
+  final int? sellerId;
+  final String sellerName;
 }
 
