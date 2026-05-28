@@ -121,48 +121,60 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   Future<void> _submit() async {
     if (busy) return;
+    if (email.text.trim().isEmpty || password.text.length < 6) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Email requis et mot de passe d’au moins 6 caractères.'),
+        ),
+      );
+      return;
+    }
     setState(() => busy = true);
     try {
       final auth = AuthScope.of(context);
-      final profileJson = _buildProfileJson();
+      final profile = _buildProfile();
       await EventTracker.instance.track(
         'register_submit',
         screen: 'RegisterScreen',
-        meta: profileJson,
+        meta: profile.toString(),
       );
       await auth.register(
         name: name.text,
         email: email.text,
         password: password.text,
-        profileJson: profileJson,
+        profile: profile,
       );
       if (!mounted) return;
       Navigator.of(context).pop();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(apiErrorMessage(e))),
+        );
+      }
     } finally {
       if (mounted) setState(() => busy = false);
     }
   }
 
-  String _buildProfileJson() {
+  Map<String, dynamic> _buildProfile() {
     String s(String v) => v.trim();
-    return <String, Object?>{
-      'name': s(name.text),
+    return <String, dynamic>{
       'phone': s(phone.text),
       'country': s(country.text),
       'city': s(city.text),
       'neighborhood': s(neighborhood.text),
-      'birthYear': s(birthYear.text),
+      'birth_year': s(birthYear.text),
       'gender': s(gender.text),
-      'shopName': s(shopName.text),
-      'shopCategory': s(shopCategory.text),
+      'shop_name': s(shopName.text),
+      'shop_category': s(shopCategory.text),
       'cuisine': s(cuisine.text),
-      'opensAt': s(opensAt.text),
-      'closesAt': s(closesAt.text),
-      'deliveryRadiusKm': s(deliveryRadiusKm.text),
-      'acceptsDelivery': acceptsDelivery.value,
-      'acceptsPickup': acceptsPickup.value,
-      'createdAtMs': DateTime.now().millisecondsSinceEpoch,
-    }.toString();
+      'opens_at': s(opensAt.text),
+      'closes_at': s(closesAt.text),
+      'delivery_radius_km': int.tryParse(s(deliveryRadiusKm.text)) ?? 5,
+      'accepts_delivery': acceptsDelivery.value,
+      'accepts_pickup': acceptsPickup.value,
+    };
   }
 
   @override
