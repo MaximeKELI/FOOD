@@ -1,5 +1,6 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
+import '../../api/api_client.dart';
+import '../../api/catalog_api.dart';
 import '../../data/demo_data.dart';
 import '../../models/meal.dart';
 import '../../ui/african_pattern_painter.dart';
