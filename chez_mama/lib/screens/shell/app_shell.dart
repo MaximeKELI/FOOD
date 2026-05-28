@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import '../../auth/auth_scope.dart';
 import '../../ui/chezmama_theme.dart';
 import '../home/home_screen.dart';
 import '../cart/cart_screen.dart';
 import '../tracking/tracking_screen.dart';
+import '../auth/login_screen.dart';
 
 class AppShell extends StatefulWidget {
   const AppShell({super.key});
@@ -23,6 +25,23 @@ class _AppShellState extends State<AppShell> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        title: const Text('Food'),
+        actions: [
+          IconButton(
+            tooltip: 'Déconnexion',
+            onPressed: () async {
+              await AuthScope.of(context).signOut();
+              if (!context.mounted) return;
+              Navigator.of(context).pushAndRemoveUntil(
+                MaterialPageRoute(builder: (_) => const LoginScreen()),
+                (_) => false,
+              );
+            },
+            icon: const Icon(Icons.logout_rounded),
+          ),
+        ],
+      ),
       body: AnimatedSwitcher(
         duration: const Duration(milliseconds: 260),
         switchInCurve: Curves.easeOutCubic,
