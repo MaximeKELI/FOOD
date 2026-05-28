@@ -1,6 +1,12 @@
 from django.contrib import admin
 
-from .models import Category, Meal
+from .models import Category, Meal, Review
+
+
+@admin.register(Review)
+class ReviewAdmin(admin.ModelAdmin):
+    list_display = ("id", "meal", "user", "rating", "created_at")
+    list_filter = ("rating",)
 
 
 @admin.register(Category)

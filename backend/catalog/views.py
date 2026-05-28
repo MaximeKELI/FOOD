@@ -1,11 +1,13 @@
+from django.shortcuts import get_object_or_404
 from rest_framework import generics, permissions
 from rest_framework.parsers import FormParser, MultiPartParser
 
-from .models import Category, Meal
+from .models import Category, Meal, Review
 from .serializers import (
     CategorySerializer,
     MealCreateSerializer,
     MealSerializer,
+    ReviewSerializer,
 )
 
 
@@ -47,3 +49,26 @@ class MealDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = MealSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly, IsOwnerOrReadOnly]
     parser_classes = [MultiPartParser, FormParser]
+
+
+class ReviewListCreateView(generics.ListCreateAPIView):
+    serializer_class = ReviewSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    pagination_class = None
+
+    def get_queryset(self):
+        return Review.objects.filter(meal_id=self.kwargs["meal_id"]).select_related(
+            "user"
+        )
+
+    def perform_create(self, serializer):
+        meal = get_object_or_404(Meal, pk=self.kwargs["meal_id"])
+        # One review per user: update if it already exists.
+        existing = Review.objects.filter(meal=meal, user=self.request.user).first()
+        if existing:
+            existing.rating = serializer.validated_data["rating"]
+            existing.comment = serializer.validated_data.get("comment", "")
+            existing.save()
+            serializer.instance = existing
+        else:
+            serializer.save(meal=meal, user=self.request.user)
