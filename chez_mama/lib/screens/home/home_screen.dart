@@ -217,6 +217,51 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 }
 
+class _HomeMessage extends StatelessWidget {
+  const _HomeMessage({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onRetry,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 12),
+      child: Column(
+        children: [
+          Icon(icon, size: 48, color: ChezMamaTheme.brandBrown),
+          const SizedBox(height: 12),
+          Text(
+            title,
+            style: t.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 6),
+          Text(subtitle, textAlign: TextAlign.center),
+          const SizedBox(height: 14),
+          FilledButton.icon(
+            onPressed: onRetry,
+            icon: const Icon(Icons.refresh_rounded),
+            label: const Text('Réessayer'),
+            style: FilledButton.styleFrom(
+              backgroundColor: ChezMamaTheme.brandOrange,
+              foregroundColor: Colors.white,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _HomeSkeleton extends StatelessWidget {
   const _HomeSkeleton();
 
