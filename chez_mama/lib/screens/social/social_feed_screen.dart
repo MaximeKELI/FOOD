@@ -1,12 +1,16 @@
-import 'package:flutter/material.dart';
 import 'dart:io';
+import 'package:flutter/material.dart';
 import '../../analytics/event_tracker.dart';
 import '../../auth/auth_scope.dart';
 import '../../ui/chezmama_theme.dart';
 import 'package:image_picker/image_picker.dart';
 
+enum SocialTab { videos, shorts }
+
 class SocialFeedScreen extends StatefulWidget {
-  const SocialFeedScreen({super.key});
+  const SocialFeedScreen({super.key, required this.initialTab});
+
+  final SocialTab initialTab;
 
   @override
   State<SocialFeedScreen> createState() => _SocialFeedScreenState();
@@ -23,6 +27,7 @@ class _SocialFeedScreenState extends State<SocialFeedScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    _tabController.index = widget.initialTab == SocialTab.shorts ? 1 : 0;
   }
 
   @override
@@ -69,7 +74,7 @@ class _SocialFeedScreenState extends State<SocialFeedScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Vidéos & Shorts',
+                  _tabController.index == 1 ? 'Shorts' : 'Vidéos',
                   style: t.textTheme.headlineSmall?.copyWith(
                     fontWeight: FontWeight.w900,
                     letterSpacing: -0.4,
@@ -83,38 +88,23 @@ class _SocialFeedScreenState extends State<SocialFeedScreen>
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                const SizedBox(height: 8),
-                TabBar(
-                  controller: _tabController,
-                  indicatorColor: ChezMamaTheme.brandOrange,
-                  labelColor: ChezMamaTheme.brandOrange,
-                  unselectedLabelColor: ChezMamaTheme.ink.withValues(alpha: 0.6),
-                  tabs: const [
-                    Tab(text: 'Vidéos'),
-                    Tab(text: 'Shorts'),
-                  ],
-                ),
               ],
             ),
           ),
           Expanded(
-            child: TabBarView(
-              controller: _tabController,
-              children: [
-                _FeedList(
-                  posts: _videos,
-                  emptyTitle: 'Aucune vidéo publiée',
-                  emptySubtitle: 'Publie la première vidéo de ton plat.',
-                  followingSellers: _followingSellers,
-                ),
-                _FeedList(
-                  posts: _shorts,
-                  emptyTitle: 'Aucun short publié',
-                  emptySubtitle: 'Publie un short pour attirer les clients.',
-                  followingSellers: _followingSellers,
-                ),
-              ],
-            ),
+            child: _tabController.index == 1
+                ? _FeedList(
+                    posts: _shorts,
+                    emptyTitle: 'Aucun short publié',
+                    emptySubtitle: 'Publie un short pour attirer les clients.',
+                    followingSellers: _followingSellers,
+                  )
+                : _FeedList(
+                    posts: _videos,
+                    emptyTitle: 'Aucune vidéo publiée',
+                    emptySubtitle: 'Publie la première vidéo de ton plat.',
+                    followingSellers: _followingSellers,
+                  ),
           ),
         ],
       ),
