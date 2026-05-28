@@ -1,76 +1,97 @@
 import 'package:flutter/foundation.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
+import '../api/api_client.dart';
+
+/// Authenticates against the Django backend and keeps the session in memory.
+/// Tokens are persisted securely by [ApiClient].
 class AuthService extends ChangeNotifier {
-  static const _kIsAuthed = 'auth.isAuthed';
-  static const _kUserName = 'auth.userName';
-  static const _kEmail = 'auth.email';
-  static const _kProfileJson = 'auth.profileJson';
-
   bool _ready = false;
   bool _isAuthed = false;
+  int? _userId;
   String? _userName;
   String? _email;
-  String? _profileJson;
 
   bool get ready => _ready;
   bool get isAuthed => _isAuthed;
+  int? get userId => _userId;
   String? get userName => _userName;
   String? get email => _email;
-  String? get profileJson => _profileJson;
+
+  final _client = ApiClient.instance;
 
   Future<void> init() async {
-    final prefs = await SharedPreferences.getInstance();
-    _isAuthed = prefs.getBool(_kIsAuthed) ?? false;
-    _userName = prefs.getString(_kUserName);
-    _email = prefs.getString(_kEmail);
-    _profileJson = prefs.getString(_kProfileJson);
+    try {
+      if (await _client.hasToken()) {
+        await _loadMe();
+        _isAuthed = true;
+      }
+    } catch (_) {
+      // Token invalid or server unreachable: stay logged out.
+      _isAuthed = false;
+    }
     _ready = true;
     notifyListeners();
+  }
+
+  Future<void> _loadMe() async {
+    final res = await _client.dio.get('/auth/me/');
+    final data = res.data as Map<String, dynamic>;
+    _userId = data['id'] as int?;
+    _userName = (data['name'] ?? data['display_name']) as String?;
+    _email = data['email'] as String?;
   }
 
   Future<void> signIn({
     required String email,
     required String password,
   }) async {
-    // Demo auth: replace with real backend/Firebase later.
-    await Future<void>.delayed(const Duration(milliseconds: 350));
-    final prefs = await SharedPreferences.getInstance();
+    final res = await _client.dio.post(
+      '/auth/login/',
+      data: {'email': email.trim(), 'password': password},
+    );
+    await _client.saveTokens(
+      access: res.data['access'] as String,
+      refresh: res.data['refresh'] as String,
+    );
+    await _loadMe();
     _isAuthed = true;
-    _email = email.trim();
-    _userName = _userName ?? 'Vendeur';
-    await prefs.setBool(_kIsAuthed, true);
-    await prefs.setString(_kEmail, _email!);
-    await prefs.setString(_kUserName, _userName!);
     notifyListeners();
   }
 
+  /// Registers a new seller. [profile] carries the optional business fields
+  /// matching the backend RegisterSerializer (snake_case keys).
   Future<void> register({
     required String name,
     required String email,
     required String password,
-    String? profileJson,
+    Map<String, dynamic>? profile,
   }) async {
-    await Future<void>.delayed(const Duration(milliseconds: 420));
-    final prefs = await SharedPreferences.getInstance();
+    final payload = <String, dynamic>{
+      'email': email.trim(),
+      'password': password,
+      'name': name.trim(),
+      ...?profile,
+    };
+    final res = await _client.dio.post('/auth/register/', data: payload);
+    final tokens = res.data['tokens'] as Map<String, dynamic>;
+    await _client.saveTokens(
+      access: tokens['access'] as String,
+      refresh: tokens['refresh'] as String,
+    );
+    final user = res.data['user'] as Map<String, dynamic>;
+    _userId = user['id'] as int?;
+    _userName = (user['name'] ?? user['display_name']) as String?;
+    _email = user['email'] as String?;
     _isAuthed = true;
-    _userName = name.trim().isEmpty ? 'Vendeur' : name.trim();
-    _email = email.trim();
-    _profileJson = profileJson;
-    await prefs.setBool(_kIsAuthed, true);
-    await prefs.setString(_kEmail, _email!);
-    await prefs.setString(_kUserName, _userName!);
-    if (_profileJson != null) {
-      await prefs.setString(_kProfileJson, _profileJson!);
-    }
     notifyListeners();
   }
 
   Future<void> signOut() async {
-    final prefs = await SharedPreferences.getInstance();
+    await _client.clearTokens();
     _isAuthed = false;
-    await prefs.setBool(_kIsAuthed, false);
+    _userId = null;
+    _userName = null;
+    _email = null;
     notifyListeners();
   }
 }
-
