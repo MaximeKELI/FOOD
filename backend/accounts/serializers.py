@@ -1,0 +1,97 @@
+from django.contrib.auth import get_user_model
+from rest_framework import serializers
+
+from .models import SellerProfile
+
+User = get_user_model()
+
+
+class SellerProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SellerProfile
+        exclude = ("id", "user")
+
+
+class UserSerializer(serializers.ModelSerializer):
+    seller_profile = SellerProfileSerializer(read_only=True)
+    name = serializers.CharField(read_only=True)
+    followers_count = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = (
+            "id",
+            "email",
+            "display_name",
+            "name",
+            "phone",
+            "seller_profile",
+            "followers_count",
+        )
+
+    def get_followers_count(self, obj):
+        return obj.followers.count()
+
+
+class RegisterSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    password = serializers.CharField(write_only=True, min_length=6)
+    name = serializers.CharField(required=False, allow_blank=True)
+    phone = serializers.CharField(required=False, allow_blank=True)
+
+    # Optional seller-profile fields
+    country = serializers.CharField(required=False, allow_blank=True)
+    city = serializers.CharField(required=False, allow_blank=True)
+    neighborhood = serializers.CharField(required=False, allow_blank=True)
+    birth_year = serializers.CharField(required=False, allow_blank=True)
+    gender = serializers.CharField(required=False, allow_blank=True)
+    shop_name = serializers.CharField(required=False, allow_blank=True)
+    shop_category = serializers.CharField(required=False, allow_blank=True)
+    cuisine = serializers.CharField(required=False, allow_blank=True)
+    opens_at = serializers.CharField(required=False, allow_blank=True)
+    closes_at = serializers.CharField(required=False, allow_blank=True)
+    delivery_radius_km = serializers.IntegerField(required=False, default=5)
+    accepts_delivery = serializers.BooleanField(required=False, default=True)
+    accepts_pickup = serializers.BooleanField(required=False, default=True)
+
+    def validate_email(self, value):
+        if User.objects.filter(email__iexact=value).exists():
+            raise serializers.ValidationError("Cet email est déjà utilisé.")
+        return value.lower()
+
+    def create(self, validated_data):
+        password = validated_data.pop("password")
+        name = validated_data.pop("name", "")
+        phone = validated_data.pop("phone", "")
+
+        user = User.objects.create_user(
+            email=validated_data.pop("email"),
+            password=password,
+            display_name=name,
+            phone=phone,
+        )
+
+        SellerProfile.objects.create(
+            user=user,
+            gender=validated_data.pop("gender", "") or "Non précisé",
+            **{
+                k: v
+                for k, v in validated_data.items()
+                if k
+                in {
+                    "country",
+                    "city",
+                    "neighborhood",
+                    "birth_year",
+                    "shop_name",
+                    "shop_category",
+                    "cuisine",
+                    "opens_at",
+                    "closes_at",
+                    "delivery_radius_km",
+                    "accepts_delivery",
+                    "accepts_pickup",
+                }
+            },
+        )
+        return user
