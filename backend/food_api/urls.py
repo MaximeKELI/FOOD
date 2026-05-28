@@ -14,6 +14,7 @@ def api_root(_request):
                 "auth": "/api/auth/",
                 "catalog": "/api/catalog/",
                 "social": "/api/social/",
+                "orders": "/api/orders/",
                 "admin": "/admin/",
             },
         }
@@ -26,6 +27,7 @@ urlpatterns = [
     path("api/auth/", include("accounts.urls")),
     path("api/catalog/", include("catalog.urls")),
     path("api/social/", include("social.urls")),
+    path("api/", include("orders.urls")),
 ]
 
 if settings.DEBUG:
