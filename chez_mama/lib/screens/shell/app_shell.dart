@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../auth/auth_scope.dart';
 import '../../ui/chezmama_theme.dart';
 import '../home/home_screen.dart';
+import '../social/social_feed_screen.dart';
 import '../cart/cart_screen.dart';
 import '../tracking/tracking_screen.dart';
 import '../auth/login_screen.dart';
@@ -18,6 +19,7 @@ class _AppShellState extends State<AppShell> {
 
   final pages = const [
     HomeScreen(),
+    SocialFeedScreen(),
     TrackingScreen(),
     CartScreen(),
   ];
@@ -66,7 +68,7 @@ class _AppShellState extends State<AppShell> {
       ),
       floatingActionButton: FloatingActionButton.extended(
         heroTag: 'fab_cart',
-        onPressed: () => setState(() => index = 2),
+        onPressed: () => setState(() => index = 3),
         backgroundColor: ChezMamaTheme.brandOrange,
         foregroundColor: Colors.white,
         elevation: 0,
@@ -92,6 +94,10 @@ class _AppShellState extends State<AppShell> {
                 BottomNavigationBarItem(
                   icon: Icon(Icons.home_rounded),
                   label: 'Accueil',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.play_circle_rounded),
+                  label: 'Shorts',
                 ),
                 BottomNavigationBarItem(
                   icon: Icon(Icons.delivery_dining_rounded),
