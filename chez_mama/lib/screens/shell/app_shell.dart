@@ -77,14 +77,20 @@ class _AppShellState extends State<AppShell> {
           child: pages[index],
         ),
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        heroTag: 'fab_cart',
-        onPressed: () => setState(() => index = 4),
-        backgroundColor: ChezMamaTheme.brandOrange,
-        foregroundColor: Colors.white,
-        elevation: 0,
-        icon: const Icon(Icons.shopping_bag_rounded),
-        label: const Text('Panier'),
+      floatingActionButton: AnimatedBuilder(
+        animation: CartService.instance,
+        builder: (context, _) {
+          final count = CartService.instance.count;
+          return FloatingActionButton.extended(
+            heroTag: 'fab_cart',
+            onPressed: () => setState(() => index = 4),
+            backgroundColor: ChezMamaTheme.brandOrange,
+            foregroundColor: Colors.white,
+            elevation: 0,
+            icon: const Icon(Icons.shopping_bag_rounded),
+            label: Text(count > 0 ? 'Panier ($count)' : 'Panier'),
+          );
+        },
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       bottomNavigationBar: SafeArea(
