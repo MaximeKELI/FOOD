@@ -3,9 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
+import '../../api/accounts_api.dart';
 import '../../services/app_location_service.dart';
 import '../../services/platform_utils.dart';
 import '../../ui/chezmama_theme.dart';
+import '../profile/seller_profile_screen.dart';
 
 /// Default map center (Dakar) when GPS is unavailable on desktop.
 const _defaultCenter = LatLng(14.7167, -17.4677);
@@ -24,11 +26,34 @@ class _TrackingScreenState extends State<TrackingScreen> {
   String? _error;
   bool _loading = true;
   bool _manualMode = false;
+  List<SellerLocation> _sellers = [];
 
   @override
   void initState() {
     super.initState();
     _startLocation();
+    _loadSellers();
+  }
+
+  Future<void> _loadSellers() async {
+    try {
+      final sellers = await AccountsApi.instance.fetchSellersWithLocation();
+      if (!mounted) return;
+      setState(() => _sellers = sellers);
+    } catch (_) {
+      // Non-blocking: the map still works without seller markers.
+    }
+  }
+
+  void _openSeller(SellerLocation seller) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => SellerProfileScreen(
+          sellerId: seller.id,
+          sellerName: seller.shopName.isEmpty ? seller.name : seller.shopName,
+        ),
+      ),
+    );
   }
 
   Future<void> _retry() async {
