@@ -21,7 +21,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   final ScrollController scroll = ScrollController();
 
   bool loading = true;
+  String? error;
   String activeCategory = DemoData.categories.first;
+  List<Meal> _allMeals = [];
 
   late final AnimationController _stagger;
 
@@ -32,13 +34,29 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       vsync: this,
       duration: const Duration(milliseconds: 900),
     );
+    _loadMeals();
+  }
 
-    // Demo loading.
-    Timer(const Duration(milliseconds: 650), () {
-      if (!mounted) return;
-      setState(() => loading = false);
-      _stagger.forward(from: 0);
+  Future<void> _loadMeals() async {
+    setState(() {
+      loading = true;
+      error = null;
     });
+    try {
+      final meals = await CatalogApi.instance.fetchMeals();
+      if (!mounted) return;
+      setState(() {
+        _allMeals = meals;
+        loading = false;
+      });
+      _stagger.forward(from: 0);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        error = apiErrorMessage(e);
+        loading = false;
+      });
+    }
   }
 
   @override
@@ -49,8 +67,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 
   List<Meal> get _visibleMeals {
-    if (activeCategory == 'Popular') return DemoData.meals;
-    return DemoData.meals.where((m) => m.category == activeCategory).toList();
+    if (activeCategory == 'Popular') return _allMeals;
+    return _allMeals.where((m) => m.category == activeCategory).toList();
   }
 
   @override
