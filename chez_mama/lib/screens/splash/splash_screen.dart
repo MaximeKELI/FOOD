@@ -113,7 +113,7 @@ class _SplashScreenState extends State<SplashScreen>
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'ChezMama',
+                    'Food',
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                           fontWeight: FontWeight.w800,
                           letterSpacing: -0.4,
