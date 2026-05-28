@@ -10,11 +10,14 @@ class AppLocationService {
 
   Future<({LatLng? location, String? error, bool allowManual})> acquireLocation() async {
     try {
-      final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      final serviceEnabled = await Geolocator.isLocationServiceEnabled()
+          .timeout(const Duration(seconds: 6), onTimeout: () => false);
       if (!serviceEnabled) {
         return (
           location: null,
-          error: 'Active la localisation de ton appareil (GeoClue sur Linux).',
+          error: isDesktopPlatform
+              ? 'Localisation indisponible sur ce PC. Place ta position sur la carte.'
+              : 'Active la localisation de ton appareil.',
           allowManual: isDesktopPlatform,
         );
       }
@@ -36,22 +39,34 @@ class AppLocationService {
         locationSettings: const LocationSettings(
           accuracy: LocationAccuracy.high,
         ),
-      );
+      ).timeout(const Duration(seconds: 10));
       return (
         location: LatLng(position.latitude, position.longitude),
         error: null,
         allowManual: false,
       );
+    } on TimeoutException {
+      return (
+        location: null,
+        error: isDesktopPlatform
+            ? 'Position GPS introuvable. Place ta position sur la carte.'
+            : 'Délai dépassé. Réessaie.',
+        allowManual: isDesktopPlatform,
+      );
     } on MissingPluginException {
       return (
         location: null,
-        error: 'Plugin de localisation indisponible. Relance l’app après mise à jour.',
-        allowManual: true,
+        error: isDesktopPlatform
+            ? 'Localisation non disponible sur ce PC. Place ta position sur la carte.'
+            : 'Plugin de localisation indisponible.',
+        allowManual: isDesktopPlatform,
       );
     } catch (e) {
       return (
         location: null,
-        error: 'Erreur localisation: $e',
+        error: isDesktopPlatform
+            ? 'Localisation indisponible. Place ta position sur la carte.'
+            : 'Erreur localisation: $e',
         allowManual: isDesktopPlatform,
       );
     }

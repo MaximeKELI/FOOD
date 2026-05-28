@@ -1,5 +1,5 @@
 import 'dart:io';
-import 'package:file_picker/file_picker.dart';
+import 'package:file_selector/file_selector.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path/path.dart' as p;
 import 'platform_utils.dart';
@@ -18,6 +18,16 @@ class AppMediaPicker {
   AppMediaPicker._();
   static final AppMediaPicker instance = AppMediaPicker._();
 
+  static const _imageExtensions = [
+    'jpg',
+    'jpeg',
+    'png',
+    'webp',
+    'gif',
+    'heic',
+    'bmp',
+  ];
+
   static const _videoExtensions = [
     'mp4',
     'mov',
@@ -33,21 +43,23 @@ class AppMediaPicker {
 
   final ImagePicker _imagePicker = ImagePicker();
 
-  bool _isVideoPath(String path) {
+  bool _hasExtension(String path, List<String> exts) {
     final ext = p.extension(path).replaceFirst('.', '').toLowerCase();
-    return _videoExtensions.contains(ext);
+    return exts.contains(ext);
   }
 
   Future<PickedMedia?> pickPhotoFromGallery() async {
     if (isDesktopPlatform) {
-      final result = await FilePicker.platform.pickFiles(
-        type: FileType.custom,
-        allowedExtensions: ['jpg', 'jpeg', 'png', 'webp', 'gif', 'heic'],
-        allowMultiple: false,
+      final file = await openFile(
+        acceptedTypeGroups: [
+          XTypeGroup(label: 'Images', extensions: _imageExtensions),
+        ],
       );
-      final path = result?.files.single.path;
-      if (path == null) return null;
-      return PickedMedia(path: path, isVideo: false);
+      if (file == null) return null;
+      if (!await File(file.path).exists()) {
+        throw StateError('Le fichier sélectionné est introuvable.');
+      }
+      return PickedMedia(path: file.path, isVideo: false);
     }
 
     final x = await _imagePicker.pickImage(source: ImageSource.gallery);
@@ -57,35 +69,21 @@ class AppMediaPicker {
 
   Future<PickedMedia?> pickVideoFromGallery() async {
     if (isDesktopPlatform) {
-      // FileType.video is often too strict on Linux GTK — try custom then any.
-      var result = await FilePicker.platform.pickFiles(
-        type: FileType.custom,
-        allowedExtensions: _videoExtensions,
-        allowMultiple: false,
-        dialogTitle: 'Choisir une vidéo',
+      final file = await openFile(
+        acceptedTypeGroups: [
+          XTypeGroup(label: 'Vidéos', extensions: _videoExtensions),
+        ],
       );
-      if (result == null || result.files.isEmpty) {
-        result = await FilePicker.platform.pickFiles(
-          type: FileType.any,
-          allowMultiple: false,
-          dialogTitle: 'Choisir une vidéo',
+      if (file == null) return null;
+      if (!_hasExtension(file.path, _videoExtensions)) {
+        throw const FormatException(
+          'Format vidéo non supporté. Utilise mp4, mov, mkv, webm…',
         );
       }
-      final path = result?.files.single.path;
-      if (path == null) return null;
-
-      if (!_isVideoPath(path)) {
-        throw FormatException(
-          'Format non supporté. Utilise: ${_videoExtensions.join(', ')}',
-        );
-      }
-
-      final file = File(path);
-      if (!await file.exists()) {
+      if (!await File(file.path).exists()) {
         throw StateError('Le fichier sélectionné est introuvable.');
       }
-
-      return PickedMedia(path: path, isVideo: true);
+      return PickedMedia(path: file.path, isVideo: true);
     }
 
     final x = await _imagePicker.pickVideo(source: ImageSource.gallery);
