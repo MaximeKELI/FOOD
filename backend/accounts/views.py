@@ -38,6 +38,14 @@ class RegisterView(generics.GenericAPIView):
         )
 
 
+class SellerDetailView(generics.RetrieveAPIView):
+    """Public read-only profile of a seller."""
+
+    serializer_class = UserSerializer
+    permission_classes = [AllowAny]
+    queryset = User.objects.all()
+
+
 class MeView(generics.RetrieveUpdateAPIView):
     serializer_class = UserSerializer
     permission_classes = [IsAuthenticated]

@@ -16,6 +16,8 @@ class UserSerializer(serializers.ModelSerializer):
     seller_profile = SellerProfileSerializer(read_only=True)
     name = serializers.CharField(read_only=True)
     followers_count = serializers.SerializerMethodField()
+    meals_count = serializers.SerializerMethodField()
+    followed_by_me = serializers.SerializerMethodField()
 
     class Meta:
         model = User
@@ -27,10 +29,22 @@ class UserSerializer(serializers.ModelSerializer):
             "phone",
             "seller_profile",
             "followers_count",
+            "meals_count",
+            "followed_by_me",
         )
 
     def get_followers_count(self, obj):
         return obj.followers.count()
+
+    def get_meals_count(self, obj):
+        return obj.meals.count()
+
+    def get_followed_by_me(self, obj):
+        request = self.context.get("request")
+        user = getattr(request, "user", None)
+        if user is None or not user.is_authenticated:
+            return False
+        return obj.followers.filter(follower=user).exists()
 
 
 class RegisterSerializer(serializers.Serializer):
