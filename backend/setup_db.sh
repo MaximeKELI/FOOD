@@ -16,7 +16,9 @@ BEGIN
 END
 \$\$;
 
-ALTER ROLE ${DB_USER} CREATEDB;
+-- Force le mot de passe et le droit de créer des bases (idempotent).
+ALTER ROLE ${DB_USER} WITH LOGIN PASSWORD '${DB_PASSWORD}' CREATEDB;
+
 SELECT 'CREATE DATABASE ${DB_NAME} OWNER ${DB_USER}'
 WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = '${DB_NAME}')\gexec
 

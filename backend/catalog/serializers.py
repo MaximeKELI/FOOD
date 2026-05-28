@@ -33,6 +33,8 @@ class MealSerializer(serializers.ModelSerializer):
 
 
 class MealCreateSerializer(serializers.ModelSerializer):
+    is_available = serializers.BooleanField(required=False, default=True)
+
     class Meta:
         model = Meal
         fields = (
