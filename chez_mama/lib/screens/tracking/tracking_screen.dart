@@ -3,7 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
+import '../../services/app_location_service.dart';
+import '../../services/platform_utils.dart';
 import '../../ui/chezmama_theme.dart';
+
+/// Default map center (Dakar) when GPS is unavailable on desktop.
+const _defaultCenter = LatLng(14.7167, -17.4677);
 
 class TrackingScreen extends StatefulWidget {
   const TrackingScreen({super.key});
@@ -14,10 +19,11 @@ class TrackingScreen extends StatefulWidget {
 
 class _TrackingScreenState extends State<TrackingScreen> {
   final MapController _mapController = MapController();
-  StreamSubscription<Position>? _positionSub;
-  Position? _position;
+  StreamSubscription<LatLng>? _positionSub;
+  LatLng? _userLocation;
   String? _error;
   bool _loading = true;
+  bool _manualMode = false;
 
   @override
   void initState() {
@@ -29,62 +35,48 @@ class _TrackingScreenState extends State<TrackingScreen> {
     await _positionSub?.cancel();
     if (!mounted) return;
     setState(() {
-      _position = null;
+      _userLocation = null;
       _error = null;
       _loading = true;
+      _manualMode = false;
     });
     await _startLocation();
   }
 
   Future<void> _startLocation() async {
-    try {
-      final serviceEnabled = await Geolocator.isLocationServiceEnabled();
-      if (!serviceEnabled) {
-        setState(() {
-          _error = 'Active la localisation de ton appareil.';
-          _loading = false;
-        });
-        return;
-      }
+    final result = await AppLocationService.instance.acquireLocation();
+    if (!mounted) return;
 
-      var permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied) {
-        permission = await Geolocator.requestPermission();
-      }
-      if (permission == LocationPermission.denied ||
-          permission == LocationPermission.deniedForever) {
-        setState(() {
-          _error = 'Permission de localisation refusée.';
-          _loading = false;
-        });
-        return;
-      }
-
-      final initial = await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.high,
-        ),
-      );
+    if (result.location != null) {
       setState(() {
-        _position = initial;
+        _userLocation = result.location;
+        _error = null;
         _loading = false;
+        _manualMode = false;
       });
-
-      _positionSub = Geolocator.getPositionStream(
-        locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.best,
-          distanceFilter: 5,
-        ),
-      ).listen((pos) {
+      _positionSub = AppLocationService.instance.watchLocation()?.listen((loc) {
         if (!mounted) return;
-        setState(() => _position = pos);
+        setState(() => _userLocation = loc);
       });
-    } catch (e) {
-      setState(() {
-        _error = 'Erreur localisation: $e\n\nSur Linux Desktop, la localisation peut nécessiter GeoClue activé.';
-        _loading = false;
-      });
+      return;
     }
+
+    setState(() {
+      _error = result.error;
+      _loading = false;
+      _manualMode = result.allowManual;
+      if (_manualMode) {
+        _userLocation = _defaultCenter;
+      }
+    });
+  }
+
+  void _setManualLocation(LatLng point) {
+    setState(() {
+      _userLocation = point;
+      _error = null;
+    });
+    _mapController.move(point, _mapController.camera.zoom);
   }
 
   @override
@@ -110,11 +102,30 @@ class _TrackingScreenState extends State<TrackingScreen> {
               ),
             ),
             const SizedBox(height: 12),
-            _StatusProgress(value: _position == null ? 0.1 : 0.78),
-            const SizedBox(height: 16),
-            if (_position != null)
+            _StatusProgress(value: _userLocation == null ? 0.1 : 0.78),
+            if (_manualMode) ...[
+              const SizedBox(height: 8),
               Text(
-                'Lat: ${_position!.latitude.toStringAsFixed(5)}  •  Lng: ${_position!.longitude.toStringAsFixed(5)}',
+                'GPS indisponible : appuie sur la carte pour placer ta position.',
+                style: t.textTheme.bodySmall?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: ChezMamaTheme.brandBrown,
+                ),
+              ),
+            ],
+            if (_error != null && !_manualMode) ...[
+              const SizedBox(height: 8),
+              Text(
+                _error!,
+                style: t.textTheme.bodySmall?.copyWith(
+                  color: ChezMamaTheme.brandBrown,
+                ),
+              ),
+            ],
+            const SizedBox(height: 12),
+            if (_userLocation != null)
+              Text(
+                'Lat: ${_userLocation!.latitude.toStringAsFixed(5)}  •  Lng: ${_userLocation!.longitude.toStringAsFixed(5)}',
                 style: t.textTheme.bodyMedium?.copyWith(
                   fontWeight: FontWeight.w700,
                   color: ChezMamaTheme.ink.withValues(alpha: 0.7),
@@ -134,31 +145,11 @@ class _TrackingScreenState extends State<TrackingScreen> {
                 ),
               ),
             ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildMapContent() {
-    if (_loading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-    if (_error != null) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(18),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.location_off_rounded, size: 40),
-              const SizedBox(height: 10),
-              Text(_error!, textAlign: TextAlign.center),
+            if (_error != null && !_manualMode) ...[
               const SizedBox(height: 12),
               Wrap(
                 spacing: 10,
                 runSpacing: 10,
-                alignment: WrapAlignment.center,
                 children: [
                   OutlinedButton.icon(
                     onPressed: () => Geolocator.openLocationSettings(),
@@ -182,30 +173,70 @@ class _TrackingScreenState extends State<TrackingScreen> {
                 ],
               ),
             ],
+            if (_manualMode || (_error != null && isDesktopPlatform)) ...[
+              const SizedBox(height: 8),
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton.icon(
+                  onPressed: _retry,
+                  icon: const Icon(Icons.refresh_rounded),
+                  label: const Text('Réessayer GPS'),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMapContent() {
+    if (_loading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (_userLocation == null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(18),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.location_off_rounded, size: 40),
+              const SizedBox(height: 10),
+              Text(
+                _error ?? 'Position indisponible.',
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 12),
+              FilledButton.icon(
+                onPressed: _retry,
+                icon: const Icon(Icons.refresh_rounded),
+                label: const Text('Réessayer'),
+                style: FilledButton.styleFrom(
+                  backgroundColor: ChezMamaTheme.brandOrange,
+                  foregroundColor: Colors.white,
+                ),
+              ),
+            ],
           ),
         ),
       );
     }
-    final pos = _position;
-    if (pos == null) {
-      return const Center(child: Text('Position indisponible.'));
-    }
-    final center = LatLng(pos.latitude, pos.longitude);
+
+    final center = _userLocation!;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _mapController.move(center, 15.5);
     });
-
-    final nearbyServices = [
-      LatLng(pos.latitude + 0.0042, pos.longitude - 0.0024),
-      LatLng(pos.latitude - 0.0031, pos.longitude + 0.0036),
-      LatLng(pos.latitude + 0.0021, pos.longitude + 0.0018),
-    ];
 
     return FlutterMap(
       mapController: _mapController,
       options: MapOptions(
         initialCenter: center,
         initialZoom: 15.5,
+        onTap: _manualMode
+            ? (_, point) => _setManualLocation(point)
+            : null,
       ),
       children: [
         TileLayer(
@@ -227,24 +258,6 @@ class _TrackingScreenState extends State<TrackingScreen> {
                 child: const Icon(
                   Icons.my_location_rounded,
                   color: Colors.white,
-                ),
-              ),
-            ),
-            ...nearbyServices.map(
-              (p) => Marker(
-                point: p,
-                width: 38,
-                height: 38,
-                child: Container(
-                  decoration: const BoxDecoration(
-                    color: Color(0xFF6E3B1F),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.restaurant_rounded,
-                    color: Colors.white,
-                    size: 20,
-                  ),
                 ),
               ),
             ),
@@ -315,5 +328,3 @@ class _StatusProgress extends StatelessWidget {
     );
   }
 }
-
-

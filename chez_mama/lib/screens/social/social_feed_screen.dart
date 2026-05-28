@@ -1,9 +1,11 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:path/path.dart' as p;
 import '../../analytics/event_tracker.dart';
 import '../../auth/auth_scope.dart';
+import '../../services/app_media_picker.dart';
+import '../../services/platform_utils.dart';
 import '../../ui/chezmama_theme.dart';
-import 'package:image_picker/image_picker.dart';
 
 enum SocialTab { videos, shorts }
 
@@ -494,8 +496,8 @@ class _CreatePostSheet extends StatefulWidget {
 
 class _CreatePostSheetState extends State<_CreatePostSheet> {
   final captionController = TextEditingController();
-  final ImagePicker _picker = ImagePicker();
-  XFile? picked;
+  final _mediaPicker = AppMediaPicker.instance;
+  String? mediaPath;
   _MediaType? pickedType;
 
   @override
@@ -504,46 +506,68 @@ class _CreatePostSheetState extends State<_CreatePostSheet> {
     super.dispose();
   }
 
-  Future<void> _pickVideoFromGallery() async {
-    final x = await _picker.pickVideo(source: ImageSource.gallery);
+  void _showPickError(Object e) {
     if (!mounted) return;
-    if (x == null) return;
-    setState(() {
-      picked = x;
-      pickedType = _MediaType.video;
-    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Impossible de choisir le fichier: $e')),
+    );
+  }
+
+  Future<void> _pickVideoFromGallery() async {
+    try {
+      final media = await _mediaPicker.pickVideoFromGallery();
+      if (!mounted || media == null) return;
+      setState(() {
+        mediaPath = media.path;
+        pickedType = _MediaType.video;
+      });
+    } catch (e) {
+      _showPickError(e);
+    }
   }
 
   Future<void> _captureVideo() async {
-    final x = await _picker.pickVideo(source: ImageSource.camera);
-    if (!mounted) return;
-    if (x == null) return;
-    setState(() {
-      picked = x;
-      pickedType = _MediaType.video;
-    });
+    final hint = _mediaPicker.desktopCaptureHint();
+    if (hint != null) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(hint)));
+      return;
+    }
+    try {
+      final media = await _mediaPicker.captureVideo();
+      if (!mounted || media == null) return;
+      setState(() {
+        mediaPath = media.path;
+        pickedType = _MediaType.video;
+      });
+    } catch (e) {
+      _showPickError(e);
+    }
   }
 
   Future<void> _pickPhoto() async {
-    final x = await _picker.pickImage(source: ImageSource.gallery);
-    if (!mounted) return;
-    if (x == null) return;
-    setState(() {
-      picked = x;
-      pickedType = _MediaType.image;
-    });
+    try {
+      final media = await _mediaPicker.pickPhotoFromGallery();
+      if (!mounted || media == null) return;
+      setState(() {
+        mediaPath = media.path;
+        pickedType = _MediaType.image;
+      });
+    } catch (e) {
+      _showPickError(e);
+    }
   }
 
   void _submit() {
     final caption = captionController.text.trim();
     if (caption.isEmpty) return;
-    if (picked == null || pickedType == null) return;
+    if (mediaPath == null || pickedType == null) return;
     final now = DateTime.now().millisecondsSinceEpoch;
     final post = _UserPost(
       id: 'p_$now',
       sellerName: widget.sellerName,
       caption: caption,
-      mediaPath: picked!.path,
+      mediaPath: mediaPath!,
       isShort: widget.isShort,
       mediaType: pickedType!,
     );
@@ -591,14 +615,15 @@ class _CreatePostSheetState extends State<_CreatePostSheet> {
             ],
           ),
           const SizedBox(height: 10),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: _captureVideo,
-              icon: const Icon(Icons.videocam_rounded),
-              label: const Text('Filmer maintenant (camera)'),
+          if (isMobilePlatform)
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: _captureVideo,
+                icon: const Icon(Icons.videocam_rounded),
+                label: const Text('Filmer maintenant (caméra)'),
+              ),
             ),
-          ),
           const SizedBox(height: 12),
           Container(
             width: double.infinity,
@@ -608,7 +633,9 @@ class _CreatePostSheetState extends State<_CreatePostSheet> {
               borderRadius: BorderRadius.circular(16),
             ),
             child: Text(
-              picked == null ? 'Aucun média sélectionné' : 'Média sélectionné: ${picked!.name}',
+              mediaPath == null
+                  ? 'Aucun média sélectionné'
+                  : 'Média sélectionné: ${p.basename(mediaPath!)}',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     fontWeight: FontWeight.w700,
                   ),
