@@ -1,4 +1,8 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:latlong2/latlong.dart';
 import '../../ui/chezmama_theme.dart';
 
 class TrackingScreen extends StatefulWidget {
@@ -8,22 +12,71 @@ class TrackingScreen extends StatefulWidget {
   State<TrackingScreen> createState() => _TrackingScreenState();
 }
 
-class _TrackingScreenState extends State<TrackingScreen>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _c;
+class _TrackingScreenState extends State<TrackingScreen> {
+  final MapController _mapController = MapController();
+  StreamSubscription<Position>? _positionSub;
+  Position? _position;
+  String? _error;
+  bool _loading = true;
 
   @override
   void initState() {
     super.initState();
-    _c = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 3),
-    )..repeat(reverse: true);
+    _startLocation();
+  }
+
+  Future<void> _startLocation() async {
+    try {
+      final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        setState(() {
+          _error = 'Active la localisation de ton appareil.';
+          _loading = false;
+        });
+        return;
+      }
+
+      var permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
+        setState(() {
+          _error = 'Permission de localisation refusée.';
+          _loading = false;
+        });
+        return;
+      }
+
+      final initial = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+      );
+      setState(() {
+        _position = initial;
+        _loading = false;
+      });
+
+      _positionSub = Geolocator.getPositionStream(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.best,
+          distanceFilter: 5,
+        ),
+      ).listen((pos) {
+        if (!mounted) return;
+        setState(() => _position = pos);
+      });
+    } catch (e) {
+      setState(() {
+        _error = 'Erreur localisation: $e';
+        _loading = false;
+      });
+    }
   }
 
   @override
   void dispose() {
-    _c.dispose();
+    _positionSub?.cancel();
     super.dispose();
   }
 
@@ -31,28 +84,29 @@ class _TrackingScreenState extends State<TrackingScreen>
   Widget build(BuildContext context) {
     final t = Theme.of(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('Suivi commande')),
+      appBar: AppBar(title: const Text('Suivi & localisation')),
       body: Padding(
         padding: const EdgeInsets.fromLTRB(14, 14, 14, 110),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Commande #CM-2041',
+              'Position en temps réel',
               style: t.textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.w900,
               ),
             ),
             const SizedBox(height: 12),
-            _StatusProgress(value: 0.62),
+            _StatusProgress(value: _position == null ? 0.1 : 0.78),
             const SizedBox(height: 16),
-            Text(
-              'Ton livreur arrive…',
-              style: t.textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w700,
-                color: ChezMamaTheme.ink.withValues(alpha: 0.7),
+            if (_position != null)
+              Text(
+                'Lat: ${_position!.latitude.toStringAsFixed(5)}  •  Lng: ${_position!.longitude.toStringAsFixed(5)}',
+                style: t.textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: ChezMamaTheme.ink.withValues(alpha: 0.7),
+                ),
               ),
-            ),
             const SizedBox(height: 12),
             Expanded(
               child: Container(
@@ -63,75 +117,96 @@ class _TrackingScreenState extends State<TrackingScreen>
                 ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(20),
-                  child: Stack(
-                    children: [
-                      // Hook point: replace this with Google Maps / Mapbox.
-                      Positioned.fill(
-                        child: DecoratedBox(
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                              colors: [
-                                ChezMamaTheme.brandOrange
-                                    .withValues(alpha: 0.08),
-                                ChezMamaTheme.brandAmber
-                                    .withValues(alpha: 0.10),
-                                Colors.white,
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                      Positioned.fill(
-                        child: CustomPaint(
-                          painter: _RoutePainter(
-                            color: ChezMamaTheme.brandBrown
-                                .withValues(alpha: 0.35),
-                          ),
-                        ),
-                      ),
-                      AnimatedBuilder(
-                        animation: _c,
-                        builder: (context, _) {
-                          final v = Curves.easeInOut.transform(_c.value);
-                          return Positioned(
-                            left: 36 + (220 * v),
-                            top: 70 + (140 * (1 - v)),
-                            child: Container(
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                color: ChezMamaTheme.brandOrange,
-                                borderRadius: BorderRadius.circular(16),
-                                boxShadow:
-                                    ChezMamaTheme.softShadow(opacity: 0.16),
-                              ),
-                              child: const Icon(
-                                Icons.delivery_dining_rounded,
-                                color: Colors.white,
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                      const Positioned(
-                        left: 28,
-                        top: 200,
-                        child: _Pin(label: 'Restaurant'),
-                      ),
-                      const Positioned(
-                        right: 22,
-                        bottom: 26,
-                        child: _Pin(label: 'Toi'),
-                      ),
-                    ],
-                  ),
+                  child: _buildMapContent(),
                 ),
               ),
             ),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildMapContent() {
+    if (_loading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (_error != null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(18),
+          child: Text(
+            _error!,
+            textAlign: TextAlign.center,
+          ),
+        ),
+      );
+    }
+    final pos = _position;
+    if (pos == null) {
+      return const Center(child: Text('Position indisponible.'));
+    }
+    final center = LatLng(pos.latitude, pos.longitude);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _mapController.move(center, 15.5);
+    });
+
+    final nearbyServices = [
+      LatLng(pos.latitude + 0.0042, pos.longitude - 0.0024),
+      LatLng(pos.latitude - 0.0031, pos.longitude + 0.0036),
+      LatLng(pos.latitude + 0.0021, pos.longitude + 0.0018),
+    ];
+
+    return FlutterMap(
+      mapController: _mapController,
+      options: MapOptions(
+        initialCenter: center,
+        initialZoom: 15.5,
+      ),
+      children: [
+        TileLayer(
+          urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+          userAgentPackageName: 'com.example.food',
+        ),
+        MarkerLayer(
+          markers: [
+            Marker(
+              point: center,
+              width: 52,
+              height: 52,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: ChezMamaTheme.brandOrange,
+                  shape: BoxShape.circle,
+                  boxShadow: ChezMamaTheme.softShadow(opacity: 0.2),
+                ),
+                child: const Icon(
+                  Icons.my_location_rounded,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+            ...nearbyServices.map(
+              (p) => Marker(
+                point: p,
+                width: 38,
+                height: 38,
+                child: Container(
+                  decoration: const BoxDecoration(
+                    color: Color(0xFF6E3B1F),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.restaurant_rounded,
+                    color: Colors.white,
+                    size: 20,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 }
@@ -197,71 +272,4 @@ class _StatusProgress extends StatelessWidget {
   }
 }
 
-class _Pin extends StatelessWidget {
-  const _Pin({required this.label});
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    final t = Theme.of(context);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: ChezMamaTheme.softShadow(opacity: 0.12),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 10,
-            height: 10,
-            decoration: const BoxDecoration(
-              color: ChezMamaTheme.brandOrange,
-              shape: BoxShape.circle,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Text(
-            label,
-            style: t.textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w800),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _RoutePainter extends CustomPainter {
-  _RoutePainter({required this.color});
-  final Color color;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final p = Paint()
-      ..color = color
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 4
-      ..strokeCap = StrokeCap.round;
-
-    final path = Path()
-      ..moveTo(44, size.height * 0.62)
-      ..cubicTo(
-        size.width * 0.35,
-        size.height * 0.35,
-        size.width * 0.60,
-        size.height * 0.75,
-        size.width - 56,
-        size.height - 58,
-      );
-
-    canvas.drawPath(path, p);
-  }
-
-  @override
-  bool shouldRepaint(covariant _RoutePainter oldDelegate) {
-    return oldDelegate.color != color;
-  }
-}
 
