@@ -23,6 +23,24 @@ class MealCard extends StatefulWidget {
 class _MealCardState extends State<MealCard> {
   bool pressed = false;
 
+  Widget _buildMealImage(String source) {
+    if (source.startsWith('assets/')) {
+      return Image.asset(
+        source,
+        fit: BoxFit.cover,
+        filterQuality: FilterQuality.low,
+      );
+    }
+    return Image.network(
+      source,
+      fit: BoxFit.cover,
+      filterQuality: FilterQuality.low,
+      errorBuilder: (context, error, stackTrace) {
+        return _ImageFallback(accent: widget.meal.accent);
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context);
@@ -54,14 +72,7 @@ class _MealCardState extends State<MealCard> {
                       tag: 'meal_${m.id}',
                       child: AspectRatio(
                         aspectRatio: 16 / 10,
-                        child: Image.network(
-                          m.image,
-                          fit: BoxFit.cover,
-                          filterQuality: FilterQuality.low,
-                          errorBuilder: (context, error, stackTrace) {
-                            return _ImageFallback(accent: m.accent);
-                          },
-                        ),
+                        child: _buildMealImage(m.image),
                       ),
                     ),
                     Positioned(
