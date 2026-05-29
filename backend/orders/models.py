@@ -40,6 +40,17 @@ class Order(models.Model):
     phone = models.CharField(max_length=30, blank=True)
     note = models.TextField(blank=True)
 
+    # Customer location (used to compute the delivery fee).
+    latitude = models.FloatField(null=True, blank=True)
+    longitude = models.FloatField(null=True, blank=True)
+
+    subtotal = models.PositiveIntegerField(default=0)
+    delivery_fee = models.PositiveIntegerField(default=0)
+    discount = models.PositiveIntegerField(default=0)
+    promo_code = models.CharField(max_length=40, blank=True)
+    points_earned = models.PositiveIntegerField(default=0)
+    points_awarded = models.BooleanField(default=False)
+
     total = models.PositiveIntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -50,7 +61,8 @@ class Order(models.Model):
         return f"Commande #{self.id} de {self.customer.name}"
 
     def recompute_total(self):
-        self.total = sum(item.line_total for item in self.items.all())
+        self.subtotal = sum(item.line_total for item in self.items.all())
+        self.total = max(0, self.subtotal + self.delivery_fee - self.discount)
         return self.total
 
 
