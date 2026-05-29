@@ -87,8 +87,8 @@ class SellerStatsView(APIView):
 
         top_meals = list(
             items.values("meal_name")
-            .annotate(quantity=Sum("quantity"), revenue=Sum(_line_total()))
-            .order_by("-quantity")[:5]
+            .annotate(qty=Sum("quantity"), revenue=Sum(_line_total()))
+            .order_by("-qty")[:5]
         )
 
         return Response(

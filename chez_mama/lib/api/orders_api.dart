@@ -138,7 +138,7 @@ class TopMeal {
   factory TopMeal.fromJson(Map<String, dynamic> json) {
     return TopMeal(
       name: json['meal_name'] as String? ?? '',
-      quantity: json['quantity'] as int? ?? 0,
+      quantity: json['qty'] as int? ?? 0,
       revenue: json['revenue'] as int? ?? 0,
     );
   }
