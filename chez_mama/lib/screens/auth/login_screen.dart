@@ -89,10 +89,12 @@ class _LoginScreenState extends State<LoginScreen> {
                       );
                     },
                     child: Container(
-                      padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.92),
-                        borderRadius: BorderRadius.circular(20),
+                        color: ChezMamaTheme.cardColor(context)
+                            .withValues(alpha: 0.96),
+                        borderRadius:
+                            BorderRadius.circular(ChezMamaTheme.rCard),
                         boxShadow: ChezMamaTheme.softShadow(opacity: 0.12),
                       ),
                       child: Column(
@@ -148,7 +150,6 @@ class _LoginScreenState extends State<LoginScreen> {
                             decoration: const InputDecoration(
                               labelText: 'Email',
                               prefixIcon: Icon(Icons.alternate_email_rounded),
-                              border: OutlineInputBorder(),
                             ),
                           ),
                           const SizedBox(height: 12),
@@ -159,7 +160,6 @@ class _LoginScreenState extends State<LoginScreen> {
                             decoration: const InputDecoration(
                               labelText: 'Mot de passe',
                               prefixIcon: Icon(Icons.lock_rounded),
-                              border: OutlineInputBorder(),
                             ),
                           ),
                           const SizedBox(height: 14),
