@@ -244,6 +244,105 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
   }
 }
 
+class _SalesBarChart extends StatelessWidget {
+  const _SalesBarChart({required this.days});
+  final List<DaySales> days;
+
+  static const _weekdays = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
+
+  String _dow(String iso) {
+    try {
+      final d = DateTime.parse(iso);
+      return _weekdays[(d.weekday - 1) % 7];
+    } catch (_) {
+      return '';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (days.isEmpty) {
+      return const SizedBox(
+        height: 60,
+        child: Center(child: Text('Aucune donnée.')),
+      );
+    }
+    final maxV = days.fold<int>(0, (m, d) => d.revenue > m ? d.revenue : m);
+    final total = days.fold<int>(0, (sum, d) => sum + d.revenue);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Total semaine : $total FCFA',
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: ChezMamaTheme.mutedInk(context),
+                fontWeight: FontWeight.w700,
+              ),
+        ),
+        const SizedBox(height: 10),
+        SizedBox(
+          height: 120,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: days.map((d) {
+              final ratio = maxV == 0 ? 0.0 : d.revenue / maxV;
+              return Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      if (d.revenue > 0)
+                        Text(
+                          d.revenue >= 1000
+                              ? '${(d.revenue / 1000).toStringAsFixed(1)}k'
+                              : '${d.revenue}',
+                          style: const TextStyle(
+                            fontSize: 9,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      const SizedBox(height: 2),
+                      TweenAnimationBuilder<double>(
+                        tween: Tween(begin: 0, end: ratio),
+                        duration: const Duration(milliseconds: 500),
+                        curve: Curves.easeOutCubic,
+                        builder: (_, v, __) => Container(
+                          height: (90 * v).clamp(2.0, 90.0),
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              begin: Alignment.bottomCenter,
+                              end: Alignment.topCenter,
+                              colors: [
+                                ChezMamaTheme.brandBrown,
+                                ChezMamaTheme.brandOrange,
+                              ],
+                            ),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        _dow(d.date),
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: ChezMamaTheme.mutedInk(context),
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class _StatCard extends StatelessWidget {
   const _StatCard({
     required this.icon,
