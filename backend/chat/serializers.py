@@ -9,6 +9,14 @@ class MessageSerializer(serializers.ModelSerializer):
         fields = ("id", "sender", "text", "is_read", "created_at")
         read_only_fields = ("sender", "is_read", "created_at")
 
+    def validate_text(self, value):
+        text = (value or "").strip()
+        if not text:
+            raise serializers.ValidationError("Le message est vide.")
+        if len(text) > 4000:
+            raise serializers.ValidationError("Message trop long (max 4000).")
+        return text
+
 
 class ConversationSerializer(serializers.ModelSerializer):
     other_id = serializers.SerializerMethodField()

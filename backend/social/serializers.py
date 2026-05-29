@@ -28,14 +28,22 @@ class CommentSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 {"parent": "Commentaire parent invalide pour cette publication."}
             )
+        text = (attrs.get("text") or "").strip()
+        if not text:
+            raise serializers.ValidationError({"text": "Le commentaire est vide."})
+        if len(text) > 2000:
+            raise serializers.ValidationError(
+                {"text": "Commentaire trop long (max 2000)."}
+            )
+        attrs["text"] = text
         return attrs
 
 
 class PostSerializer(serializers.ModelSerializer):
     author_name = serializers.CharField(source="author.name", read_only=True)
     media = serializers.FileField(read_only=True)
-    like_count = serializers.IntegerField(read_only=True)
-    comment_count = serializers.IntegerField(read_only=True)
+    like_count = serializers.SerializerMethodField()
+    comment_count = serializers.SerializerMethodField()
     liked_by_me = serializers.SerializerMethodField()
     favorited_by_me = serializers.SerializerMethodField()
 

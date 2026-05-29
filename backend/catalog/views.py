@@ -23,6 +23,26 @@ class IsOwnerOrReadOnly(permissions.BasePermission):
         return obj.seller_id == request.user.id
 
 
+def _meal_queryset(request):
+    qs = Meal.objects.select_related(
+        "seller", "seller__seller_profile", "category"
+    ).prefetch_related("gallery")
+    qs = qs.annotate(
+        rating_avg=Avg("reviews__rating"),
+        reviews_count_annotated=Count("reviews", distinct=True),
+    )
+    user = request.user
+    if user.is_authenticated:
+        qs = qs.annotate(
+            favorited_by_me_annotated=Exists(
+                MealFavorite.objects.filter(
+                    meal_id=OuterRef("pk"), user_id=user.id
+                )
+            )
+        )
+    return qs
+
+
 class CategoryListView(generics.ListAPIView):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
@@ -34,9 +54,7 @@ class MealListCreateView(generics.ListCreateAPIView):
     parser_classes = [MultiPartParser, FormParser]
 
     def get_queryset(self):
-        qs = Meal.objects.select_related(
-            "seller", "seller__seller_profile", "category"
-        ).prefetch_related("gallery")
+        qs = _meal_queryset(self.request)
         params = self.request.query_params
         q = (params.get("q") or "").strip()
         if q:
@@ -65,10 +83,12 @@ class MealListCreateView(generics.ListCreateAPIView):
 
 
 class MealDetailView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = Meal.objects.select_related("seller", "category").all()
     serializer_class = MealSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly, IsOwnerOrReadOnly]
     parser_classes = [MultiPartParser, FormParser]
+
+    def get_queryset(self):
+        return _meal_queryset(self.request)
 
 
 class ReviewListCreateView(generics.ListCreateAPIView):
@@ -122,6 +142,6 @@ class MyFavoriteMealsView(generics.ListAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        return Meal.objects.filter(
+        return _meal_queryset(self.request).filter(
             favorited_by__user=self.request.user
-        ).select_related("seller", "category")
+        )
