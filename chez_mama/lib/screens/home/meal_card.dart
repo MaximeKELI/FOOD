@@ -53,10 +53,11 @@ class _MealCardState extends State<MealCard> {
           duration: const Duration(milliseconds: 160),
           curve: Curves.easeOutCubic,
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: ChezMamaTheme.cardColor(context),
             borderRadius: BorderRadius.circular(ChezMamaTheme.rCard),
-            boxShadow:
-                pressed ? ChezMamaTheme.softShadow(opacity: 0.16) : ChezMamaTheme.softShadow(opacity: 0.10),
+            boxShadow: pressed
+                ? ChezMamaTheme.softShadow(opacity: 0.16)
+                : ChezMamaTheme.softShadow(opacity: 0.10),
           ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(ChezMamaTheme.rCard),

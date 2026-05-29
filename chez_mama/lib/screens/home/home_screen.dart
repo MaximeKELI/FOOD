@@ -109,8 +109,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     return Scaffold(
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _publishMeal,
-        backgroundColor: ChezMamaTheme.brandOrange,
-        foregroundColor: Colors.white,
         icon: const Icon(Icons.add_rounded),
         label: const Text('Publier un plat'),
       ),
@@ -119,23 +117,16 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         slivers: [
           SliverAppBar(
             pinned: true,
-            expandedHeight: 170,
+            expandedHeight: 176,
             automaticallyImplyLeading: false,
-            title: const Text('Food'),
+            backgroundColor: Theme.of(context).scaffoldBackgroundColor,
             flexibleSpace: FlexibleSpaceBar(
               background: Stack(
                 fit: StackFit.expand,
                 children: [
-                  const DecoratedBox(
+                  DecoratedBox(
                     decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          Color(0xFFFFE3C3),
-                          Color(0xFFFFFBF6),
-                        ],
-                      ),
+                      gradient: ChezMamaTheme.headerGradient(context),
                     ),
                   ),
                   Positioned.fill(
@@ -173,9 +164,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       return ChoiceChip(
                         label: Text(c),
                         selected: selected,
-                        selectedColor: ChezMamaTheme.brandOrange
-                            .withValues(alpha: 0.16),
-                        backgroundColor: Colors.white,
+                        labelStyle: TextStyle(
+                          fontWeight:
+                              selected ? FontWeight.w700 : FontWeight.w600,
+                          color: selected
+                              ? ChezMamaTheme.brandBrown
+                              : ChezMamaTheme.mutedInk(context),
+                        ),
                         onSelected: (_) {
                           setState(() => activeCategory = c);
                           if (!loading) _stagger.forward(from: 0);
@@ -206,14 +201,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                             setState(() => _query = '');
                           },
                         ),
-                  filled: true,
-                  fillColor: Colors.white,
-                  contentPadding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: BorderSide.none,
-                  ),
                 ),
               ),
             ),

@@ -56,17 +56,10 @@ class _LoginScreenState extends State<LoginScreen> {
     return Scaffold(
       body: Stack(
         children: [
-          const Positioned.fill(
+          Positioned.fill(
             child: DecoratedBox(
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    Color(0xFFFFE3C3),
-                    Color(0xFFFFFBF6),
-                  ],
-                ),
+                gradient: ChezMamaTheme.headerGradient(context),
               ),
             ),
           ),

@@ -37,6 +37,8 @@ class _AppShellState extends State<AppShell> {
     CartScreen(),
   ];
 
+  static const _titles = ['Accueil', 'Shorts', 'Vidéos', 'Suivi', 'Panier'];
+
   Timer? _badgeTimer;
 
   @override
@@ -81,9 +83,30 @@ class _AppShellState extends State<AppShell> {
 
   @override
   Widget build(BuildContext context) {
+    final cardColor = ChezMamaTheme.cardColor(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Food'),
+        titleSpacing: 16,
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 30,
+              height: 30,
+              decoration: BoxDecoration(
+                color: ChezMamaTheme.brandOrange.withValues(alpha: 0.14),
+                borderRadius: BorderRadius.circular(9),
+              ),
+              child: const Icon(
+                Icons.restaurant_rounded,
+                size: 18,
+                color: ChezMamaTheme.brandOrange,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Text(_titles[index]),
+          ],
+        ),
         actions: [
           AnimatedBuilder(
             animation: NotificationsNotifier.instance,
@@ -211,58 +234,54 @@ class _AppShellState extends State<AppShell> {
           child: pages[index],
         ),
       ),
-      floatingActionButton: AnimatedBuilder(
-        animation: CartService.instance,
-        builder: (context, _) {
-          final count = CartService.instance.count;
-          return FloatingActionButton.extended(
-            heroTag: 'fab_cart',
-            onPressed: () => setState(() => index = 4),
-            backgroundColor: ChezMamaTheme.brandOrange,
-            foregroundColor: Colors.white,
-            elevation: 0,
-            icon: const Icon(Icons.shopping_bag_rounded),
-            label: Text(count > 0 ? 'Panier ($count)' : 'Panier'),
-          );
-        },
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       bottomNavigationBar: SafeArea(
         top: false,
         child: Container(
           margin: const EdgeInsets.fromLTRB(14, 0, 14, 12),
           decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
+            color: cardColor,
+            borderRadius: BorderRadius.circular(22),
             boxShadow: ChezMamaTheme.softShadow(opacity: 0.10),
           ),
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(20),
-            child: BottomNavigationBar(
-              currentIndex: index,
-              onTap: (v) => setState(() => index = v),
-              items: const [
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.home_rounded),
-                  label: 'Accueil',
-                ),
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.bolt_rounded),
-                  label: 'Shorts',
-                ),
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.videocam_rounded),
-                  label: 'Vidéos',
-                ),
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.delivery_dining_rounded),
-                  label: 'Suivi',
-                ),
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.shopping_bag_rounded),
-                  label: 'Panier',
-                ),
-              ],
+            borderRadius: BorderRadius.circular(22),
+            child: AnimatedBuilder(
+              animation: CartService.instance,
+              builder: (context, _) {
+                final count = CartService.instance.count;
+                return BottomNavigationBar(
+                  currentIndex: index,
+                  onTap: (v) => setState(() => index = v),
+                  backgroundColor: cardColor,
+                  items: [
+                    const BottomNavigationBarItem(
+                      icon: Icon(Icons.home_rounded),
+                      label: 'Accueil',
+                    ),
+                    const BottomNavigationBarItem(
+                      icon: Icon(Icons.bolt_rounded),
+                      label: 'Shorts',
+                    ),
+                    const BottomNavigationBarItem(
+                      icon: Icon(Icons.videocam_rounded),
+                      label: 'Vidéos',
+                    ),
+                    const BottomNavigationBarItem(
+                      icon: Icon(Icons.delivery_dining_rounded),
+                      label: 'Suivi',
+                    ),
+                    BottomNavigationBarItem(
+                      icon: count > 0
+                          ? Badge.count(
+                              count: count,
+                              child: const Icon(Icons.shopping_bag_rounded),
+                            )
+                          : const Icon(Icons.shopping_bag_rounded),
+                      label: 'Panier',
+                    ),
+                  ],
+                );
+              },
             ),
           ),
         ),
