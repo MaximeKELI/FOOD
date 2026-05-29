@@ -1,5 +1,7 @@
 from rest_framework import serializers
 
+from food_api.validators import validate_video_upload
+
 from .models import Comment, Favorite, Like, Post
 
 
@@ -18,6 +20,15 @@ class CommentSerializer(serializers.ModelSerializer):
             "created_at",
         )
         read_only_fields = ("author", "post")
+
+    def validate(self, attrs):
+        post = self.context.get("post")
+        parent = attrs.get("parent")
+        if parent is not None and post is not None and parent.post_id != post.id:
+            raise serializers.ValidationError(
+                {"parent": "Commentaire parent invalide pour cette publication."}
+            )
+        return attrs
 
 
 class PostSerializer(serializers.ModelSerializer):
@@ -69,14 +80,12 @@ class PostCreateSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         media = attrs.get("media")
         media_type = attrs.get("media_type")
-        if media_type == Post.MediaType.VIDEO and media is not None:
-            if media.size < 1024:
-                raise serializers.ValidationError(
-                    {
-                        "media": "Fichier vidéo invalide ou trop petit. "
-                        "Utilise un vrai fichier mp4, mov ou webm."
-                    }
-                )
+        if media_type == Post.MediaType.VIDEO:
+            validate_video_upload(media)
+        elif media is not None:
+            from food_api.validators import validate_image_upload
+
+            validate_image_upload(media)
         return attrs
 
     def create(self, validated_data):

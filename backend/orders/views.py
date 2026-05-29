@@ -9,6 +9,8 @@ from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from rest_framework.exceptions import ValidationError
+
 from catalog.models import Meal
 
 from .models import Order, OrderItem
@@ -251,10 +253,8 @@ class DeliveryQuoteView(APIView):
         seller_subtotals = subtotal_by_seller(items, meals)
         try:
             fee = compute_delivery_fee(sellers, seller_subtotals, lat, lng)
-        except Exception as exc:
-            if hasattr(exc, "detail"):
-                return Response(exc.detail, status=status.HTTP_400_BAD_REQUEST)
-            raise
+        except ValidationError as exc:
+            return Response(exc.detail, status=status.HTTP_400_BAD_REQUEST)
         return Response({"delivery_fee": fee})
 
 

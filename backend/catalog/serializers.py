@@ -1,4 +1,5 @@
 from django.db.models import Avg
+from food_api.validators import validate_image_upload
 from rest_framework import serializers
 
 from .models import Category, Meal, MealFavorite, Review
@@ -105,6 +106,16 @@ class MealCreateSerializer(serializers.ModelSerializer):
             "is_special",
             "category",
         )
+
+    def validate(self, attrs):
+        validate_image_upload(attrs.get("image"))
+        price = attrs.get("price")
+        promo = attrs.get("promo_price")
+        if promo is not None and price is not None and promo >= price:
+            raise serializers.ValidationError(
+                {"promo_price": "Le prix promo doit être inférieur au prix normal."}
+            )
+        return attrs
 
     def create(self, validated_data):
         validated_data["seller"] = self.context["request"].user

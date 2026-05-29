@@ -89,6 +89,8 @@ class ReviewListCreateView(generics.ListCreateAPIView):
                     Notification.Kind.REVIEW,
                     "Nouvel avis",
                     f"{self.request.user.name} a noté « {meal.name} » {review.rating}/5.",
+                    related_id=meal.id,
+                    link="meal",
                 )
 
 

@@ -64,8 +64,24 @@ class MessageListCreateView(generics.ListCreateAPIView):
 
     def perform_create(self, serializer):
         convo = self._conversation()
-        serializer.save(conversation=convo, sender=self.request.user)
+        message = serializer.save(conversation=convo, sender=self.request.user)
         convo.save(update_fields=["updated_at"])
+        recipient = (
+            convo.user_high
+            if convo.user_low_id == self.request.user.id
+            else convo.user_low
+        )
+        if recipient.id != self.request.user.id:
+            from notifications.models import Notification, notify
+
+            notify(
+                recipient,
+                Notification.Kind.CHAT,
+                f"Message de {self.request.user.name}",
+                message.text[:200],
+                related_id=convo.id,
+                link="chat",
+            )
 
 
 class UnreadCountView(APIView):

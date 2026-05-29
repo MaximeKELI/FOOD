@@ -76,6 +76,11 @@ class CommentListCreateView(generics.ListCreateAPIView):
             post_id=self.kwargs["post_id"]
         )
 
+    def get_serializer_context(self):
+        ctx = super().get_serializer_context()
+        ctx["post"] = get_object_or_404(Post, pk=self.kwargs["post_id"])
+        return ctx
+
     def perform_create(self, serializer):
         post = get_object_or_404(Post, pk=self.kwargs["post_id"])
         serializer.save(author=self.request.user, post=post)
