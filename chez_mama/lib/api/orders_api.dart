@@ -1,4 +1,5 @@
 import 'api_client.dart';
+import '../l10n/app_strings.dart';
 
 class OrderItemView {
   OrderItemView({
@@ -85,21 +86,22 @@ class OrderView {
   }
 }
 
-const Map<String, String> kPaymentMethods = {
-  'cash': 'À la livraison',
-  'wave': 'Wave',
-  'orange_money': 'Orange Money',
-  'free_money': 'Free Money',
-};
+/// Payment method keys sent to the API.
+const List<String> kPaymentMethodKeys = [
+  'cash',
+  'wave',
+  'orange_money',
+  'free_money',
+];
 
-/// Order status values used by the API.
-const Map<String, String> kOrderStatuses = {
-  'pending': 'En attente',
-  'preparing': 'En préparation',
-  'on_the_way': 'En route',
-  'delivered': 'Livrée',
-  'cancelled': 'Annulée',
-};
+/// Order status keys from the API.
+const List<String> kOrderStatusKeys = [
+  'pending',
+  'preparing',
+  'on_the_way',
+  'delivered',
+  'cancelled',
+];
 
 class OrdersApi {
   OrdersApi._();

@@ -1,9 +1,9 @@
 import 'package:flutter/foundation.dart';
 
 import '../api/api_client.dart';
+import 'session_handler.dart';
 
 /// Authenticates against the Django backend and keeps the session in memory.
-/// Tokens are persisted via [ApiClient] (SharedPreferences; use secure storage on mobile when configured).
 class AuthService extends ChangeNotifier {
   bool _ready = false;
   bool _isAuthed = false;
@@ -39,6 +39,7 @@ class AuthService extends ChangeNotifier {
     _mealsCount = 0;
     _isSeller = false;
     notifyListeners();
+    SessionHandler.instance.onSessionExpired();
   }
 
   Future<void> init() async {
@@ -68,7 +69,6 @@ class AuthService extends ChangeNotifier {
     _isSeller = _mealsCount > 0 || shopName.trim().isNotEmpty;
   }
 
-  /// Re-fetches the current user (e.g. to refresh loyalty points).
   Future<void> refreshMe() async {
     if (!_isAuthed) return;
     try {
@@ -96,8 +96,6 @@ class AuthService extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Registers a new seller. [profile] carries the optional business fields
-  /// matching the backend RegisterSerializer (snake_case keys).
   Future<void> register({
     required String name,
     required String email,

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'auth/auth_scope.dart';
 import 'auth/auth_service.dart';
+import 'auth/session_handler.dart';
 import 'analytics/event_tracker.dart';
 import 'analytics/tracked_widgets.dart';
 import 'cart/cart_service.dart';
@@ -11,8 +12,11 @@ import 'ui/theme_controller.dart';
 import 'notifications/push_service.dart';
 import 'screens/auth/auth_gate.dart';
 
+final navigatorKey = GlobalKey<NavigatorState>();
+
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
+  SessionHandler.instance.bind(navigatorKey);
   runApp(const ChezMamaApp());
 }
 
@@ -28,8 +32,9 @@ class ChezMamaApp extends StatelessWidget {
         ),
         builder: (context, _) {
           return MaterialApp(
+            navigatorKey: navigatorKey,
             debugShowCheckedModeBanner: false,
-            title: 'Food',
+            title: tr('app.name'),
             locale: LocaleController.instance.locale,
             supportedLocales: AppLang.values.map((l) => Locale(l.code)),
             localizationsDelegates: const [
