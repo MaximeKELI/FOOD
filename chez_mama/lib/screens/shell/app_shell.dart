@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../auth/auth_scope.dart';
+import '../../cart/cart_fly_service.dart';
 import '../../cart/cart_service.dart';
 import '../../cart/received_orders_notifier.dart';
 import '../../chat/chat_unread_notifier.dart';
@@ -320,12 +321,15 @@ class _AppShellState extends State<AppShell> {
                       label: tr('nav.tracking'),
                     ),
                     NavigationDestination(
-                      icon: count > 0
-                          ? Badge.count(
-                              count: count,
-                              child: const Icon(Icons.shopping_bag_outlined),
-                            )
-                          : const Icon(Icons.shopping_bag_outlined),
+                      icon: KeyedSubtree(
+                        key: CartFlyService.instance.cartIconKey,
+                        child: count > 0
+                            ? Badge.count(
+                                count: count,
+                                child: const Icon(Icons.shopping_bag_outlined),
+                              )
+                            : const Icon(Icons.shopping_bag_outlined),
+                      ),
                       selectedIcon: count > 0
                           ? Badge.count(
                               count: count,
