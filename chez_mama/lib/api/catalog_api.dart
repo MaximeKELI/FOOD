@@ -25,12 +25,19 @@ class CatalogApi {
         .toList();
   }
 
-  Future<List<Meal>> fetchMeals({String? category, int? sellerId}) async {
+  Future<List<Meal>> fetchMeals({
+    String? category,
+    int? sellerId,
+    bool availableOnly = false,
+    bool specialOnly = false,
+  }) async {
     final res = await _dio.get(
       '/catalog/meals/',
       queryParameters: {
         if (category != null && category != 'Popular') 'category': category,
         if (sellerId != null) 'seller': sellerId,
+        if (availableOnly) 'available': 'true',
+        if (specialOnly) 'special': 'true',
       },
     );
     final results = (res.data['results'] as List?) ?? const [];
@@ -78,12 +85,16 @@ class CatalogApi {
     required String imagePath,
     String? subtitle,
     int? price,
+    int? promoPrice,
+    bool isSpecial = false,
   }) async {
     final form = FormData.fromMap({
       'name': name,
       'category': categoryId,
       if (subtitle != null && subtitle.isNotEmpty) 'subtitle': subtitle,
       if (price != null) 'price': price,
+      if (promoPrice != null) 'promo_price': promoPrice,
+      'is_special': isSpecial,
       'image': await MultipartFile.fromFile(imagePath),
     });
     final res = await _dio.post('/catalog/meals/', data: form);
