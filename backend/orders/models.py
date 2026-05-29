@@ -84,3 +84,32 @@ class OrderItem(models.Model):
 
     def __str__(self):
         return f"{self.quantity} x {self.meal_name}"
+
+
+class PromoCode(models.Model):
+    """A discount code, optionally restricted to one seller."""
+
+    code = models.CharField(max_length=40, unique=True)
+    seller = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="promo_codes",
+        null=True,
+        blank=True,
+    )
+    percent = models.PositiveSmallIntegerField(default=0)  # 0..100
+    amount = models.PositiveIntegerField(default=0)  # flat FCFA discount
+    min_total = models.PositiveIntegerField(default=0)
+    active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def discount_for(self, subtotal):
+        if not self.active or subtotal < self.min_total:
+            return 0
+        value = self.amount
+        if self.percent:
+            value += subtotal * self.percent // 100
+        return min(value, subtotal)
+
+    def __str__(self):
+        return self.code
