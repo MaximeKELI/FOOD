@@ -3,8 +3,10 @@ import '../../api/api_client.dart';
 import '../../api/catalog_api.dart';
 import '../../api/social_api.dart';
 import '../../auth/auth_scope.dart';
+import '../../l10n/app_strings.dart';
 import '../../models/meal.dart';
 import '../../ui/chezmama_theme.dart';
+import '../../widgets/food_network_image.dart';
 
 class MyPublicationsScreen extends StatefulWidget {
   const MyPublicationsScreen({super.key});
@@ -71,17 +73,17 @@ class _MyPublicationsScreenState extends State<MyPublicationsScreen>
     final ok = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Supprimer'),
-        content: Text('Supprimer $label ? Cette action est définitive.'),
+        title: Text(tr('action.delete')),
+        content: Text(trf('publications.deleteConfirm', {'label': label})),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Annuler'),
+            child: Text(tr('action.cancel')),
           ),
           FilledButton(
             onPressed: () => Navigator.of(context).pop(true),
             style: FilledButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Supprimer'),
+            child: Text(tr('action.delete')),
           ),
         ],
       ),
@@ -141,13 +143,13 @@ class _MyPublicationsScreenState extends State<MyPublicationsScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Mes publications'),
+        title: Text(tr('publications.title')),
         bottom: TabBar(
           controller: _tab,
-          tabs: const [
-            Tab(text: 'Plats'),
-            Tab(text: 'Vidéos'),
-            Tab(text: 'Shorts'),
+          tabs: [
+            Tab(text: tr('publications.tabMeals')),
+            Tab(text: tr('publications.tabVideos')),
+            Tab(text: tr('publications.tabShorts')),
           ],
         ),
       ),
@@ -165,12 +167,12 @@ class _MyPublicationsScreenState extends State<MyPublicationsScreen>
                     ),
                     _PostsTab(
                       posts: _videos,
-                      emptyText: 'Aucune vidéo publiée.',
+                      emptyText: tr('publications.noVideos'),
                       onDelete: (p) => _deletePost(p, false),
                     ),
                     _PostsTab(
                       posts: _shorts,
-                      emptyText: 'Aucun short publié.',
+                      emptyText: tr('publications.noShorts'),
                       onDelete: (p) => _deletePost(p, true),
                     ),
                   ],
@@ -192,7 +194,7 @@ class _MealsTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (meals.isEmpty) {
-      return const Center(child: Text('Aucun plat publié.'));
+      return Center(child: Text(tr('publications.noMeals')));
     }
     return ListView.separated(
       padding: const EdgeInsets.all(14),
@@ -202,7 +204,9 @@ class _MealsTab extends StatelessWidget {
         final meal = meals[i];
         return _Row(
           title: meal.name,
-          subtitle: meal.isAvailable ? meal.category : '${meal.category} • Épuisé',
+          subtitle: meal.isAvailable
+              ? meal.category
+              : '${meal.category} • ${tr('meal.soldOut')}',
           imageUrl: meal.image,
           onDelete: () => onDelete(meal),
           trailing: PopupMenuButton<String>(
@@ -225,8 +229,8 @@ class _MealsTab extends StatelessWidget {
                       ? Icons.block_rounded
                       : Icons.check_circle_rounded),
                   title: Text(meal.isAvailable
-                      ? 'Marquer épuisé'
-                      : 'Marquer disponible'),
+                      ? tr('publications.markSoldOut')
+                      : tr('publications.markAvailable')),
                 ),
               ),
               PopupMenuItem(
@@ -234,15 +238,15 @@ class _MealsTab extends StatelessWidget {
                 child: ListTile(
                   leading: const Icon(Icons.local_fire_department_rounded),
                   title: Text(meal.isSpecial
-                      ? 'Retirer plat du jour'
-                      : 'Marquer plat du jour'),
+                      ? tr('publications.removeSpecial')
+                      : tr('publications.markSpecial')),
                 ),
               ),
-              const PopupMenuItem(
+              PopupMenuItem(
                 value: 'delete',
                 child: ListTile(
-                  leading: Icon(Icons.delete_outline_rounded, color: Colors.red),
-                  title: Text('Supprimer'),
+                  leading: const Icon(Icons.delete_outline_rounded, color: Colors.red),
+                  title: Text(tr('action.delete')),
                 ),
               ),
             ],
@@ -275,9 +279,13 @@ class _PostsTab extends StatelessWidget {
       itemBuilder: (context, i) {
         final post = posts[i];
         return _Row(
-          title: post.caption.isEmpty ? '(sans texte)' : post.caption,
-          subtitle:
-              '${post.likeCount} j’aime • ${post.commentCount} commentaire(s)',
+          title: post.caption.isEmpty
+              ? tr('publications.noCaption')
+              : post.caption,
+          subtitle: trf('publications.likesComments', {
+            'likes': post.likeCount,
+            'comments': post.commentCount,
+          }),
           imageUrl: post.isVideo ? '' : post.mediaUrl,
           leadingIcon: post.isVideo ? Icons.videocam_rounded : Icons.image_rounded,
           onDelete: () => onDelete(post),
@@ -321,13 +329,7 @@ class _Row extends StatelessWidget {
             child: SizedBox(
               width: 52,
               height: 52,
-              child: imageUrl.startsWith('http')
-                  ? Image.network(
-                      imageUrl,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => _icon(leadingIcon),
-                    )
-                  : _icon(leadingIcon),
+              child: _buildThumbnail(imageUrl, leadingIcon),
             ),
           ),
           const SizedBox(width: 12),
@@ -358,10 +360,25 @@ class _Row extends StatelessWidget {
                 onPressed: onDelete,
                 icon: const Icon(Icons.delete_outline_rounded,
                     color: Colors.red),
+                tooltip: tr('action.delete'),
               ),
         ],
       ),
     );
+  }
+
+  Widget _buildThumbnail(String imageUrl, IconData? leadingIcon) {
+    if (imageUrl.startsWith('assets/')) {
+      return Image.asset(imageUrl, fit: BoxFit.cover);
+    }
+    if (imageUrl.startsWith('http')) {
+      return FoodNetworkImage(
+        url: imageUrl,
+        fit: BoxFit.cover,
+        placeholder: _icon(leadingIcon),
+      );
+    }
+    return _icon(leadingIcon);
   }
 
   Widget _icon(IconData? icon) {
@@ -395,7 +412,7 @@ class _ErrorView extends StatelessWidget {
             FilledButton.icon(
               onPressed: onRetry,
               icon: const Icon(Icons.refresh_rounded),
-              label: const Text('Réessayer'),
+              label: Text(tr('action.retry')),
             ),
           ],
         ),

@@ -4,9 +4,11 @@ import 'package:path/path.dart' as p;
 import '../../api/api_client.dart';
 import '../../api/social_api.dart';
 import '../../analytics/event_tracker.dart';
+import '../../l10n/app_strings.dart';
 import '../../services/app_media_picker.dart';
 import '../../services/platform_utils.dart';
 import '../../ui/chezmama_theme.dart';
+import '../../widgets/food_network_image.dart';
 import '../../widgets/post_video_player.dart';
 
 enum SocialTab { videos, shorts }
@@ -66,7 +68,7 @@ class _SocialFeedScreenState extends State<SocialFeedScreen> {
     if (!mounted) return;
 
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Publication en cours…')),
+      SnackBar(content: Text(tr('social.publishing'))),
     );
     try {
       await _api.createPost(
@@ -85,14 +87,16 @@ class _SocialFeedScreenState extends State<SocialFeedScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            _isShort ? 'Short publié avec succès' : 'Vidéo publiée avec succès',
+            _isShort ? tr('social.shortPublished') : tr('social.videoPublished'),
           ),
         ),
       );
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Échec de la publication: ${apiErrorMessage(e)}')),
+        SnackBar(
+          content: Text(trf('social.publishFailed', {'error': apiErrorMessage(e)})),
+        ),
       );
     }
   }
@@ -155,7 +159,7 @@ class _SocialFeedScreenState extends State<SocialFeedScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  _isShort ? 'Shorts' : 'Vidéos',
+                  _isShort ? tr('nav.shorts') : tr('nav.videos'),
                   style: t.textTheme.headlineSmall?.copyWith(
                     fontWeight: FontWeight.w900,
                     letterSpacing: -0.4,
@@ -163,7 +167,7 @@ class _SocialFeedScreenState extends State<SocialFeedScreen> {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  'Publie ton contenu et laisse la communauté réagir.',
+                  tr('social.subtitle'),
                   style: t.textTheme.bodyMedium?.copyWith(
                     color: ChezMamaTheme.ink.withValues(alpha: 0.68),
                     fontWeight: FontWeight.w600,
@@ -180,7 +184,7 @@ class _SocialFeedScreenState extends State<SocialFeedScreen> {
         backgroundColor: ChezMamaTheme.brandOrange,
         foregroundColor: Colors.white,
         icon: Icon(_isShort ? Icons.bolt_rounded : Icons.videocam_rounded),
-        label: Text(_isShort ? 'Publier short' : 'Publier vidéo'),
+        label: Text(_isShort ? tr('social.publishShort') : tr('social.publishVideo')),
       ),
     );
   }
@@ -199,10 +203,10 @@ class _SocialFeedScreenState extends State<SocialFeedScreen> {
           children: [
             SizedBox(height: MediaQuery.sizeOf(context).height * 0.18),
             _EmptyState(
-              title: _isShort ? 'Aucun short publié' : 'Aucune vidéo publiée',
+              title: _isShort ? tr('social.emptyShort') : tr('social.emptyVideo'),
               subtitle: _isShort
-                  ? 'Publie un short pour attirer les clients.'
-                  : 'Publie la première vidéo de ton plat.',
+                  ? tr('social.emptyShortHint')
+                  : tr('social.emptyVideoHint'),
             ),
           ],
         ),
@@ -222,7 +226,7 @@ class _SocialFeedScreenState extends State<SocialFeedScreen> {
             onFollow: () => _toggleFollow(post),
             onFavorite: () => _toggleFavorite(post),
             onShare: () => ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Partage ouvert')),
+              SnackBar(content: Text(tr('social.shareOpened'))),
             ),
             onComments: () => _openComments(post),
           );
@@ -324,7 +328,7 @@ class _SocialPostCard extends StatelessWidget {
                             foregroundColor: Colors.white,
                             visualDensity: VisualDensity.compact,
                           ),
-                          child: const Text('S’abonner'),
+                          child: Text(tr('social.subscribe')),
                         ),
                       ],
                     ),
@@ -354,13 +358,13 @@ class _SocialPostCard extends StatelessWidget {
                     icon: post.favoritedByMe
                         ? Icons.bookmark_rounded
                         : Icons.bookmark_border_rounded,
-                    label: 'Favori',
+                    label: tr('social.favorite'),
                     active: post.favoritedByMe,
                     onTap: onFavorite,
                   ),
                   const Spacer(),
                   IconButton(
-                    tooltip: 'Partager',
+                    tooltip: tr('social.share'),
                     onPressed: onShare,
                     icon: const Icon(Icons.ios_share_rounded),
                   ),
@@ -381,14 +385,10 @@ class _PostMedia extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (!post.isVideo) {
-      return Image.network(
-        post.mediaUrl,
+      return FoodNetworkImage(
+        url: post.mediaUrl,
         fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) => const _PostPlaceholder(),
-        loadingBuilder: (context, child, progress) {
-          if (progress == null) return child;
-          return const Center(child: CircularProgressIndicator());
-        },
+        placeholder: const _PostPlaceholder(),
       );
     }
     return PostVideoPlayer(path: post.mediaUrl, isRemote: true);
@@ -745,24 +745,24 @@ class _CommentsSheetState extends State<_CommentsSheet> {
     final text = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Répondre'),
+        title: Text(tr('social.replyTitle')),
         content: TextField(
           controller: replyController,
           autofocus: true,
-          decoration: const InputDecoration(
-            hintText: 'Ta réponse…',
-            border: OutlineInputBorder(),
+          decoration: InputDecoration(
+            hintText: tr('social.replyHint'),
+            border: const OutlineInputBorder(),
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Annuler'),
+            child: Text(tr('action.cancel')),
           ),
           FilledButton(
             onPressed: () =>
                 Navigator.of(context).pop(replyController.text.trim()),
-            child: const Text('Envoyer'),
+            child: Text(tr('action.send')),
           ),
         ],
       ),
@@ -792,7 +792,7 @@ class _CommentsSheetState extends State<_CommentsSheet> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Commentaires',
+              tr('social.comments'),
               style: t.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900),
             ),
             const SizedBox(height: 12),
@@ -800,8 +800,7 @@ class _CommentsSheetState extends State<_CommentsSheet> {
               child: _loading
                   ? const Center(child: CircularProgressIndicator())
                   : _topLevel.isEmpty
-                      ? const Center(
-                          child: Text('Aucun commentaire pour le moment.'))
+                      ? Center(child: Text(tr('social.noComments')))
                       : ListView.separated(
                           itemCount: _topLevel.length,
                           separatorBuilder: (_, __) => const Divider(height: 22),
@@ -820,7 +819,7 @@ class _CommentsSheetState extends State<_CommentsSheet> {
                                 Text(comment.text, style: t.textTheme.bodyMedium),
                                 TextButton(
                                   onPressed: () => _replyTo(comment),
-                                  child: const Text('Répondre'),
+                                  child: Text(tr('social.reply')),
                                 ),
                                 for (final reply in replies)
                                   Padding(
@@ -853,9 +852,9 @@ class _CommentsSheetState extends State<_CommentsSheet> {
                 Expanded(
                   child: TextField(
                     controller: controller,
-                    decoration: const InputDecoration(
-                      hintText: 'Ajouter un commentaire…',
-                      border: OutlineInputBorder(),
+                    decoration: InputDecoration(
+                      hintText: tr('social.addComment'),
+                      border: const OutlineInputBorder(),
                     ),
                     onSubmitted: (_) => _addComment(),
                   ),
@@ -942,7 +941,7 @@ class _ErrorState extends StatelessWidget {
             FilledButton.icon(
               onPressed: onRetry,
               icon: const Icon(Icons.refresh_rounded),
-              label: const Text('Réessayer'),
+              label: Text(tr('action.retry')),
               style: FilledButton.styleFrom(
                 backgroundColor: ChezMamaTheme.brandOrange,
                 foregroundColor: Colors.white,

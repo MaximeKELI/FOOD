@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../api/api_client.dart';
 import '../../api/orders_api.dart';
+import '../../l10n/app_strings.dart';
 import '../../ui/chezmama_theme.dart';
+import '../../utils/currency_format.dart';
 import '../../widgets/entrance.dart';
 
 class OrdersScreen extends StatefulWidget {
@@ -46,7 +48,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Mes commandes')),
+      appBar: AppBar(title: Text(tr('orders.title'))),
       body: _buildBody(),
     );
   }
@@ -69,7 +71,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
               FilledButton.icon(
                 onPressed: _load,
                 icon: const Icon(Icons.refresh_rounded),
-                label: const Text('Réessayer'),
+                label: Text(tr('action.retry')),
               ),
             ],
           ),
@@ -77,7 +79,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
       );
     }
     if (_orders.isEmpty) {
-      return const Center(child: Text('Aucune commande pour le moment.'));
+      return Center(child: Text(tr('orders.empty')));
     }
     return RefreshIndicator(
       onRefresh: _load,
@@ -96,6 +98,15 @@ class _OrderCard extends StatelessWidget {
   const _OrderCard({required this.order});
   final OrderView order;
 
+  String get _statusText =>
+      kOrderStatusKeys.contains(order.status)
+          ? orderStatusLabel(order.status)
+          : order.statusLabel;
+
+  String get _fulfillmentText => order.fulfillment == 'pickup'
+      ? tr('checkout.pickup')
+      : tr('checkout.delivery');
+
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context);
@@ -113,7 +124,7 @@ class _OrderCard extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  'Commande #${order.id}',
+                  trf('tracking.orderLabel', {'id': order.id}),
                   style: t.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w900,
                   ),
@@ -126,7 +137,7 @@ class _OrderCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(999),
                 ),
                 child: Text(
-                  order.statusLabel,
+                  _statusText,
                   style: t.textTheme.labelMedium?.copyWith(
                     color: ChezMamaTheme.brandBrown,
                     fontWeight: FontWeight.w800,
@@ -141,7 +152,7 @@ class _OrderCard extends StatelessWidget {
               padding: const EdgeInsets.only(bottom: 2),
               child: Text(
                 '${item.quantity} x ${item.mealName}'
-                '${item.unitPrice > 0 ? '  (${item.lineTotal} FCFA)' : ''}',
+                '${item.unitPrice > 0 ? '  (${formatFcfa(item.lineTotal)})' : ''}',
                 style: t.textTheme.bodyMedium,
               ),
             ),
@@ -149,15 +160,22 @@ class _OrderCard extends StatelessWidget {
           if (order.deliveryFee > 0 ||
               order.discount > 0 ||
               order.subtotal > 0) ...[
-            _miniLine(context, t, 'Sous-total', '${order.subtotal} FCFA'),
+            _miniLine(context, t, tr('checkout.subtotal'), formatFcfa(order.subtotal)),
             if (order.deliveryFee > 0)
-              _miniLine(context, t, 'Livraison', '${order.deliveryFee} FCFA'),
+              _miniLine(
+                context,
+                t,
+                tr('checkout.deliveryFee'),
+                formatFcfa(order.deliveryFee),
+              ),
             if (order.discount > 0)
               _miniLine(
                 context,
                 t,
-                'Promo${order.promoCode.isEmpty ? '' : ' (${order.promoCode})'}',
-                '−${order.discount} FCFA',
+                order.promoCode.isEmpty
+                    ? tr('checkout.promoLine')
+                    : trf('orders.promoWithCode', {'code': order.promoCode}),
+                '−${formatFcfa(order.discount)}',
                 accent: const Color(0xFFD7263D),
               ),
             const SizedBox(height: 6),
@@ -172,14 +190,17 @@ class _OrderCard extends StatelessWidget {
                 color: ChezMamaTheme.brandBrown,
               ),
               const SizedBox(width: 6),
-              Text(
-                '${order.fulfillment == 'pickup' ? 'Retrait' : 'Livraison'}'
-                '${order.paymentLabel.isEmpty ? '' : ' • ${order.paymentLabel}'}',
-                style: t.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w700),
+              Expanded(
+                child: Text(
+                  _fulfillmentText +
+                      (order.paymentLabel.isEmpty
+                          ? ''
+                          : ' • ${order.paymentLabel}'),
+                  style: t.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w700),
+                ),
               ),
-              const Spacer(),
               Text(
-                'Total: ${order.total} FCFA',
+                trf('orders.totalLine', {'total': formatFcfa(order.total)}),
                 style: t.textTheme.titleSmall?.copyWith(
                   fontWeight: FontWeight.w900,
                 ),
@@ -194,7 +215,7 @@ class _OrderCard extends StatelessWidget {
                     size: 16, color: ChezMamaTheme.brandAmber),
                 const SizedBox(width: 4),
                 Text(
-                  '+${order.pointsEarned} points de fidélité',
+                  trf('orders.loyaltyEarned', {'points': order.pointsEarned}),
                   style: t.textTheme.bodySmall?.copyWith(
                     fontWeight: FontWeight.w700,
                     color: ChezMamaTheme.brandBrown,

@@ -3,7 +3,10 @@ import '../../auth/auth_scope.dart';
 import '../../cart/cart_service.dart';
 import '../../l10n/app_strings.dart';
 import '../../ui/chezmama_theme.dart';
+import '../../utils/currency_format.dart';
+import '../../widgets/accessible_icon_button.dart';
 import '../../widgets/entrance.dart';
+import '../../widgets/food_network_image.dart';
 import '../auth/login_screen.dart';
 import 'checkout_sheet.dart';
 
@@ -65,7 +68,7 @@ class _CartScreenState extends State<CartScreen> {
                     children: [
                       Expanded(
                         child: Text(
-                          '${tr('cart.total')}: ${_cart.total} FCFA',
+                          '${tr('cart.total')}: ${formatFcfa(_cart.total)}',
                           style: t.textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.w900,
                           ),
@@ -136,13 +139,7 @@ class _CartRow extends StatelessWidget {
             child: SizedBox(
               width: 52,
               height: 52,
-              child: item.image.startsWith('http')
-                  ? Image.network(
-                      item.image,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => const _Thumb(),
-                    )
-                  : const _Thumb(),
+              child: _buildItemImage(item.image),
             ),
           ),
           const SizedBox(width: 12),
@@ -160,7 +157,7 @@ class _CartRow extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  '${item.unitPrice} FCFA',
+                  formatFcfa(item.unitPrice),
                   style: t.textTheme.bodySmall?.copyWith(
                     color: ChezMamaTheme.mutedInk(context),
                     fontWeight: FontWeight.w600,
@@ -169,7 +166,11 @@ class _CartRow extends StatelessWidget {
               ],
             ),
           ),
-          _QtyButton(icon: Icons.remove_rounded, onTap: onRemove),
+          AccessibleIconButton(
+            icon: Icons.remove_rounded,
+            label: tr('action.decreaseQty'),
+            onPressed: onRemove,
+          ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8),
             child: Text(
@@ -179,14 +180,29 @@ class _CartRow extends StatelessWidget {
               ),
             ),
           ),
-          _QtyButton(icon: Icons.add_rounded, onTap: onAdd),
-          IconButton(
+          AccessibleIconButton(
+            icon: Icons.add_rounded,
+            label: tr('action.increaseQty'),
+            onPressed: onAdd,
+          ),
+          AccessibleIconButton(
+            icon: Icons.delete_outline_rounded,
+            label: tr('action.delete'),
             onPressed: onDelete,
-            icon: const Icon(Icons.delete_outline_rounded),
           ),
         ],
       ),
     );
+  }
+
+  Widget _buildItemImage(String image) {
+    if (image.startsWith('assets/')) {
+      return Image.asset(image, fit: BoxFit.cover);
+    }
+    if (image.startsWith('http')) {
+      return FoodNetworkImage(url: image, fit: BoxFit.cover);
+    }
+    return const _Thumb();
   }
 }
 
@@ -198,28 +214,6 @@ class _Thumb extends StatelessWidget {
     return Container(
       color: ChezMamaTheme.brandOrange.withValues(alpha: 0.12),
       child: const Icon(Icons.restaurant_rounded, color: ChezMamaTheme.brandOrange),
-    );
-  }
-}
-
-class _QtyButton extends StatelessWidget {
-  const _QtyButton({required this.icon, required this.onTap});
-  final IconData icon;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(10),
-      child: Container(
-        padding: const EdgeInsets.all(4),
-        decoration: BoxDecoration(
-          color: ChezMamaTheme.subtleSurface(context),
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Icon(icon, size: 20, color: ChezMamaTheme.brandBrown),
-      ),
     );
   }
 }

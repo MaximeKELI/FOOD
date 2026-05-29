@@ -20,13 +20,13 @@ enum MealSort { recent, priceAsc, priceDesc, rating, distance }
 
 const _allCategory = 'Tous';
 
-const Map<MealSort, String> _sortLabels = {
-  MealSort.recent: 'Récents',
-  MealSort.priceAsc: 'Prix ↑',
-  MealSort.priceDesc: 'Prix ↓',
-  MealSort.rating: 'Mieux notés',
-  MealSort.distance: 'Plus proches',
-};
+String _sortLabel(MealSort sort) => switch (sort) {
+      MealSort.recent => tr('home.sortRecent'),
+      MealSort.priceAsc => tr('home.sortPriceAsc'),
+      MealSort.priceDesc => tr('home.sortPriceDesc'),
+      MealSort.rating => tr('home.sortRating'),
+      MealSort.distance => tr('home.sortDistance'),
+    };
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({
@@ -137,7 +137,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           _fromCache = true;
         });
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Mode hors ligne — ${tr('action.retry')}')),
+          SnackBar(content: Text(tr('home.offlineBanner'))),
         );
       }
     }
@@ -153,7 +153,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     if (!available) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Reconnaissance vocale indisponible.')),
+        SnackBar(content: Text(tr('home.voiceUnavailable'))),
       );
       return;
     }
@@ -260,7 +260,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       await _loadMeals();
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Plat publié avec succès')),
+        SnackBar(content: Text(tr('home.publishSuccess'))),
       );
     }
   }
@@ -339,7 +339,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       final c = _categories[i];
                       final selected = c == activeCategory;
                       return ChoiceChip(
-                        label: Text(c),
+                        label: Text(
+                          c == _allCategory ? tr('home.allCategory') : c,
+                        ),
                         selected: selected,
                         labelStyle: TextStyle(
                           fontWeight:
@@ -367,12 +369,39 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   if (_fromCache)
                     Padding(
                       padding: const EdgeInsets.only(bottom: 8),
-                      child: Text(
-                        'Données en cache — reconnecte-toi pour actualiser.',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: ChezMamaTheme.brandBrown.withValues(alpha: 0.1),
+                          borderRadius:
+                              BorderRadius.circular(ChezMamaTheme.rCard),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.cloud_off_rounded,
+                              size: 18,
                               color: ChezMamaTheme.brandBrown,
-                              fontWeight: FontWeight.w600,
                             ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                tr('home.offlineBanner'),
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodySmall
+                                    ?.copyWith(
+                                      color: ChezMamaTheme.brandBrown,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   TextField(
@@ -390,7 +419,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       IconButton(
-                        tooltip: 'Recherche vocale',
+                        tooltip: tr('home.voiceSearch'),
                         onPressed: _startVoiceSearch,
                         icon: Icon(
                           _listening ? Icons.mic_rounded : Icons.mic_none_rounded,
@@ -469,7 +498,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     ? SliverToBoxAdapter(
                         child: _HomeMessage(
                           icon: Icons.cloud_off_rounded,
-                          title: 'Connexion impossible',
+                          title: tr('home.connectionFailed'),
                           subtitle: error!,
                           onRetry: _loadMeals,
                         ),
@@ -481,11 +510,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                   ? Icons.search_off_rounded
                                   : Icons.restaurant_menu_rounded,
                               title: _query.isNotEmpty
-                                  ? 'Aucun résultat'
-                                  : 'Aucun plat pour le moment',
+                                  ? tr('home.noResults')
+                                  : tr('home.noMeals'),
                               subtitle: _query.isNotEmpty
-                                  ? 'Aucun plat ne correspond à « $_query ».'
-                                  : 'Les plats publiés par les vendeurs apparaîtront ici.',
+                                  ? trf('home.noResultsQuery',
+                                      {'query': _query})
+                                  : tr('home.noMealsHint'),
                               onRetry: _loadMeals,
                             ),
                           )
@@ -544,11 +574,11 @@ class _SortMenu extends StatelessWidget {
       initialValue: value,
       onSelected: onSelected,
       itemBuilder: (_) => MealSort.values
-          .map((s) => PopupMenuItem(value: s, child: Text(_sortLabels[s]!)))
+          .map((s) => PopupMenuItem(value: s, child: Text(_sortLabel(s))))
           .toList(),
       child: Chip(
         avatar: const Icon(Icons.swap_vert_rounded, size: 18),
-        label: Text('${tr('home.sort')} · ${_sortLabels[value]}'),
+        label: Text('${tr('home.sort')} · ${_sortLabel(value)}'),
       ),
     );
   }
@@ -587,7 +617,7 @@ class _HomeMessage extends StatelessWidget {
           FilledButton.icon(
             onPressed: onRetry,
             icon: const Icon(Icons.refresh_rounded),
-            label: const Text('Réessayer'),
+            label: Text(tr('action.retry')),
             style: FilledButton.styleFrom(
               backgroundColor: ChezMamaTheme.brandOrange,
               foregroundColor: Colors.white,

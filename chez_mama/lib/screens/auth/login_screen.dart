@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import '../../api/api_client.dart';
 import '../../auth/auth_scope.dart';
+import '../../l10n/app_strings.dart';
 import '../../ui/african_pattern_painter.dart';
 import '../../ui/chezmama_theme.dart';
 import '../../widgets/primary_button.dart';
+import '../legal/privacy_screen.dart';
+import '../legal/terms_screen.dart';
 import 'register_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -29,7 +32,7 @@ class _LoginScreenState extends State<LoginScreen> {
     if (busy) return;
     if (email.text.trim().isEmpty || password.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Renseigne ton email et ton mot de passe.')),
+        SnackBar(content: Text(tr('auth.fillEmailPassword'))),
       );
       return;
     }
@@ -48,6 +51,31 @@ class _LoginScreenState extends State<LoginScreen> {
     } finally {
       if (mounted) setState(() => busy = false);
     }
+  }
+
+  void _openRegister() {
+    Navigator.of(context).push(
+      PageRouteBuilder(
+        transitionDuration: const Duration(milliseconds: 260),
+        pageBuilder: (_, __, ___) => const RegisterScreen(),
+        transitionsBuilder: (_, a, __, child) {
+          final c = CurvedAnimation(
+            parent: a,
+            curve: Curves.easeOutCubic,
+          );
+          return FadeTransition(
+            opacity: c,
+            child: SlideTransition(
+              position: Tween<Offset>(
+                begin: const Offset(0, 0.04),
+                end: Offset.zero,
+              ).animate(c),
+              child: child,
+            ),
+          );
+        },
+      ),
+    );
   }
 
   @override
@@ -111,14 +139,14 @@ class _LoginScreenState extends State<LoginScreen> {
                                   borderRadius: BorderRadius.circular(14),
                                 ),
                                 child: const Icon(
-                                  Icons.storefront_rounded,
+                                  Icons.restaurant_rounded,
                                   color: ChezMamaTheme.brandOrange,
                                 ),
                               ),
                               const SizedBox(width: 12),
                               Expanded(
                                 child: Text(
-                                  'Food',
+                                  tr('app.name'),
                                   style: t.textTheme.titleLarge?.copyWith(
                                     fontWeight: FontWeight.w900,
                                   ),
@@ -128,7 +156,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                           const SizedBox(height: 14),
                           Text(
-                            'Connexion vendeur',
+                            tr('auth.loginTitle'),
                             style: t.textTheme.headlineSmall?.copyWith(
                               fontWeight: FontWeight.w900,
                               letterSpacing: -0.3,
@@ -136,7 +164,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                           const SizedBox(height: 6),
                           Text(
-                            'Publie tes produits et reçois des commandes.',
+                            tr('auth.loginSubtitle'),
                             style: t.textTheme.bodyMedium?.copyWith(
                               color: ChezMamaTheme.ink.withValues(alpha: 0.7),
                               fontWeight: FontWeight.w600,
@@ -147,9 +175,10 @@ class _LoginScreenState extends State<LoginScreen> {
                             controller: email,
                             keyboardType: TextInputType.emailAddress,
                             textInputAction: TextInputAction.next,
-                            decoration: const InputDecoration(
-                              labelText: 'Email',
-                              prefixIcon: Icon(Icons.alternate_email_rounded),
+                            decoration: InputDecoration(
+                              labelText: tr('auth.email'),
+                              prefixIcon:
+                                  const Icon(Icons.alternate_email_rounded),
                             ),
                           ),
                           const SizedBox(height: 12),
@@ -157,9 +186,9 @@ class _LoginScreenState extends State<LoginScreen> {
                             controller: password,
                             obscureText: true,
                             onSubmitted: (_) => _submit(),
-                            decoration: const InputDecoration(
-                              labelText: 'Mot de passe',
-                              prefixIcon: Icon(Icons.lock_rounded),
+                            decoration: InputDecoration(
+                              labelText: tr('auth.password'),
+                              prefixIcon: const Icon(Icons.lock_rounded),
                             ),
                           ),
                           const SizedBox(height: 14),
@@ -169,7 +198,9 @@ class _LoginScreenState extends State<LoginScreen> {
                             child: AbsorbPointer(
                               absorbing: busy,
                               child: PrimaryButton(
-                                label: busy ? 'Connexion…' : 'Se connecter',
+                                label: busy
+                                    ? tr('auth.signingIn')
+                                    : tr('auth.login'),
                                 icon: Icons.login_rounded,
                                 onPressed: _submit,
                               ),
@@ -180,42 +211,56 @@ class _LoginScreenState extends State<LoginScreen> {
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Text(
-                                'Pas de compte ? ',
+                                '${tr('auth.noAccount')} ',
                                 style: t.textTheme.bodySmall?.copyWith(
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
                               TextButton(
+                                onPressed: _openRegister,
+                                child: Text(tr('auth.createAccount')),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Center(
+                            child: TextButton(
+                              onPressed: _openRegister,
+                              child: Text(tr('auth.sellerRegister')),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              TextButton(
                                 onPressed: () {
                                   Navigator.of(context).push(
-                                    PageRouteBuilder(
-                                      transitionDuration:
-                                          const Duration(milliseconds: 260),
-                                      pageBuilder: (_, __, ___) =>
-                                          const RegisterScreen(),
-                                      transitionsBuilder: (_, a, __, child) {
-                                        final c = CurvedAnimation(
-                                          parent: a,
-                                          curve: Curves.easeOutCubic,
-                                        );
-                                        return FadeTransition(
-                                          opacity: c,
-                                          child: SlideTransition(
-                                            position: Tween<Offset>(
-                                              begin: const Offset(0, 0.04),
-                                              end: Offset.zero,
-                                            ).animate(c),
-                                            child: child,
-                                          ),
-                                        );
-                                      },
+                                    MaterialPageRoute(
+                                      builder: (_) => const PrivacyScreen(),
                                     ),
                                   );
                                 },
-                                child: const Text('Créer un compte'),
+                                child: Text(tr('legal.privacyLink')),
+                              ),
+                              Text(
+                                ' • ',
+                                style: t.textTheme.bodySmall?.copyWith(
+                                  color: ChezMamaTheme.mutedInk(context),
+                                ),
+                              ),
+                              TextButton(
+                                onPressed: () {
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (_) => const TermsScreen(),
+                                    ),
+                                  );
+                                },
+                                child: Text(tr('legal.termsLink')),
                               ),
                             ],
-                          )
+                          ),
                         ],
                       ),
                     ),
@@ -229,4 +274,3 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 }
-

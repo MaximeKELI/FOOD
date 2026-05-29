@@ -7,9 +7,11 @@ import '../../api/payments_api.dart';
 import '../../auth/auth_scope.dart';
 import '../../cart/cart_service.dart';
 import '../../cart/received_orders_notifier.dart';
-import '../../services/app_location_service.dart';
 import '../../l10n/app_strings.dart';
+import '../../services/app_location_service.dart';
 import '../../ui/chezmama_theme.dart';
+import '../../utils/currency_format.dart';
+import '../../widgets/accessible_icon_button.dart';
 import '../auth/login_screen.dart';
 
 class CheckoutSheet extends StatefulWidget {
@@ -80,7 +82,7 @@ class _CheckoutSheetState extends State<CheckoutSheet> {
     if (_loc == null) {
       setState(() {
         _deliveryFee = 0;
-        _quoteError = 'Utilise ta position pour estimer les frais de livraison.';
+        _quoteError = tr('checkout.needLocationQuote');
       });
       return;
     }
@@ -122,7 +124,13 @@ class _CheckoutSheetState extends State<CheckoutSheet> {
       if (!mounted) return;
       setState(() => _promoDiscount = res.discount);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Promo appliquée : −${res.discount} FCFA')),
+        SnackBar(
+          content: Text(
+            trf('checkout.promoApplied', {
+              'amount': formatFcfa(res.discount),
+            }),
+          ),
+        ),
       );
     } catch (e) {
       if (!mounted) return;
@@ -165,19 +173,19 @@ class _CheckoutSheetState extends State<CheckoutSheet> {
     }
     if (_fulfillment == 'delivery' && _address.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Indique une adresse de livraison.')),
+        SnackBar(content: Text(tr('checkout.needAddress'))),
       );
       return;
     }
     if (_fulfillment == 'delivery' && _phone.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Indique un numéro de téléphone.')),
+        SnackBar(content: Text(tr('checkout.needPhone'))),
       );
       return;
     }
     if (_fulfillment == 'delivery' && _loc == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Utilise ta position pour la livraison.')),
+        SnackBar(content: Text(tr('checkout.needGps'))),
       );
       return;
     }
@@ -205,24 +213,40 @@ class _CheckoutSheetState extends State<CheckoutSheet> {
           }
         }
       }
-      _cart.clear();
+      if (paid || _payment == 'cash') {
+        _cart.clear();
+      }
       ReceivedOrdersNotifier.instance.refresh();
       if (!mounted) return;
       AuthScope.of(context).refreshMe();
       Navigator.of(context).pop();
       final extra = order.discount > 0
-          ? ' (−${order.discount} FCFA promo)'
+          ? trf('checkout.discountExtra', {
+              'amount': formatFcfa(order.discount),
+            })
           : '';
       final message = paid
-          ? 'Commande #${order.id} confirmée · ${order.total} FCFA$extra'
-          : 'Commande #${order.id} créée — paiement en cours (${order.total} FCFA$extra)';
+          ? trf('checkout.orderConfirmed', {
+              'id': order.id,
+              'total': formatFcfa(order.total),
+              'extra': extra,
+            })
+          : trf('checkout.orderPendingPay', {
+              'id': order.id,
+              'total': formatFcfa(order.total),
+              'extra': extra,
+            });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(message)),
       );
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Échec: ${apiErrorMessage(e)}')),
+        SnackBar(
+          content: Text(
+            trf('checkout.failed', {'error': apiErrorMessage(e)}),
+          ),
+        ),
       );
     } finally {
       if (mounted) setState(() => _submitting = false);
@@ -250,7 +274,10 @@ class _CheckoutSheetState extends State<CheckoutSheet> {
             ),
             const SizedBox(height: 6),
             Text(
-              'Total: ${_cart.total} FCFA • ${_cart.count} article(s)',
+              trf('cart.summary', {
+                'total': formatFcfa(_cart.total),
+                'count': _cart.count,
+              }),
               style: t.textTheme.bodyMedium?.copyWith(
                 fontWeight: FontWeight.w700,
                 color: ChezMamaTheme.brandBrown,
@@ -280,9 +307,9 @@ class _CheckoutSheetState extends State<CheckoutSheet> {
             if (_fulfillment == 'delivery') ...[
               TextField(
                 controller: _address,
-                decoration: const InputDecoration(
-                  labelText: 'Adresse de livraison',
-                  prefixIcon: Icon(Icons.place_rounded),
+                decoration: InputDecoration(
+                  labelText: tr('checkout.address'),
+                  prefixIcon: const Icon(Icons.place_rounded),
                 ),
               ),
               const SizedBox(height: 8),
@@ -303,8 +330,8 @@ class _CheckoutSheetState extends State<CheckoutSheet> {
                         ),
                   label: Text(
                     _loc != null
-                        ? 'Position détectée (frais calculés)'
-                        : 'Utiliser ma position',
+                        ? tr('checkout.locationOkQuoted')
+                        : tr('checkout.useLocation'),
                   ),
                 ),
               ),
@@ -323,23 +350,23 @@ class _CheckoutSheetState extends State<CheckoutSheet> {
             TextField(
               controller: _phone,
               keyboardType: TextInputType.phone,
-              decoration: const InputDecoration(
-                labelText: 'Téléphone',
-                prefixIcon: Icon(Icons.phone_rounded),
+              decoration: InputDecoration(
+                labelText: tr('checkout.phone'),
+                prefixIcon: const Icon(Icons.phone_rounded),
               ),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: _note,
               maxLines: 2,
-              decoration: const InputDecoration(
-                labelText: 'Note (optionnel)',
-                prefixIcon: Icon(Icons.notes_rounded),
+              decoration: InputDecoration(
+                labelText: tr('checkout.note'),
+                prefixIcon: const Icon(Icons.notes_rounded),
               ),
             ),
             const SizedBox(height: 16),
             Text(
-              'Mode de paiement',
+              tr('checkout.paymentMode'),
               style: t.textTheme.titleSmall?.copyWith(
                 fontWeight: FontWeight.w800,
               ),
@@ -348,10 +375,10 @@ class _CheckoutSheetState extends State<CheckoutSheet> {
             Wrap(
               spacing: 8,
               runSpacing: 8,
-              children: kPaymentMethods.entries.map((e) {
-                final selected = _payment == e.key;
+              children: kPaymentMethodKeys.map((key) {
+                final selected = _payment == key;
                 return ChoiceChip(
-                  label: Text(e.value),
+                  label: Text(paymentMethodLabel(key)),
                   selected: selected,
                   labelStyle: TextStyle(
                     fontWeight:
@@ -360,7 +387,7 @@ class _CheckoutSheetState extends State<CheckoutSheet> {
                         ? ChezMamaTheme.brandBrown
                         : ChezMamaTheme.mutedInk(context),
                   ),
-                  onSelected: (_) => setState(() => _payment = e.key),
+                  onSelected: (_) => setState(() => _payment = key),
                 );
               }).toList(),
             ),
@@ -369,19 +396,22 @@ class _CheckoutSheetState extends State<CheckoutSheet> {
               controller: _promo,
               textCapitalization: TextCapitalization.characters,
               decoration: InputDecoration(
-                labelText: 'Code promo (optionnel)',
+                labelText: tr('checkout.promo'),
                 prefixIcon: const Icon(Icons.local_offer_rounded),
-                suffixIcon: IconButton(
-                  onPressed: _validatingPromo ? null : _validatePromo,
-                  icon: _validatingPromo
-                      ? const SizedBox(
+                suffixIcon: _validatingPromo
+                    ? const Padding(
+                        padding: EdgeInsets.all(12),
+                        child: SizedBox(
                           width: 18,
                           height: 18,
                           child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.check_rounded),
-                  tooltip: 'Vérifier le code',
-                ),
+                        ),
+                      )
+                    : AccessibleIconButton(
+                        icon: Icons.check_rounded,
+                        label: tr('checkout.verifyPromo'),
+                        onPressed: _validatePromo,
+                      ),
               ),
             ),
             const SizedBox(height: 16),
@@ -393,25 +423,29 @@ class _CheckoutSheetState extends State<CheckoutSheet> {
               ),
               child: Column(
                 children: [
-                  _line(t, 'Sous-total', '${_cart.total} FCFA'),
+                  _line(t, tr('checkout.subtotal'), formatFcfa(_cart.total)),
                   if (_fulfillment == 'delivery') ...[
                     const SizedBox(height: 6),
                     _line(
                       t,
-                      'Livraison',
+                      tr('checkout.deliveryFee'),
                       _quoting
                           ? '…'
                           : (_deliveryFee == 0
-                              ? 'À estimer'
-                              : '$_deliveryFee FCFA'),
+                              ? tr('checkout.toEstimate')
+                              : formatFcfa(_deliveryFee)),
                     ),
                   ],
                   if (_promoDiscount > 0) ...[
                     const SizedBox(height: 6),
-                    _line(t, 'Promo', '−$_promoDiscount FCFA'),
+                    _line(
+                      t,
+                      tr('checkout.promoLine'),
+                      '−${formatFcfa(_promoDiscount)}',
+                    ),
                   ],
                   const Divider(height: 18),
-                  _line(t, tr('cart.total'), '$_grandTotal FCFA', bold: true),
+                  _line(t, tr('cart.total'), formatFcfa(_grandTotal), bold: true),
                 ],
               ),
             ),

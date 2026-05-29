@@ -6,6 +6,8 @@ import '../../cart/cart_service.dart';
 import '../../l10n/app_strings.dart';
 import '../../models/meal.dart';
 import '../../ui/chezmama_theme.dart';
+import '../../utils/currency_format.dart';
+import '../../widgets/food_network_image.dart';
 import '../../widgets/primary_button.dart';
 import '../chat/conversation_screen.dart';
 import '../profile/seller_profile_screen.dart';
@@ -87,7 +89,7 @@ class _MealDetailsScreenState extends State<MealDetailsScreen> {
       await _loadReviews();
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Merci pour ton avis !')),
+        SnackBar(content: Text(tr('meal.thanksReview'))),
       );
     } catch (e) {
       if (!mounted) return;
@@ -106,28 +108,10 @@ class _MealDetailsScreenState extends State<MealDetailsScreen> {
         filterQuality: FilterQuality.low,
       );
     }
-    return Image.network(
-      meal.image,
+    return FoodNetworkImage(
+      url: meal.image,
       fit: BoxFit.cover,
       filterQuality: FilterQuality.low,
-      errorBuilder: (context, error, stackTrace) {
-        return const DecoratedBox(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [Color(0xFFFFE3C3), Color(0xFFFFFBF6)],
-            ),
-          ),
-          child: Center(
-            child: Icon(
-              Icons.restaurant_rounded,
-              size: 54,
-              color: ChezMamaTheme.brandOrange,
-            ),
-          ),
-        );
-      },
     );
   }
 
@@ -145,7 +129,9 @@ class _MealDetailsScreenState extends State<MealDetailsScreen> {
             foregroundColor: ChezMamaTheme.inkColor(context),
             actions: [
               IconButton(
-                tooltip: _favorited ? 'Retirer des favoris' : 'Ajouter aux favoris',
+                tooltip: _favorited
+                    ? tr('meal.removeFavorite')
+                    : tr('meal.addFavorite'),
                 onPressed: _favBusy ? null : _toggleFavorite,
                 icon: Icon(
                   _favorited
@@ -240,16 +226,16 @@ class _MealDetailsScreenState extends State<MealDetailsScreen> {
                       children: [
                         if (meal.isSpecial)
                           _Badge(
-                            label: 'Plat du jour',
+                            label: tr('home.filter.special'),
                             color: ChezMamaTheme.brandBrown,
                             icon: Icons.local_fire_department_rounded,
                           ),
                         if (meal.isSpecial && !meal.isAvailable)
                           const SizedBox(width: 8),
                         if (!meal.isAvailable)
-                          const _Badge(
-                            label: 'Épuisé',
-                            color: Color(0xFF8A8A8A),
+                          _Badge(
+                            label: tr('meal.soldOut'),
+                            color: const Color(0xFF8A8A8A),
                             icon: Icons.block_rounded,
                           ),
                       ],
@@ -270,7 +256,7 @@ class _MealDetailsScreenState extends State<MealDetailsScreen> {
                             children: [
                               if (meal.hasPromo)
                                 Text(
-                                  '${meal.price.toStringAsFixed(0)} FCFA',
+                                  formatFcfa(meal.price),
                                   style: t.textTheme.bodyMedium?.copyWith(
                                     color: ChezMamaTheme.mutedInk(context),
                                     decoration: TextDecoration.lineThrough,
@@ -278,7 +264,7 @@ class _MealDetailsScreenState extends State<MealDetailsScreen> {
                                   ),
                                 ),
                               Text(
-                                '${meal.effectivePrice.toStringAsFixed(0)} FCFA',
+                                formatFcfa(meal.effectivePrice),
                                 style: t.textTheme.titleLarge?.copyWith(
                                   fontWeight: FontWeight.w900,
                                   color: meal.hasPromo
@@ -301,8 +287,9 @@ class _MealDetailsScreenState extends State<MealDetailsScreen> {
                                     SnackBar(
                                       content: Text(
                                         added
-                                            ? '${meal.name} ajouté au panier'
-                                            : 'Ce plat ne peut pas être ajouté au panier.',
+                                            ? trf('meal.addedToCart',
+                                                {'name': meal.name})
+                                            : tr('meal.cannotAddToCart'),
                                       ),
                                       duration:
                                           const Duration(milliseconds: 900),
@@ -338,7 +325,8 @@ class _MealDetailsScreenState extends State<MealDetailsScreen> {
                     children: [
                       Expanded(
                         child: Text(
-                          'Avis (${_reviews.length})',
+                          trf('meal.reviewsCount',
+                              {'count': _reviews.length}),
                           style: t.textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.w900,
                           ),
@@ -347,7 +335,7 @@ class _MealDetailsScreenState extends State<MealDetailsScreen> {
                       TextButton.icon(
                         onPressed: _addReview,
                         icon: const Icon(Icons.rate_review_rounded),
-                        label: const Text('Donner mon avis'),
+                        label: Text(tr('meal.addReview')),
                       ),
                     ],
                   ),
@@ -356,7 +344,7 @@ class _MealDetailsScreenState extends State<MealDetailsScreen> {
                     const Center(child: CircularProgressIndicator())
                   else if (_reviews.isEmpty)
                     Text(
-                      'Aucun avis pour le moment. Sois le premier !',
+                      tr('meal.noReviews'),
                       style: t.textTheme.bodyMedium?.copyWith(
                         color: ChezMamaTheme.mutedInk(context),
                       ),
@@ -416,7 +404,7 @@ class _RatingSummary extends StatelessWidget {
     final t = Theme.of(context);
     if (count == 0) {
       return Text(
-        'Pas encore noté',
+        tr('meal.notRated'),
         style: t.textTheme.bodySmall?.copyWith(
           color: ChezMamaTheme.mutedInk(context),
         ),
@@ -478,7 +466,7 @@ class _ReviewTile extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  review.userName.isEmpty ? 'Client' : review.userName,
+                  review.userName.isEmpty ? tr('meal.customer') : review.userName,
                   style: t.textTheme.titleSmall?.copyWith(
                     fontWeight: FontWeight.w800,
                   ),
@@ -529,7 +517,7 @@ class _AddReviewSheetState extends State<_AddReviewSheet> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Donner mon avis',
+            tr('meal.addReview'),
             style: t.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900),
           ),
           const SizedBox(height: 12),
@@ -553,8 +541,8 @@ class _AddReviewSheetState extends State<_AddReviewSheet> {
           TextField(
             controller: _comment,
             maxLines: 3,
-            decoration: const InputDecoration(
-              labelText: 'Commentaire (optionnel)',
+            decoration: InputDecoration(
+              labelText: tr('meal.reviewComment'),
             ),
           ),
           const SizedBox(height: 16),
@@ -566,7 +554,7 @@ class _AddReviewSheetState extends State<_AddReviewSheet> {
                 (rating: _rating, comment: _comment.text.trim()),
               ),
               icon: const Icon(Icons.send_rounded),
-              label: const Text('Publier mon avis'),
+              label: Text(tr('meal.publishReview')),
             ),
           ),
         ],

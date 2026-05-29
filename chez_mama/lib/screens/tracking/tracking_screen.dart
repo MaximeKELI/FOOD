@@ -6,9 +6,13 @@ import 'package:latlong2/latlong.dart';
 import '../../api/accounts_api.dart';
 import '../../api/api_client.dart';
 import '../../api/orders_api.dart';
+import '../../auth/auth_scope.dart';
+import '../../l10n/app_strings.dart';
 import '../../services/app_location_service.dart';
 import '../../services/platform_utils.dart';
 import '../../ui/chezmama_theme.dart';
+import '../../utils/currency_format.dart';
+import '../auth/login_screen.dart';
 import '../cart/orders_screen.dart';
 import '../profile/seller_profile_screen.dart';
 
@@ -62,8 +66,13 @@ class _TrackingScreenState extends State<TrackingScreen> {
     super.initState();
     _startLocation();
     _loadSellers();
-    _loadOrders();
-    _ordersTimer = Timer.periodic(const Duration(seconds: 20), (_) => _loadOrders());
+    if (AuthScope.of(context).isAuthed) {
+      _loadOrders();
+      _ordersTimer =
+          Timer.periodic(const Duration(seconds: 20), (_) => _loadOrders());
+    } else {
+      _ordersLoading = false;
+    }
   }
 
   List<OrderView> get _activeOrders => _orders
@@ -176,6 +185,37 @@ class _TrackingScreenState extends State<TrackingScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (!AuthScope.of(context).isAuthed) {
+      return Scaffold(
+        body: Padding(
+          padding: const EdgeInsets.fromLTRB(14, 14, 14, 110),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                tr('tracking.title'),
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w900,
+                    ),
+              ),
+              const SizedBox(height: 12),
+              _TrackingMessage(
+                icon: Icons.login_rounded,
+                title: tr('tracking.loginRequired'),
+                subtitle: tr('auth.loginSubtitle'),
+                actionLabel: tr('auth.login'),
+                onAction: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const LoginScreen()),
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     final t = Theme.of(context);
     final tracked = _trackedOrder;
     final active = _activeOrders;
@@ -187,7 +227,7 @@ class _TrackingScreenState extends State<TrackingScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Suivi de commande',
+              tr('tracking.title'),
               style: t.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900),
             ),
             const SizedBox(height: 12),
@@ -199,17 +239,16 @@ class _TrackingScreenState extends State<TrackingScreen> {
             else if (_ordersError != null && _orders.isEmpty)
               _TrackingMessage(
                 icon: Icons.cloud_off_rounded,
-                title: 'Impossible de charger les commandes',
+                title: tr('tracking.loadError'),
                 subtitle: _ordersError!,
                 onRetry: _loadOrders,
               )
             else if (tracked == null)
               _TrackingMessage(
                 icon: Icons.delivery_dining_outlined,
-                title: 'Aucune commande en cours',
-                subtitle:
-                    'Passe une commande depuis le panier pour suivre sa préparation ici.',
-                actionLabel: 'Voir mes commandes',
+                title: tr('tracking.none'),
+                subtitle: tr('tracking.noneHint'),
+                actionLabel: tr('tracking.seeAll'),
                 onAction: () => Navigator.of(context).push(
                   MaterialPageRoute(builder: (_) => const OrdersScreen()),
                 ),
@@ -228,7 +267,7 @@ class _TrackingScreenState extends State<TrackingScreen> {
                         final order = active[i];
                         final selected = i == _selectedOrderIndex;
                         return ChoiceChip(
-                          label: Text('Commande #${order.id}'),
+                          label: Text(trf('tracking.orderLabel', {'id': order.id})),
                           selected: selected,
                           onSelected: (_) =>
                               setState(() => _selectedOrderIndex = i),
@@ -241,13 +280,13 @@ class _TrackingScreenState extends State<TrackingScreen> {
             ],
             const SizedBox(height: 16),
             Text(
-              'Carte & position',
+              tr('tracking.mapSection'),
               style: t.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
             ),
             if (_manualMode) ...[
               const SizedBox(height: 8),
               Text(
-                'GPS indisponible : appuie sur la carte pour placer ta position.',
+                tr('tracking.manualGpsHint'),
                 style: t.textTheme.bodySmall?.copyWith(
                   fontWeight: FontWeight.w600,
                   color: ChezMamaTheme.brandBrown,
@@ -266,7 +305,10 @@ class _TrackingScreenState extends State<TrackingScreen> {
             if (_userLocation != null) ...[
               const SizedBox(height: 8),
               Text(
-                'Lat: ${_userLocation!.latitude.toStringAsFixed(5)}  •  Lng: ${_userLocation!.longitude.toStringAsFixed(5)}',
+                trf('tracking.coords', {
+                  'lat': _userLocation!.latitude.toStringAsFixed(5),
+                  'lng': _userLocation!.longitude.toStringAsFixed(5),
+                }),
                 style: t.textTheme.bodyMedium?.copyWith(
                   fontWeight: FontWeight.w700,
                   color: ChezMamaTheme.mutedInk(context),
@@ -296,17 +338,17 @@ class _TrackingScreenState extends State<TrackingScreen> {
                   OutlinedButton.icon(
                     onPressed: () => Geolocator.openLocationSettings(),
                     icon: const Icon(Icons.settings_rounded),
-                    label: const Text('Réglages'),
+                    label: Text(tr('tracking.settings')),
                   ),
                   OutlinedButton.icon(
                     onPressed: () => Geolocator.openAppSettings(),
                     icon: const Icon(Icons.app_settings_alt_rounded),
-                    label: const Text('Paramètres app'),
+                    label: Text(tr('tracking.appSettings')),
                   ),
                   FilledButton.icon(
                     onPressed: _retryLocation,
                     icon: const Icon(Icons.refresh_rounded),
-                    label: const Text('Réessayer'),
+                    label: Text(tr('action.retry')),
                   ),
                 ],
               ),
@@ -318,7 +360,7 @@ class _TrackingScreenState extends State<TrackingScreen> {
                 child: TextButton.icon(
                   onPressed: _retryLocation,
                   icon: const Icon(Icons.refresh_rounded),
-                  label: const Text('Réessayer GPS'),
+                  label: Text(tr('tracking.retryGps')),
                 ),
               ),
             ],
@@ -343,14 +385,14 @@ class _TrackingScreenState extends State<TrackingScreen> {
               const Icon(Icons.location_off_rounded, size: 40),
               const SizedBox(height: 10),
               Text(
-                _locationError ?? 'Position indisponible.',
+                _locationError ?? tr('tracking.locationUnavailable'),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 12),
               FilledButton.icon(
                 onPressed: _retryLocation,
                 icon: const Icon(Icons.refresh_rounded),
-                label: const Text('Réessayer'),
+                label: Text(tr('action.retry')),
               ),
             ],
           ),
@@ -453,7 +495,7 @@ class _TrackingScreenState extends State<TrackingScreen> {
                   _openSeller(seller);
                 },
                 icon: const Icon(Icons.storefront_rounded),
-                label: const Text('Voir la boutique'),
+                label: Text(tr('tracking.viewShop')),
               ),
             ),
           ],
@@ -472,11 +514,14 @@ class _OrderStatusCard extends StatelessWidget {
     final t = Theme.of(context);
     final progress = orderStatusProgress(order.status);
     final steps = [
-      ('pending', 'En attente'),
-      ('preparing', 'Préparation'),
-      ('on_the_way', 'En route'),
-      ('delivered', 'Livrée'),
+      ('pending', orderStatusLabel('pending')),
+      ('preparing', orderStatusLabel('preparing')),
+      ('on_the_way', orderStatusLabel('on_the_way')),
+      ('delivered', orderStatusLabel('delivered')),
     ];
+    final fulfillment = order.fulfillment == 'pickup'
+        ? tr('checkout.pickup')
+        : tr('checkout.delivery');
 
     return Container(
       width: double.infinity,
@@ -492,7 +537,7 @@ class _OrderStatusCard extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  'Commande #${order.id}',
+                  trf('tracking.orderLabel', {'id': order.id}),
                   style: t.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w900,
                   ),
@@ -505,7 +550,9 @@ class _OrderStatusCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(999),
                 ),
                 child: Text(
-                  order.statusLabel,
+                  kOrderStatusKeys.contains(order.status)
+                      ? orderStatusLabel(order.status)
+                      : order.statusLabel,
                   style: t.textTheme.labelMedium?.copyWith(
                     color: ChezMamaTheme.brandBrown,
                     fontWeight: FontWeight.w800,
@@ -553,7 +600,10 @@ class _OrderStatusCard extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            '${order.fulfillment == 'pickup' ? 'Retrait' : 'Livraison'} • ${order.total} FCFA',
+            trf('tracking.fulfillmentLine', {
+              'fulfillment': fulfillment,
+              'total': formatFcfa(order.total),
+            }),
             style: t.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w700),
           ),
         ],
@@ -654,12 +704,12 @@ class _TrackingMessage extends StatelessWidget {
               FilledButton.icon(
                 onPressed: onRetry,
                 icon: const Icon(Icons.refresh_rounded),
-                label: const Text('Réessayer'),
+                label: Text(tr('action.retry')),
               ),
             if (onAction != null)
               OutlinedButton(
                 onPressed: onAction,
-                child: Text(actionLabel ?? 'Continuer'),
+                child: Text(actionLabel ?? tr('action.continueGuest')),
               ),
           ],
         ],

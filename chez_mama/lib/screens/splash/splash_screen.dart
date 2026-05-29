@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import '../../l10n/app_strings.dart';
 import '../../ui/chezmama_theme.dart';
 import '../shell/app_shell.dart';
 
@@ -98,7 +99,7 @@ class _SplashScreenState extends State<SplashScreen>
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'Food',
+                    tr('app.name'),
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                           fontWeight: FontWeight.w800,
                           letterSpacing: -0.4,
@@ -106,7 +107,7 @@ class _SplashScreenState extends State<SplashScreen>
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Du chaud. Du local. Du bon.',
+                    tr('app.tagline'),
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           color: ChezMamaTheme.ink.withValues(alpha: 0.65),
                           fontWeight: FontWeight.w600,
