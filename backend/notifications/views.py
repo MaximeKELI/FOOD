@@ -62,6 +62,8 @@ class PushDeviceRegisterView(APIView):
             PushDevice.objects.filter(user=request.user, token=token).delete()
         return Response({"ok": True})
 
+
+class NotificationMarkOneReadView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request, pk):

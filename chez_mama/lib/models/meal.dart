@@ -20,6 +20,7 @@ class Meal {
     this.sellerLng,
     this.reviewsCount = 0,
     this.favoritedByMe = false,
+    this.gallery = const [],
   });
 
   final String id;
@@ -40,6 +41,7 @@ class Meal {
   final double? sellerLng;
   final int reviewsCount;
   final bool favoritedByMe;
+  final List<String> gallery;
 
   /// Price actually charged (promo price when on sale, otherwise the price).
   double get effectivePrice => hasPromo && promoPrice > 0 ? promoPrice : price;

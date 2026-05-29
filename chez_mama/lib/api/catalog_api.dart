@@ -27,6 +27,7 @@ class CatalogApi {
 
   Future<List<Meal>> fetchMeals({
     String? category,
+    String? query,
     int? sellerId,
     bool availableOnly = false,
     bool specialOnly = false,
@@ -34,7 +35,9 @@ class CatalogApi {
     final res = await _dio.get(
       '/catalog/meals/',
       queryParameters: {
-        if (category != null && category != 'Popular') 'category': category,
+        if (category != null && category != 'Popular' && category != 'Tous')
+          'category': category,
+        if (query != null && query.trim().isNotEmpty) 'q': query.trim(),
         if (sellerId != null) 'seller': sellerId,
         if (availableOnly) 'available': 'true',
         if (specialOnly) 'special': 'true',
