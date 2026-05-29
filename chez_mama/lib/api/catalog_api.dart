@@ -101,6 +101,7 @@ class CatalogApi {
     required String name,
     required int categoryId,
     required String imagePath,
+    List<String> extraImagePaths = const [],
     String? subtitle,
     int? price,
     int? promoPrice,
@@ -115,12 +116,23 @@ class CatalogApi {
       'is_special': isSpecial,
       'image': await MultipartFile.fromFile(imagePath),
     });
+    for (final path in extraImagePaths.take(4)) {
+      form.files.add(MapEntry(
+        'gallery',
+        await MultipartFile.fromFile(path),
+      ));
+    }
     final res = await _dio.post('/catalog/meals/', data: form);
     return _mealFromJson(res.data as Map<String, dynamic>);
   }
 
   Meal _mealFromJson(Map<String, dynamic> json) {
     final image = (json['image'] as String?) ?? '';
+    final galleryRaw = (json['gallery'] as List?) ?? const [];
+    final gallery = galleryRaw.map((e) {
+      final s = e.toString();
+      return s.startsWith('http') ? s : '${ApiConfig.baseUrl}$s';
+    }).toList();
     return Meal(
       id: (json['id']).toString(),
       name: json['name'] as String? ?? '',
