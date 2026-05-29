@@ -140,6 +140,18 @@ class _MealDetailsScreenState extends State<MealDetailsScreen> {
             expandedHeight: 290,
             backgroundColor: Colors.white,
             foregroundColor: ChezMamaTheme.ink,
+            actions: [
+              IconButton(
+                tooltip: _favorited ? 'Retirer des favoris' : 'Ajouter aux favoris',
+                onPressed: _favBusy ? null : _toggleFavorite,
+                icon: Icon(
+                  _favorited
+                      ? Icons.favorite_rounded
+                      : Icons.favorite_border_rounded,
+                  color: _favorited ? Colors.red : null,
+                ),
+              ),
+            ],
             flexibleSpace: FlexibleSpaceBar(
               background: Hero(
                 tag: 'meal_${meal.id}',
