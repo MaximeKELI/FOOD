@@ -396,6 +396,27 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 }
 
+class _SortMenu extends StatelessWidget {
+  const _SortMenu({required this.value, required this.onSelected});
+  final MealSort value;
+  final ValueChanged<MealSort> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return PopupMenuButton<MealSort>(
+      initialValue: value,
+      onSelected: onSelected,
+      itemBuilder: (_) => MealSort.values
+          .map((s) => PopupMenuItem(value: s, child: Text(_sortLabels[s]!)))
+          .toList(),
+      child: Chip(
+        avatar: const Icon(Icons.swap_vert_rounded, size: 18),
+        label: Text('Trier · ${_sortLabels[value]}'),
+      ),
+    );
+  }
+}
+
 class _HomeMessage extends StatelessWidget {
   const _HomeMessage({
     required this.icon,
