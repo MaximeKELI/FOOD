@@ -276,6 +276,53 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               ),
             ),
           ),
+          SliverToBoxAdapter(
+            child: SizedBox(
+              height: 48,
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.fromLTRB(14, 10, 14, 0),
+                children: [
+                  _SortMenu(
+                    value: _sort,
+                    onSelected: (s) async {
+                      if (s == MealSort.distance) await _ensureLocation();
+                      if (!mounted) return;
+                      setState(() => _sort = s);
+                    },
+                  ),
+                  const SizedBox(width: 8),
+                  FilterChip(
+                    label: const Text('Dispo'),
+                    selected: _availableOnly,
+                    onSelected: (v) => setState(() => _availableOnly = v),
+                  ),
+                  const SizedBox(width: 8),
+                  FilterChip(
+                    avatar: Icon(
+                      Icons.sell_rounded,
+                      size: 16,
+                      color: _promoOnly ? Colors.white : null,
+                    ),
+                    label: const Text('Promo'),
+                    selected: _promoOnly,
+                    onSelected: (v) => setState(() => _promoOnly = v),
+                  ),
+                  const SizedBox(width: 8),
+                  FilterChip(
+                    avatar: Icon(
+                      Icons.local_fire_department_rounded,
+                      size: 16,
+                      color: _specialOnly ? Colors.white : null,
+                    ),
+                    label: const Text('Plat du jour'),
+                    selected: _specialOnly,
+                    onSelected: (v) => setState(() => _specialOnly = v),
+                  ),
+                ],
+              ),
+            ),
+          ),
           SliverPadding(
             padding: const EdgeInsets.fromLTRB(14, 14, 14, 110),
             sliver: loading
