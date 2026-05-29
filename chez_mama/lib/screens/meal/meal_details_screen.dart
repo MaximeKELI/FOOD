@@ -325,7 +325,7 @@ class _MealDetailsScreenState extends State<MealDetailsScreen> {
                           ),
                         ),
                         icon: const Icon(Icons.chat_bubble_outline_rounded),
-                        label: const Text('Contacter le vendeur'),
+                        label: Text(tr('action.contactSeller')),
                       ),
                     ),
                   ],
