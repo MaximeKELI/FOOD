@@ -9,6 +9,12 @@ class ChezMamaTheme {
   static const Color surface = Color(0xFFFFFBF6);
   static const Color surface2 = Color(0xFFFFF2E2);
 
+  // Dark palette
+  static const Color darkBg = Color(0xFF161310);
+  static const Color darkSurface = Color(0xFF221E1A);
+  static const Color darkCard = Color(0xFF2A2520);
+  static const Color darkInk = Color(0xFFF3EDE6);
+
   static const double rCard = 18;
   static const double rChip = 999;
 
@@ -60,6 +66,66 @@ class ChezMamaTheme {
         backgroundColor: Colors.white,
         selectedItemColor: brandOrange,
         unselectedItemColor: ink.withValues(alpha: 0.55),
+        elevation: 0,
+        type: BottomNavigationBarType.fixed,
+        selectedLabelStyle: base.textTheme.labelSmall?.copyWith(
+          fontWeight: FontWeight.w600,
+        ),
+        unselectedLabelStyle: base.textTheme.labelSmall?.copyWith(
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+
+  static ThemeData dark() {
+    final colorScheme = ColorScheme.fromSeed(
+      seedColor: brandOrange,
+      brightness: Brightness.dark,
+      primary: brandOrange,
+      secondary: brandAmber,
+      surface: darkSurface,
+      onSurface: darkInk,
+    );
+
+    final base = ThemeData(
+      useMaterial3: true,
+      colorScheme: colorScheme,
+      scaffoldBackgroundColor: darkBg,
+      textTheme: GoogleFonts.poppinsTextTheme(ThemeData.dark().textTheme),
+    );
+
+    return base.copyWith(
+      appBarTheme: AppBarTheme(
+        backgroundColor: darkSurface,
+        foregroundColor: darkInk,
+        elevation: 0,
+        centerTitle: false,
+        titleTextStyle: base.textTheme.titleLarge?.copyWith(
+          fontWeight: FontWeight.w700,
+          color: darkInk,
+        ),
+      ),
+      cardTheme: CardTheme(
+        color: darkCard,
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(rCard),
+        ),
+      ),
+      chipTheme: base.chipTheme.copyWith(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(rChip),
+        ),
+        side: const BorderSide(color: Color(0x00000000)),
+        labelStyle: base.textTheme.labelLarge?.copyWith(
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+      bottomNavigationBarTheme: BottomNavigationBarThemeData(
+        backgroundColor: darkCard,
+        selectedItemColor: brandOrange,
+        unselectedItemColor: darkInk.withValues(alpha: 0.55),
         elevation: 0,
         type: BottomNavigationBarType.fixed,
         selectedLabelStyle: base.textTheme.labelSmall?.copyWith(

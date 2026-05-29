@@ -248,11 +248,8 @@ class _ReceivedOrderCard extends StatelessWidget {
               const SizedBox(width: 6),
               Expanded(
                 child: Text(
-                  order.fulfillment == 'pickup'
-                      ? 'Retrait'
-                      : (order.address.isEmpty
-                          ? 'Livraison'
-                          : 'Livraison • ${order.address}'),
+                  '${order.fulfillment == 'pickup' ? 'Retrait' : (order.address.isEmpty ? 'Livraison' : 'Livraison • ${order.address}')}'
+                  '${order.paymentLabel.isEmpty ? '' : '\nPaiement: ${order.paymentLabel}'}',
                   style:
                       t.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600),
                 ),
