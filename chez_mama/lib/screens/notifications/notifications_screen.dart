@@ -1,9 +1,16 @@
 import 'package:flutter/material.dart';
 import '../../api/api_client.dart';
 import '../../api/notifications_api.dart';
+import '../../auth/auth_scope.dart';
+import '../../l10n/app_strings.dart';
 import '../../notifications/notifications_notifier.dart';
 import '../../ui/chezmama_theme.dart';
 import '../../widgets/entrance.dart';
+import '../cart/orders_screen.dart';
+import '../chat/conversation_screen.dart';
+import '../profile/received_orders_screen.dart';
+import '../profile/seller_profile_screen.dart';
+import '../tracking/tracking_screen.dart';
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
@@ -35,11 +42,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         _items = res.items;
         _loading = false;
       });
-      // Opening the screen marks everything as read.
-      if (res.unread > 0) {
-        await NotificationsApi.instance.markAllRead();
-        await NotificationsNotifier.instance.refresh();
-      }
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -52,20 +54,74 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   IconData _iconFor(String kind) {
     switch (kind) {
       case 'order':
+      case 'order_status':
         return Icons.receipt_long_rounded;
       case 'follow':
         return Icons.person_add_alt_1_rounded;
       case 'review':
         return Icons.star_rounded;
+      case 'chat':
+        return Icons.chat_bubble_rounded;
       default:
         return Icons.notifications_rounded;
+    }
+  }
+
+  Future<void> _openNotification(AppNotification n) async {
+    if (!n.isRead) {
+      await NotificationsApi.instance.markRead(n.id);
+      await NotificationsNotifier.instance.refresh();
+    }
+    if (!mounted) return;
+
+    switch (n.link) {
+      case 'order':
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const TrackingScreen()),
+        );
+      case 'received_order':
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const ReceivedOrdersScreen()),
+        );
+      case 'chat':
+        if (n.relatedId != null) {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => ConversationScreen(conversationId: n.relatedId!),
+            ),
+          );
+        }
+      case 'follower':
+        if (n.relatedId != null) {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => SellerProfileScreen(
+                sellerId: n.relatedId!,
+                sellerName: n.title,
+              ),
+            ),
+          );
+        }
+      case 'meal':
+        // Seller sees review on publications — stay on list for now.
+        break;
+      default:
+        if (n.kind == 'order' || n.kind == 'order_status') {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => AuthScope.of(context).isSeller
+                  ? const ReceivedOrdersScreen()
+                  : const OrdersScreen(),
+            ),
+          );
+        }
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Notifications')),
+      appBar: AppBar(title: Text(tr('notif.title'))),
       body: _buildBody(),
     );
   }
@@ -88,7 +144,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               FilledButton.icon(
                 onPressed: _load,
                 icon: const Icon(Icons.refresh_rounded),
-                label: const Text('Réessayer'),
+                label: Text(tr('action.retry')),
               ),
             ],
           ),
@@ -96,7 +152,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       );
     }
     if (_items.isEmpty) {
-      return const Center(child: Text('Aucune notification.'));
+      return Center(child: Text(tr('notif.empty')));
     }
     return RefreshIndicator(
       onRefresh: _load,
@@ -108,45 +164,57 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           final n = _items[i];
           return FadeInUp(
             index: i,
-            child: Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: n.isRead
-                  ? ChezMamaTheme.cardColor(context)
-                  : ChezMamaTheme.brandOrange.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(ChezMamaTheme.rCard),
-              boxShadow: ChezMamaTheme.softShadow(opacity: 0.06),
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                CircleAvatar(
-                  backgroundColor:
-                      ChezMamaTheme.brandOrange.withValues(alpha: 0.14),
-                  child: Icon(_iconFor(n.kind),
-                      color: ChezMamaTheme.brandBrown, size: 20),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () => _openNotification(n),
+                borderRadius: BorderRadius.circular(ChezMamaTheme.rCard),
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: n.isRead
+                        ? ChezMamaTheme.cardColor(context)
+                        : ChezMamaTheme.brandOrange.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(ChezMamaTheme.rCard),
+                    boxShadow: ChezMamaTheme.softShadow(opacity: 0.06),
+                  ),
+                  child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        n.title,
-                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.w800,
-                            ),
+                      CircleAvatar(
+                        backgroundColor:
+                            ChezMamaTheme.brandOrange.withValues(alpha: 0.14),
+                        child: Icon(
+                          _iconFor(n.kind),
+                          color: ChezMamaTheme.brandBrown,
+                          size: 20,
+                        ),
                       ),
-                      if (n.body.isNotEmpty) ...[
-                        const SizedBox(height: 2),
-                        Text(n.body),
-                      ],
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              n.title,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .titleSmall
+                                  ?.copyWith(fontWeight: FontWeight.w800),
+                            ),
+                            if (n.body.isNotEmpty) ...[
+                              const SizedBox(height: 2),
+                              Text(n.body),
+                            ],
+                          ],
+                        ),
+                      ),
+                      const Icon(Icons.chevron_right_rounded),
                     ],
                   ),
                 ),
-              ],
+              ),
             ),
-          ),
           );
         },
       ),

@@ -6,6 +6,8 @@ class AppNotification {
     required this.kind,
     required this.title,
     required this.body,
+    required this.relatedId,
+    required this.link,
     required this.isRead,
     required this.createdAt,
   });
@@ -14,6 +16,8 @@ class AppNotification {
   final String kind;
   final String title;
   final String body;
+  final int? relatedId;
+  final String link;
   final bool isRead;
   final String createdAt;
 
@@ -23,6 +27,8 @@ class AppNotification {
       kind: json['kind'] as String? ?? '',
       title: json['title'] as String? ?? '',
       body: json['body'] as String? ?? '',
+      relatedId: json['related_id'] as int?,
+      link: json['link'] as String? ?? '',
       isRead: json['is_read'] as bool? ?? false,
       createdAt: json['created_at'] as String? ?? '',
     );
@@ -49,5 +55,9 @@ class NotificationsApi {
 
   Future<void> markAllRead() async {
     await _dio.post('/notifications/read/');
+  }
+
+  Future<void> markRead(int id) async {
+    await _dio.post('/notifications/$id/read/');
   }
 }

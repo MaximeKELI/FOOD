@@ -146,6 +146,22 @@ class OrdersApi {
     return res.data['delivery_fee'] as int? ?? 0;
   }
 
+  Future<({String code, int discount, int subtotal})> validatePromo({
+    required String promoCode,
+    required List<Map<String, dynamic>> items,
+  }) async {
+    final res = await _dio.post('/orders/promo-validate/', data: {
+      'promo_code': promoCode,
+      'items': items,
+    });
+    final data = res.data as Map<String, dynamic>;
+    return (
+      code: data['promo_code'] as String? ?? promoCode,
+      discount: data['discount'] as int? ?? 0,
+      subtotal: data['subtotal'] as int? ?? 0,
+    );
+  }
+
   Future<List<OrderView>> fetchOrders() async {
     final res = await _dio.get('/orders/');
     final results = (res.data['results'] as List?) ?? const [];
