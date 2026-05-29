@@ -6,6 +6,7 @@ import 'analytics/tracked_widgets.dart';
 import 'l10n/app_strings.dart';
 import 'ui/chezmama_theme.dart';
 import 'ui/theme_controller.dart';
+import 'notifications/push_service.dart';
 import 'screens/auth/auth_gate.dart';
 
 void main() {
@@ -58,6 +59,7 @@ class _AuthBootstrapState extends State<_AuthBootstrap> {
     EventTracker.instance.init();
     ThemeController.instance.load();
     LocaleController.instance.load();
+    PushService.instance.init();
     service.init();
   }
 

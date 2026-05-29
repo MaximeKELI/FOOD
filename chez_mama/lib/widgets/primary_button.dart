@@ -50,33 +50,33 @@ class _PrimaryButtonState extends State<PrimaryButton>
       label: widget.label,
       enabled: widget.onPressed != null,
       child: AnimatedBuilder(
-      animation: _c,
-      builder: (context, child) {
-        final s = 1 + (0.06 * Curves.elasticOut.transform(_c.value));
-        return Transform.scale(scale: s, child: child);
-      },
-      child: FilledButton.icon(
-        onPressed: widget.onPressed == null
-            ? null
-            : () {
-                _bounce();
-                widget.onPressed!();
-              },
-        style: FilledButton.styleFrom(
-          backgroundColor: ChezMamaTheme.brandOrange,
-          foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+        animation: _c,
+        builder: (context, child) {
+          final s = 1 + (0.06 * Curves.elasticOut.transform(_c.value));
+          return Transform.scale(scale: s, child: child);
+        },
+        child: FilledButton.icon(
+          onPressed: widget.onPressed == null
+              ? null
+              : () {
+                  _bounce();
+                  widget.onPressed!();
+                },
+          style: FilledButton.styleFrom(
+            backgroundColor: ChezMamaTheme.brandOrange,
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
           ),
-        ),
-        icon: Icon(widget.icon ?? Icons.add_shopping_cart_rounded, size: 20),
-        label: Text(
-          widget.label,
-          style: t.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700),
+          icon: Icon(widget.icon ?? Icons.add_shopping_cart_rounded, size: 20),
+          label: Text(
+            widget.label,
+            style: t.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700),
+          ),
         ),
       ),
     );
   }
 }
-
