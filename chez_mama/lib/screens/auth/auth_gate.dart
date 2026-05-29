@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../auth/auth_scope.dart';
 import '../splash/splash_screen.dart';
-import 'login_screen.dart';
 
 class AuthGate extends StatelessWidget {
   const AuthGate({super.key});
@@ -14,12 +13,7 @@ class AuthGate extends StatelessWidget {
       return const SplashScreen();
     }
 
-    if (!auth.isAuthed) {
-      return const LoginScreen();
-    }
-
-    // Splash will redirect to AppShell.
+    // Guest browse: splash then AppShell for everyone.
     return const SplashScreen();
   }
 }
-

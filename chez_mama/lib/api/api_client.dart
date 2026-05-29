@@ -38,6 +38,8 @@ class ApiClient {
               } catch (_) {
                 // fall through
               }
+            } else {
+              await _invalidateSession();
             }
           }
           handler.next(error);
@@ -52,6 +54,7 @@ class ApiClient {
   static const _kRefresh = 'auth.refresh';
 
   late final Dio _dio;
+  void Function()? onSessionExpired;
 
   Dio get dio => _dio;
 
@@ -76,6 +79,11 @@ class ApiClient {
     final prefs = await _prefs;
     final token = prefs.getString(_kAccess);
     return token != null && token.isNotEmpty;
+  }
+
+  Future<void> _invalidateSession() async {
+    await clearTokens();
+    onSessionExpired?.call();
   }
 
   Future<bool> _tryRefresh() async {

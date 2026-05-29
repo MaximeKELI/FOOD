@@ -1,9 +1,12 @@
+import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../api/api_client.dart';
 
 /// Authenticates against the Django backend and keeps the session in memory.
-/// Tokens are persisted securely by [ApiClient].
+/// Tokens are persisted via [ApiClient] (SharedPreferences; use secure storage on mobile when configured).
 class AuthService extends ChangeNotifier {
   bool _ready = false;
   bool _isAuthed = false;
@@ -25,6 +28,22 @@ class AuthService extends ChangeNotifier {
 
   final _client = ApiClient.instance;
 
+  AuthService() {
+    _client.onSessionExpired = _handleSessionExpired;
+  }
+
+  void _handleSessionExpired() {
+    if (!_isAuthed) return;
+    _isAuthed = false;
+    _userId = null;
+    _userName = null;
+    _email = null;
+    _loyaltyPoints = 0;
+    _mealsCount = 0;
+    _isSeller = false;
+    notifyListeners();
+  }
+
   Future<void> init() async {
     try {
       if (await _client.hasToken()) {
@@ -32,7 +51,7 @@ class AuthService extends ChangeNotifier {
         _isAuthed = true;
       }
     } catch (_) {
-      // Token invalid or server unreachable: stay logged out.
+      await _client.clearTokens();
       _isAuthed = false;
     }
     _ready = true;
@@ -54,6 +73,7 @@ class AuthService extends ChangeNotifier {
 
   /// Re-fetches the current user (e.g. to refresh loyalty points).
   Future<void> refreshMe() async {
+    if (!_isAuthed) return;
     try {
       await _loadMe();
       notifyListeners();
