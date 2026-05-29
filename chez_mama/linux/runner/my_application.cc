@@ -5,6 +5,8 @@
 #include <gdk/gdkx.h>
 #endif
 
+#include <unistd.h>
+
 #include "flutter/generated_plugin_registrant.h"
 
 struct _MyApplication {
