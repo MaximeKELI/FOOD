@@ -79,6 +79,8 @@ class _MyShopScreenState extends State<MyShopScreen> {
       _opensAt.text = profile['opens_at'] as String? ?? '';
       _closesAt.text = profile['closes_at'] as String? ?? '';
       _radius.text = (profile['delivery_radius_km'] ?? 5).toString();
+      _feeBase.text = (profile['delivery_fee_base'] ?? 500).toString();
+      _feePerKm.text = (profile['delivery_fee_per_km'] ?? 100).toString();
       _acceptsDelivery = profile['accepts_delivery'] as bool? ?? true;
       _acceptsPickup = profile['accepts_pickup'] as bool? ?? true;
       _lat = (profile['latitude'] as num?)?.toDouble();
@@ -132,6 +134,8 @@ class _MyShopScreenState extends State<MyShopScreen> {
         'opens_at': _opensAt.text.trim(),
         'closes_at': _closesAt.text.trim(),
         'delivery_radius_km': int.tryParse(_radius.text.trim()) ?? 5,
+        'delivery_fee_base': int.tryParse(_feeBase.text.trim()) ?? 500,
+        'delivery_fee_per_km': int.tryParse(_feePerKm.text.trim()) ?? 100,
         'accepts_delivery': _acceptsDelivery,
         'accepts_pickup': _acceptsPickup,
         if (_lat != null) 'latitude': _lat,
@@ -235,6 +239,20 @@ class _MyShopScreenState extends State<MyShopScreen> {
         ),
         _field(_radius, 'Rayon de livraison (km)', Icons.delivery_dining_rounded,
             keyboard: TextInputType.number),
+        Row(
+          children: [
+            Expanded(
+              child: _field(_feeBase, 'Frais de base (FCFA)',
+                  Icons.payments_rounded,
+                  keyboard: TextInputType.number),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _field(_feePerKm, 'Frais / km (FCFA)', Icons.route_rounded,
+                  keyboard: TextInputType.number),
+            ),
+          ],
+        ),
         SwitchListTile(
           value: _acceptsDelivery,
           onChanged: (v) => setState(() => _acceptsDelivery = v),
