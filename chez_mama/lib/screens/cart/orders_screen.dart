@@ -70,10 +70,6 @@ class _OrdersScreenState extends State<OrdersScreen> {
                 onPressed: _load,
                 icon: const Icon(Icons.refresh_rounded),
                 label: const Text('Réessayer'),
-                style: FilledButton.styleFrom(
-                  backgroundColor: ChezMamaTheme.brandOrange,
-                  foregroundColor: Colors.white,
-                ),
               ),
             ],
           ),
@@ -89,7 +85,8 @@ class _OrdersScreenState extends State<OrdersScreen> {
         padding: const EdgeInsets.all(14),
         itemCount: _orders.length,
         separatorBuilder: (_, __) => const SizedBox(height: 12),
-        itemBuilder: (context, i) => _OrderCard(order: _orders[i]),
+        itemBuilder: (context, i) =>
+            FadeInUp(index: i, child: _OrderCard(order: _orders[i])),
       ),
     );
   }
@@ -105,8 +102,8 @@ class _OrderCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
+        color: ChezMamaTheme.cardColor(context),
+        borderRadius: BorderRadius.circular(ChezMamaTheme.rCard),
         boxShadow: ChezMamaTheme.softShadow(opacity: 0.10),
       ),
       child: Column(

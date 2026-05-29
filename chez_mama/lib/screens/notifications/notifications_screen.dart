@@ -3,6 +3,7 @@ import '../../api/api_client.dart';
 import '../../api/notifications_api.dart';
 import '../../notifications/notifications_notifier.dart';
 import '../../ui/chezmama_theme.dart';
+import '../../widgets/entrance.dart';
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
@@ -88,10 +89,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 onPressed: _load,
                 icon: const Icon(Icons.refresh_rounded),
                 label: const Text('Réessayer'),
-                style: FilledButton.styleFrom(
-                  backgroundColor: ChezMamaTheme.brandOrange,
-                  foregroundColor: Colors.white,
-                ),
               ),
             ],
           ),
@@ -109,13 +106,15 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         separatorBuilder: (_, __) => const SizedBox(height: 10),
         itemBuilder: (context, i) {
           final n = _items[i];
-          return Container(
+          return FadeInUp(
+            index: i,
+            child: Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: n.isRead
-                  ? Colors.white
-                  : ChezMamaTheme.brandOrange.withValues(alpha: 0.07),
-              borderRadius: BorderRadius.circular(16),
+                  ? ChezMamaTheme.cardColor(context)
+                  : ChezMamaTheme.brandOrange.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(ChezMamaTheme.rCard),
               boxShadow: ChezMamaTheme.softShadow(opacity: 0.06),
             ),
             child: Row(

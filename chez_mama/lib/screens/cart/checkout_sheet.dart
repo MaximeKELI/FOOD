@@ -114,7 +114,6 @@ class _CheckoutSheetState extends State<CheckoutSheet> {
                 decoration: const InputDecoration(
                   labelText: 'Adresse de livraison',
                   prefixIcon: Icon(Icons.place_rounded),
-                  border: OutlineInputBorder(),
                 ),
               ),
             const SizedBox(height: 12),
@@ -124,7 +123,6 @@ class _CheckoutSheetState extends State<CheckoutSheet> {
               decoration: const InputDecoration(
                 labelText: 'Téléphone',
                 prefixIcon: Icon(Icons.phone_rounded),
-                border: OutlineInputBorder(),
               ),
             ),
             const SizedBox(height: 12),
@@ -134,7 +132,6 @@ class _CheckoutSheetState extends State<CheckoutSheet> {
               decoration: const InputDecoration(
                 labelText: 'Note (optionnel)',
                 prefixIcon: Icon(Icons.notes_rounded),
-                border: OutlineInputBorder(),
               ),
             ),
             const SizedBox(height: 16),
@@ -153,8 +150,13 @@ class _CheckoutSheetState extends State<CheckoutSheet> {
                 return ChoiceChip(
                   label: Text(e.value),
                   selected: selected,
-                  selectedColor:
-                      ChezMamaTheme.brandOrange.withValues(alpha: 0.18),
+                  labelStyle: TextStyle(
+                    fontWeight:
+                        selected ? FontWeight.w700 : FontWeight.w600,
+                    color: selected
+                        ? ChezMamaTheme.brandBrown
+                        : ChezMamaTheme.mutedInk(context),
+                  ),
                   onSelected: (_) => setState(() => _payment = e.key),
                 );
               }).toList(),
@@ -176,10 +178,6 @@ class _CheckoutSheetState extends State<CheckoutSheet> {
                       )
                     : const Icon(Icons.check_circle_rounded),
                 label: Text(_submitting ? 'Envoi…' : 'Confirmer la commande'),
-                style: FilledButton.styleFrom(
-                  backgroundColor: ChezMamaTheme.brandOrange,
-                  foregroundColor: Colors.white,
-                ),
               ),
             ),
           ],
