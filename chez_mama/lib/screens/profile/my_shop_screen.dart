@@ -25,6 +25,7 @@ class _MyShopScreenState extends State<MyShopScreen> {
   final _radius = TextEditingController();
   final _feeBase = TextEditingController();
   final _feePerKm = TextEditingController();
+  final _freeDeliveryOver = TextEditingController();
 
   bool _acceptsDelivery = true;
   bool _acceptsPickup = true;
@@ -57,6 +58,7 @@ class _MyShopScreenState extends State<MyShopScreen> {
       _radius,
       _feeBase,
       _feePerKm,
+      _freeDeliveryOver,
     ]) {
       c.dispose();
     }
@@ -81,6 +83,8 @@ class _MyShopScreenState extends State<MyShopScreen> {
       _radius.text = (profile['delivery_radius_km'] ?? 5).toString();
       _feeBase.text = (profile['delivery_fee_base'] ?? 500).toString();
       _feePerKm.text = (profile['delivery_fee_per_km'] ?? 100).toString();
+      _freeDeliveryOver.text =
+          (profile['free_delivery_over'] ?? 0).toString();
       _acceptsDelivery = profile['accepts_delivery'] as bool? ?? true;
       _acceptsPickup = profile['accepts_pickup'] as bool? ?? true;
       _lat = (profile['latitude'] as num?)?.toDouble();
@@ -136,6 +140,8 @@ class _MyShopScreenState extends State<MyShopScreen> {
         'delivery_radius_km': int.tryParse(_radius.text.trim()) ?? 5,
         'delivery_fee_base': int.tryParse(_feeBase.text.trim()) ?? 500,
         'delivery_fee_per_km': int.tryParse(_feePerKm.text.trim()) ?? 100,
+        'free_delivery_over':
+            int.tryParse(_freeDeliveryOver.text.trim()) ?? 0,
         'accepts_delivery': _acceptsDelivery,
         'accepts_pickup': _acceptsPickup,
         if (_lat != null) 'latitude': _lat,
@@ -252,6 +258,12 @@ class _MyShopScreenState extends State<MyShopScreen> {
                   keyboard: TextInputType.number),
             ),
           ],
+        ),
+        _field(
+          _freeDeliveryOver,
+          'Livraison gratuite dès (FCFA, 0 = off)',
+          Icons.card_giftcard_rounded,
+          keyboard: TextInputType.number,
         ),
         SwitchListTile(
           value: _acceptsDelivery,

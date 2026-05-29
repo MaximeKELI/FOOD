@@ -6,6 +6,7 @@ import '../../auth/auth_scope.dart';
 import '../../cart/cart_service.dart';
 import '../../cart/received_orders_notifier.dart';
 import '../../services/app_location_service.dart';
+import '../../l10n/app_strings.dart';
 import '../../ui/chezmama_theme.dart';
 
 class CheckoutSheet extends StatefulWidget {
@@ -28,7 +29,10 @@ class _CheckoutSheetState extends State<CheckoutSheet> {
   LatLng? _loc;
   bool _locating = false;
   int _deliveryFee = 0;
+  int _promoDiscount = 0;
+  String? _quoteError;
   bool _quoting = false;
+  bool _validatingPromo = false;
 
   @override
   void initState() {
@@ -64,10 +68,23 @@ class _CheckoutSheetState extends State<CheckoutSheet> {
 
   Future<void> _refreshQuote() async {
     if (_fulfillment != 'delivery') {
-      setState(() => _deliveryFee = 0);
+      setState(() {
+        _deliveryFee = 0;
+        _quoteError = null;
+      });
       return;
     }
-    setState(() => _quoting = true);
+    if (_loc == null) {
+      setState(() {
+        _deliveryFee = 0;
+        _quoteError = 'Utilise ta position pour estimer les frais de livraison.';
+      });
+      return;
+    }
+    setState(() {
+      _quoting = true;
+      _quoteError = null;
+    });
     try {
       final fee = await OrdersApi.instance.deliveryQuote(
         mealIds: _cart.mealIds,
@@ -76,19 +93,64 @@ class _CheckoutSheetState extends State<CheckoutSheet> {
       );
       if (!mounted) return;
       setState(() => _deliveryFee = fee);
-    } catch (_) {
-      // Keep previous estimate on failure.
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _quoteError = apiErrorMessage(e);
+        _deliveryFee = 0;
+      });
     } finally {
       if (mounted) setState(() => _quoting = false);
     }
   }
 
-  int get _grandTotal => _cart.total + _deliveryFee;
+  Future<void> _validatePromo() async {
+    final code = _promo.text.trim();
+    if (code.isEmpty) {
+      setState(() => _promoDiscount = 0);
+      return;
+    }
+    setState(() => _validatingPromo = true);
+    try {
+      final res = await OrdersApi.instance.validatePromo(
+        promoCode: code,
+        items: _cart.toOrderItems(),
+      );
+      if (!mounted) return;
+      setState(() => _promoDiscount = res.discount);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Promo appliquée : −${res.discount} FCFA')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _promoDiscount = 0);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(apiErrorMessage(e))),
+      );
+    } finally {
+      if (mounted) setState(() => _validatingPromo = false);
+    }
+  }
+
+  int get _grandTotal =>
+      (_cart.total + _deliveryFee - _promoDiscount).clamp(0, 1 << 30);
 
   Future<void> _submit() async {
     if (_fulfillment == 'delivery' && _address.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Indique une adresse de livraison.')),
+      );
+      return;
+    }
+    if (_fulfillment == 'delivery' && _phone.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Indique un numéro de téléphone.')),
+      );
+      return;
+    }
+    if (_fulfillment == 'delivery' && _loc == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Utilise ta position pour la livraison.')),
       );
       return;
     }
@@ -144,7 +206,7 @@ class _CheckoutSheetState extends State<CheckoutSheet> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Finaliser la commande',
+              tr('checkout.title'),
               style: t.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900),
             ),
             const SizedBox(height: 6),
@@ -157,16 +219,16 @@ class _CheckoutSheetState extends State<CheckoutSheet> {
             ),
             const SizedBox(height: 14),
             SegmentedButton<String>(
-              segments: const [
+              segments: [
                 ButtonSegment(
                   value: 'delivery',
-                  label: Text('Livraison'),
-                  icon: Icon(Icons.delivery_dining_rounded),
+                  label: Text(tr('checkout.delivery')),
+                  icon: const Icon(Icons.delivery_dining_rounded),
                 ),
                 ButtonSegment(
                   value: 'pickup',
-                  label: Text('Retrait'),
-                  icon: Icon(Icons.storefront_rounded),
+                  label: Text(tr('checkout.pickup')),
+                  icon: const Icon(Icons.storefront_rounded),
                 ),
               ],
               selected: {_fulfillment},
@@ -207,6 +269,16 @@ class _CheckoutSheetState extends State<CheckoutSheet> {
                   ),
                 ),
               ),
+              if (_quoteError != null) ...[
+                const SizedBox(height: 8),
+                Text(
+                  _quoteError!,
+                  style: t.textTheme.bodySmall?.copyWith(
+                    color: ChezMamaTheme.brandBrown,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
               const SizedBox(height: 12),
             ],
             TextField(
@@ -257,9 +329,20 @@ class _CheckoutSheetState extends State<CheckoutSheet> {
             TextField(
               controller: _promo,
               textCapitalization: TextCapitalization.characters,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Code promo (optionnel)',
-                prefixIcon: Icon(Icons.local_offer_rounded),
+                prefixIcon: const Icon(Icons.local_offer_rounded),
+                suffixIcon: IconButton(
+                  onPressed: _validatingPromo ? null : _validatePromo,
+                  icon: _validatingPromo
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.check_rounded),
+                  tooltip: 'Vérifier le code',
+                ),
               ),
             ),
             const SizedBox(height: 16),
@@ -284,8 +367,12 @@ class _CheckoutSheetState extends State<CheckoutSheet> {
                               : '$_deliveryFee FCFA'),
                     ),
                   ],
+                  if (_promoDiscount > 0) ...[
+                    const SizedBox(height: 6),
+                    _line(t, 'Promo', '−$_promoDiscount FCFA'),
+                  ],
                   const Divider(height: 18),
-                  _line(t, 'Total', '$_grandTotal FCFA', bold: true),
+                  _line(t, tr('cart.total'), '$_grandTotal FCFA', bold: true),
                 ],
               ),
             ),
@@ -305,7 +392,9 @@ class _CheckoutSheetState extends State<CheckoutSheet> {
                         ),
                       )
                     : const Icon(Icons.check_circle_rounded),
-                label: Text(_submitting ? 'Envoi…' : 'Confirmer la commande'),
+                label: Text(
+                  _submitting ? tr('checkout.submitting') : tr('checkout.confirm'),
+                ),
               ),
             ),
           ],
