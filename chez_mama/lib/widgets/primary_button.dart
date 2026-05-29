@@ -52,10 +52,12 @@ class _PrimaryButtonState extends State<PrimaryButton>
         return Transform.scale(scale: s, child: child);
       },
       child: FilledButton.icon(
-        onPressed: () {
-          _bounce();
-          widget.onPressed();
-        },
+        onPressed: widget.onPressed == null
+            ? null
+            : () {
+                _bounce();
+                widget.onPressed!();
+              },
         style: FilledButton.styleFrom(
           backgroundColor: ChezMamaTheme.brandOrange,
           foregroundColor: Colors.white,
