@@ -11,6 +11,17 @@ class ChezMamaTheme {
   static const Color brandOrange = Color(0xFFFF7A18);
   static const Color brandAmber = Color(0xFFFFC24C);
   static const Color brandBrown = Color(0xFF6E3B1F);
+  static const Color promoRed = Color(0xFFD7263D);
+  static const Color soldOutGray = Color(0xFF8A8A8A);
+  static const Color favorite = Color(0xFFE84545);
+
+  // ---- Spacing scale ------------------------------------------------------
+  static const double spaceXs = 6;
+  static const double spaceSm = 10;
+  static const double spaceMd = 14;
+  static const double spaceLg = 18;
+  static const double spaceXl = 24;
+  static const double navClearance = 110;
 
   // Light surfaces
   static const Color ink = Color(0xFF1B1B1F);
@@ -61,6 +72,55 @@ class ChezMamaTheme {
     );
   }
 
+  /// Brand gradient for CTAs, badges, splash accents.
+  static const LinearGradient brandGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [brandOrange, brandAmber],
+  );
+
+  /// Standard elevated card decoration.
+  static BoxDecoration cardDecoration(
+    BuildContext c, {
+    double radius = rCard,
+    double shadowOpacity = 0.10,
+    Color? color,
+    Border? border,
+  }) {
+    return BoxDecoration(
+      color: color ?? cardColor(c),
+      borderRadius: BorderRadius.circular(radius),
+      border: border,
+      boxShadow: softShadow(opacity: shadowOpacity),
+    );
+  }
+
+  /// Tinted block decoration (price boxes, summaries).
+  static BoxDecoration subtleDecoration(BuildContext c, {double radius = rCard}) {
+    return BoxDecoration(
+      color: subtleSurface(c),
+      borderRadius: BorderRadius.circular(radius),
+    );
+  }
+
+  /// Price display style.
+  static TextStyle? priceStyle(BuildContext c, ThemeData t, {bool promo = false}) {
+    return t.textTheme.titleSmall?.copyWith(
+      fontWeight: FontWeight.w900,
+      color: promo ? promoRed : brandBrown,
+      letterSpacing: -0.2,
+    );
+  }
+
+  /// Section title inside sheets/forms.
+  static TextStyle? sectionTitle(ThemeData t, BuildContext c) {
+    return t.textTheme.titleSmall?.copyWith(
+      fontWeight: FontWeight.w800,
+      color: inkColor(c),
+      letterSpacing: -0.1,
+    );
+  }
+
   // ---- Themes -------------------------------------------------------------
   static ThemeData light() => _build(Brightness.light);
   static ThemeData dark() => _build(Brightness.dark);
@@ -107,6 +167,13 @@ class ChezMamaTheme {
 
     return base.copyWith(
       pageTransitionsTheme: transitions,
+      extensions: const [
+        ChezMamaTokens(
+          promoRed: promoRed,
+          favorite: favorite,
+          soldOutGray: soldOutGray,
+        ),
+      ],
       appBarTheme: AppBarTheme(
         backgroundColor: bg,
         foregroundColor: inkC,
@@ -329,6 +396,38 @@ class ChezMamaTheme {
         offset: const Offset(0, 3),
       ),
     ];
+  }
+}
+
+/// Semantic brand tokens accessible via `Theme.of(context).extension<ChezMamaTokens>()`.
+class ChezMamaTokens extends ThemeExtension<ChezMamaTokens> {
+  const ChezMamaTokens({
+    required this.promoRed,
+    required this.favorite,
+    required this.soldOutGray,
+  });
+
+  final Color promoRed;
+  final Color favorite;
+  final Color soldOutGray;
+
+  @override
+  ChezMamaTokens copyWith({Color? promoRed, Color? favorite, Color? soldOutGray}) {
+    return ChezMamaTokens(
+      promoRed: promoRed ?? this.promoRed,
+      favorite: favorite ?? this.favorite,
+      soldOutGray: soldOutGray ?? this.soldOutGray,
+    );
+  }
+
+  @override
+  ChezMamaTokens lerp(ThemeExtension<ChezMamaTokens>? other, double t) {
+    if (other is! ChezMamaTokens) return this;
+    return ChezMamaTokens(
+      promoRed: Color.lerp(promoRed, other.promoRed, t)!,
+      favorite: Color.lerp(favorite, other.favorite, t)!,
+      soldOutGray: Color.lerp(soldOutGray, other.soldOutGray, t)!,
+    );
   }
 }
 
