@@ -114,6 +114,8 @@ class AuthService extends ChangeNotifier {
     _userName = null;
     _email = null;
     _loyaltyPoints = 0;
+    _mealsCount = 0;
+    _isSeller = false;
     notifyListeners();
   }
 }

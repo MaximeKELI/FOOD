@@ -53,6 +53,7 @@ class CartService extends ChangeNotifier {
       );
     }
     notifyListeners();
+    return true;
   }
 
   void increment(int mealId) {
