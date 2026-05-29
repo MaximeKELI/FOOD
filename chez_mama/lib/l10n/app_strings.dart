@@ -117,6 +117,11 @@ const Map<String, Map<AppLang, String>> _strings = {
     AppLang.en: 'Log out',
     AppLang.wo: 'Génn'
   },
+  'auth.login': {
+    AppLang.fr: 'Se connecter',
+    AppLang.en: 'Sign in',
+    AppLang.wo: 'Dugg'
+  },
   // Common actions
   'action.retry': {
     AppLang.fr: 'Réessayer',

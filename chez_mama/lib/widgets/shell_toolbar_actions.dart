@@ -10,58 +10,64 @@ class ShellToolbarActions extends StatelessWidget {
   const ShellToolbarActions({
     super.key,
     required this.isSeller,
+    required this.isAuthed,
     required this.onNotifications,
     required this.onMessages,
     required this.onReceivedOrders,
     required this.onMenuSelected,
     required this.onPickLanguage,
+    required this.onLogin,
   });
 
   final bool isSeller;
+  final bool isAuthed;
   final VoidCallback onNotifications;
   final VoidCallback onMessages;
   final VoidCallback onReceivedOrders;
   final ValueChanged<String> onMenuSelected;
   final VoidCallback onPickLanguage;
+  final VoidCallback onLogin;
 
   @override
   Widget build(BuildContext context) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        AnimatedBuilder(
-          animation: NotificationsNotifier.instance,
-          builder: (context, _) {
-            final count = NotificationsNotifier.instance.unread;
-            return IconButton(
-              tooltip: 'Notifications',
-              onPressed: onNotifications,
-              icon: count > 0
-                  ? Badge.count(
-                      count: count,
-                      child: const Icon(Icons.notifications_rounded),
-                    )
-                  : const Icon(Icons.notifications_none_rounded),
-            );
-          },
-        ),
-        AnimatedBuilder(
-          animation: ChatUnreadNotifier.instance,
-          builder: (context, _) {
-            final count = ChatUnreadNotifier.instance.unread;
-            return IconButton(
-              tooltip: 'Messages',
-              onPressed: onMessages,
-              icon: count > 0
-                  ? Badge.count(
-                      count: count,
-                      child: const Icon(Icons.chat_bubble_rounded),
-                    )
-                  : const Icon(Icons.chat_bubble_outline_rounded),
-            );
-          },
-        ),
-        if (isSeller)
+        if (isAuthed) ...[
+          AnimatedBuilder(
+            animation: NotificationsNotifier.instance,
+            builder: (context, _) {
+              final count = NotificationsNotifier.instance.unread;
+              return IconButton(
+                tooltip: tr('notif.title'),
+                onPressed: onNotifications,
+                icon: count > 0
+                    ? Badge.count(
+                        count: count,
+                        child: const Icon(Icons.notifications_rounded),
+                      )
+                    : const Icon(Icons.notifications_none_rounded),
+              );
+            },
+          ),
+          AnimatedBuilder(
+            animation: ChatUnreadNotifier.instance,
+            builder: (context, _) {
+              final count = ChatUnreadNotifier.instance.unread;
+              return IconButton(
+                tooltip: tr('menu.messages'),
+                onPressed: onMessages,
+                icon: count > 0
+                    ? Badge.count(
+                        count: count,
+                        child: const Icon(Icons.chat_bubble_rounded),
+                      )
+                    : const Icon(Icons.chat_bubble_outline_rounded),
+              );
+            },
+          ),
+        ],
+        if (isSeller && isAuthed)
           AnimatedBuilder(
             animation: ReceivedOrdersNotifier.instance,
             builder: (context, _) {
@@ -84,6 +90,8 @@ class ShellToolbarActions extends StatelessWidget {
           onSelected: (value) {
             if (value == 'language') {
               onPickLanguage();
+            } else if (value == 'login') {
+              onLogin();
             } else {
               onMenuSelected(value);
             }
@@ -91,7 +99,15 @@ class ShellToolbarActions extends StatelessWidget {
           itemBuilder: (context) {
             final dark = ThemeController.instance.isDark;
             return [
-              if (isSeller) ...[
+              if (!isAuthed)
+                PopupMenuItem(
+                  value: 'login',
+                  child: ListTile(
+                    leading: const Icon(Icons.login_rounded),
+                    title: Text(tr('auth.login')),
+                  ),
+                ),
+              if (isSeller && isAuthed) ...[
                 PopupMenuItem(
                   value: 'dashboard',
                   child: ListTile(
@@ -114,27 +130,29 @@ class ShellToolbarActions extends StatelessWidget {
                   ),
                 ),
               ],
-              PopupMenuItem(
-                value: 'favorites',
-                child: ListTile(
-                  leading: const Icon(Icons.favorite_rounded),
-                  title: Text(tr('menu.favorites')),
+              if (isAuthed) ...[
+                PopupMenuItem(
+                  value: 'favorites',
+                  child: ListTile(
+                    leading: const Icon(Icons.favorite_rounded),
+                    title: Text(tr('menu.favorites')),
+                  ),
                 ),
-              ),
-              PopupMenuItem(
-                value: 'messages',
-                child: ListTile(
-                  leading: const Icon(Icons.forum_rounded),
-                  title: Text(tr('menu.messages')),
+                PopupMenuItem(
+                  value: 'messages',
+                  child: ListTile(
+                    leading: const Icon(Icons.forum_rounded),
+                    title: Text(tr('menu.messages')),
+                  ),
                 ),
-              ),
-              PopupMenuItem(
-                value: 'loyalty',
-                child: ListTile(
-                  leading: const Icon(Icons.workspace_premium_rounded),
-                  title: Text(tr('menu.loyalty')),
+                PopupMenuItem(
+                  value: 'loyalty',
+                  child: ListTile(
+                    leading: const Icon(Icons.workspace_premium_rounded),
+                    title: Text(tr('menu.loyalty')),
+                  ),
                 ),
-              ),
+              ],
               PopupMenuItem(
                 value: 'language',
                 child: ListTile(
@@ -155,13 +173,14 @@ class ShellToolbarActions extends StatelessWidget {
                   title: Text(dark ? tr('menu.lightMode') : tr('menu.darkMode')),
                 ),
               ),
-              PopupMenuItem(
-                value: 'logout',
-                child: ListTile(
-                  leading: const Icon(Icons.logout_rounded),
-                  title: Text(tr('menu.logout')),
+              if (isAuthed)
+                PopupMenuItem(
+                  value: 'logout',
+                  child: ListTile(
+                    leading: const Icon(Icons.logout_rounded),
+                    title: Text(tr('menu.logout')),
+                  ),
                 ),
-              ),
             ];
           },
         ),

@@ -32,19 +32,23 @@ class HomeScreen extends StatefulWidget {
   const HomeScreen({
     super.key,
     required this.isSeller,
+    required this.isAuthed,
     required this.onNotifications,
     required this.onMessages,
     required this.onReceivedOrders,
     required this.onMenuSelected,
     required this.onPickLanguage,
+    required this.onLogin,
   });
 
   final bool isSeller;
+  final bool isAuthed;
   final VoidCallback onNotifications;
   final VoidCallback onMessages;
   final VoidCallback onReceivedOrders;
   final ValueChanged<String> onMenuSelected;
   final VoidCallback onPickLanguage;
+  final VoidCallback onLogin;
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -266,7 +270,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     final meals = _visibleMeals;
 
     return Scaffold(
-      floatingActionButton: widget.isSeller
+      floatingActionButton: widget.isSeller && widget.isAuthed
           ? FloatingActionButton.extended(
               onPressed: _publishMeal,
               icon: const Icon(Icons.add_rounded),
@@ -284,11 +288,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             actions: [
               ShellToolbarActions(
                 isSeller: widget.isSeller,
+                isAuthed: widget.isAuthed,
                 onNotifications: widget.onNotifications,
                 onMessages: widget.onMessages,
                 onReceivedOrders: widget.onReceivedOrders,
                 onMenuSelected: widget.onMenuSelected,
                 onPickLanguage: widget.onPickLanguage,
+                onLogin: widget.onLogin,
               ),
             ],
             flexibleSpace: FlexibleSpaceBar(
