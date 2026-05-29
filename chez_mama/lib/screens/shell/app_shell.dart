@@ -352,21 +352,21 @@ class _AppShellState extends State<AppShell> {
                   onTap: (v) => setState(() => index = v),
                   backgroundColor: cardColor,
                   items: [
-                    const BottomNavigationBarItem(
-                      icon: Icon(Icons.home_rounded),
-                      label: 'Accueil',
+                    BottomNavigationBarItem(
+                      icon: const Icon(Icons.home_rounded),
+                      label: tr('nav.home'),
                     ),
-                    const BottomNavigationBarItem(
-                      icon: Icon(Icons.bolt_rounded),
-                      label: 'Shorts',
+                    BottomNavigationBarItem(
+                      icon: const Icon(Icons.bolt_rounded),
+                      label: tr('nav.shorts'),
                     ),
-                    const BottomNavigationBarItem(
-                      icon: Icon(Icons.videocam_rounded),
-                      label: 'Vidéos',
+                    BottomNavigationBarItem(
+                      icon: const Icon(Icons.videocam_rounded),
+                      label: tr('nav.videos'),
                     ),
-                    const BottomNavigationBarItem(
-                      icon: Icon(Icons.delivery_dining_rounded),
-                      label: 'Suivi',
+                    BottomNavigationBarItem(
+                      icon: const Icon(Icons.delivery_dining_rounded),
+                      label: tr('nav.tracking'),
                     ),
                     BottomNavigationBarItem(
                       icon: count > 0
@@ -375,7 +375,7 @@ class _AppShellState extends State<AppShell> {
                               child: const Icon(Icons.shopping_bag_rounded),
                             )
                           : const Icon(Icons.shopping_bag_rounded),
-                      label: 'Panier',
+                      label: tr('nav.cart'),
                     ),
                   ],
                 );

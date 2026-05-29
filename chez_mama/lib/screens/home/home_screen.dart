@@ -3,6 +3,7 @@ import 'package:latlong2/latlong.dart';
 import '../../api/api_client.dart';
 import '../../api/catalog_api.dart';
 import '../../data/demo_data.dart';
+import '../../l10n/app_strings.dart';
 import '../../models/meal.dart';
 import '../../services/app_location_service.dart';
 import '../../ui/african_pattern_painter.dart';
@@ -181,7 +182,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _publishMeal,
         icon: const Icon(Icons.add_rounded),
-        label: const Text('Publier un plat'),
+        label: Text(tr('home.publishMeal')),
       ),
       body: CustomScrollView(
         controller: scroll,
@@ -261,7 +262,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 onChanged: (v) => setState(() => _query = v),
                 textInputAction: TextInputAction.search,
                 decoration: InputDecoration(
-                  hintText: 'Rechercher un plat, un vendeur…',
+                  hintText: tr('home.search'),
                   prefixIcon: const Icon(Icons.search_rounded),
                   suffixIcon: _query.isEmpty
                       ? null
@@ -293,7 +294,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   ),
                   const SizedBox(width: 8),
                   FilterChip(
-                    label: const Text('Dispo'),
+                    label: Text(tr('home.filter.available')),
                     selected: _availableOnly,
                     onSelected: (v) => setState(() => _availableOnly = v),
                   ),
@@ -304,7 +305,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       size: 16,
                       color: _promoOnly ? Colors.white : null,
                     ),
-                    label: const Text('Promo'),
+                    label: Text(tr('home.filter.promo')),
                     selected: _promoOnly,
                     onSelected: (v) => setState(() => _promoOnly = v),
                   ),
@@ -315,7 +316,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       size: 16,
                       color: _specialOnly ? Colors.white : null,
                     ),
-                    label: const Text('Plat du jour'),
+                    label: Text(tr('home.filter.special')),
                     selected: _specialOnly,
                     onSelected: (v) => setState(() => _specialOnly = v),
                   ),
