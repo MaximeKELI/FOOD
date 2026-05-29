@@ -4,13 +4,35 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import '../../api/accounts_api.dart';
+import '../../api/api_client.dart';
+import '../../api/orders_api.dart';
 import '../../services/app_location_service.dart';
 import '../../services/platform_utils.dart';
 import '../../ui/chezmama_theme.dart';
+import '../cart/orders_screen.dart';
 import '../profile/seller_profile_screen.dart';
 
 /// Default map center (Dakar) when GPS is unavailable on desktop.
 const _defaultCenter = LatLng(14.7167, -17.4677);
+
+const _activeStatuses = {'pending', 'preparing', 'on_the_way'};
+
+double orderStatusProgress(String status) {
+  switch (status) {
+    case 'pending':
+      return 0.2;
+    case 'preparing':
+      return 0.5;
+    case 'on_the_way':
+      return 0.8;
+    case 'delivered':
+      return 1.0;
+    case 'cancelled':
+      return 0;
+    default:
+      return 0.1;
+  }
+}
 
 class TrackingScreen extends StatefulWidget {
   const TrackingScreen({super.key});
@@ -22,17 +44,58 @@ class TrackingScreen extends StatefulWidget {
 class _TrackingScreenState extends State<TrackingScreen> {
   final MapController _mapController = MapController();
   StreamSubscription<LatLng>? _positionSub;
+  Timer? _ordersTimer;
+
   LatLng? _userLocation;
-  String? _error;
-  bool _loading = true;
+  String? _locationError;
+  bool _locating = true;
   bool _manualMode = false;
   List<SellerLocation> _sellers = [];
+
+  List<OrderView> _orders = [];
+  bool _ordersLoading = true;
+  String? _ordersError;
+  int _selectedOrderIndex = 0;
 
   @override
   void initState() {
     super.initState();
     _startLocation();
     _loadSellers();
+    _loadOrders();
+    _ordersTimer = Timer.periodic(const Duration(seconds: 20), (_) => _loadOrders());
+  }
+
+  List<OrderView> get _activeOrders => _orders
+      .where((o) => _activeStatuses.contains(o.status))
+      .toList();
+
+  OrderView? get _trackedOrder {
+    final active = _activeOrders;
+    if (active.isEmpty) return null;
+    final idx = _selectedOrderIndex.clamp(0, active.length - 1);
+    return active[idx];
+  }
+
+  Future<void> _loadOrders() async {
+    try {
+      final orders = await OrdersApi.instance.fetchOrders();
+      if (!mounted) return;
+      setState(() {
+        _orders = orders;
+        _ordersLoading = false;
+        _ordersError = null;
+        if (_selectedOrderIndex >= _activeOrders.length) {
+          _selectedOrderIndex = 0;
+        }
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _ordersError = apiErrorMessage(e);
+        _ordersLoading = false;
+      });
+    }
   }
 
   Future<void> _loadSellers() async {
@@ -56,13 +119,13 @@ class _TrackingScreenState extends State<TrackingScreen> {
     );
   }
 
-  Future<void> _retry() async {
+  Future<void> _retryLocation() async {
     await _positionSub?.cancel();
     if (!mounted) return;
     setState(() {
       _userLocation = null;
-      _error = null;
-      _loading = true;
+      _locationError = null;
+      _locating = true;
       _manualMode = false;
     });
     await _startLocation();
@@ -75,8 +138,8 @@ class _TrackingScreenState extends State<TrackingScreen> {
     if (result.location != null) {
       setState(() {
         _userLocation = result.location;
-        _error = null;
-        _loading = false;
+        _locationError = null;
+        _locating = false;
         _manualMode = false;
       });
       _positionSub = AppLocationService.instance.watchLocation()?.listen((loc) {
@@ -87,8 +150,8 @@ class _TrackingScreenState extends State<TrackingScreen> {
     }
 
     setState(() {
-      _error = result.error;
-      _loading = false;
+      _locationError = result.error;
+      _locating = false;
       _manualMode = result.allowManual;
       if (_manualMode) {
         _userLocation = _defaultCenter;
@@ -99,7 +162,7 @@ class _TrackingScreenState extends State<TrackingScreen> {
   void _setManualLocation(LatLng point) {
     setState(() {
       _userLocation = point;
-      _error = null;
+      _locationError = null;
     });
     _mapController.move(point, _mapController.camera.zoom);
   }
@@ -107,27 +170,80 @@ class _TrackingScreenState extends State<TrackingScreen> {
   @override
   void dispose() {
     _positionSub?.cancel();
+    _ordersTimer?.cancel();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context);
+    final tracked = _trackedOrder;
+    final active = _activeOrders;
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Suivi & localisation')),
       body: Padding(
         padding: const EdgeInsets.fromLTRB(14, 14, 14, 110),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Position en temps réel',
-              style: t.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.w900,
-              ),
+              'Suivi de commande',
+              style: t.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900),
             ),
             const SizedBox(height: 12),
-            _StatusProgress(value: _userLocation == null ? 0.1 : 0.78),
+            if (_ordersLoading)
+              const Center(child: Padding(
+                padding: EdgeInsets.symmetric(vertical: 24),
+                child: CircularProgressIndicator(),
+              ))
+            else if (_ordersError != null && _orders.isEmpty)
+              _TrackingMessage(
+                icon: Icons.cloud_off_rounded,
+                title: 'Impossible de charger les commandes',
+                subtitle: _ordersError!,
+                onRetry: _loadOrders,
+              )
+            else if (tracked == null)
+              _TrackingMessage(
+                icon: Icons.delivery_dining_outlined,
+                title: 'Aucune commande en cours',
+                subtitle:
+                    'Passe une commande depuis le panier pour suivre sa préparation ici.',
+                actionLabel: 'Voir mes commandes',
+                onAction: () => Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const OrdersScreen()),
+                ),
+              )
+            else ...[
+              if (active.length > 1)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: SizedBox(
+                    height: 40,
+                    child: ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: active.length,
+                      separatorBuilder: (_, __) => const SizedBox(width: 8),
+                      itemBuilder: (context, i) {
+                        final order = active[i];
+                        final selected = i == _selectedOrderIndex;
+                        return ChoiceChip(
+                          label: Text('Commande #${order.id}'),
+                          selected: selected,
+                          onSelected: (_) =>
+                              setState(() => _selectedOrderIndex = i),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+              _OrderStatusCard(order: tracked),
+            ],
+            const SizedBox(height: 16),
+            Text(
+              'Carte & position',
+              style: t.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+            ),
             if (_manualMode) ...[
               const SizedBox(height: 8),
               Text(
@@ -138,17 +254,17 @@ class _TrackingScreenState extends State<TrackingScreen> {
                 ),
               ),
             ],
-            if (_error != null && !_manualMode) ...[
+            if (_locationError != null && !_manualMode) ...[
               const SizedBox(height: 8),
               Text(
-                _error!,
+                _locationError!,
                 style: t.textTheme.bodySmall?.copyWith(
                   color: ChezMamaTheme.brandBrown,
                 ),
               ),
             ],
-            const SizedBox(height: 12),
-            if (_userLocation != null)
+            if (_userLocation != null) ...[
+              const SizedBox(height: 8),
               Text(
                 'Lat: ${_userLocation!.latitude.toStringAsFixed(5)}  •  Lng: ${_userLocation!.longitude.toStringAsFixed(5)}',
                 style: t.textTheme.bodyMedium?.copyWith(
@@ -156,6 +272,7 @@ class _TrackingScreenState extends State<TrackingScreen> {
                   color: ChezMamaTheme.mutedInk(context),
                 ),
               ),
+            ],
             const SizedBox(height: 12),
             Expanded(
               child: Container(
@@ -170,7 +287,7 @@ class _TrackingScreenState extends State<TrackingScreen> {
                 ),
               ),
             ),
-            if (_error != null && !_manualMode) ...[
+            if (_locationError != null && !_manualMode) ...[
               const SizedBox(height: 12),
               Wrap(
                 spacing: 10,
@@ -187,19 +304,19 @@ class _TrackingScreenState extends State<TrackingScreen> {
                     label: const Text('Paramètres app'),
                   ),
                   FilledButton.icon(
-                    onPressed: _retry,
+                    onPressed: _retryLocation,
                     icon: const Icon(Icons.refresh_rounded),
                     label: const Text('Réessayer'),
                   ),
                 ],
               ),
             ],
-            if (_manualMode || (_error != null && isDesktopPlatform)) ...[
+            if (_manualMode || (_locationError != null && isDesktopPlatform)) ...[
               const SizedBox(height: 8),
               Align(
                 alignment: Alignment.centerRight,
                 child: TextButton.icon(
-                  onPressed: _retry,
+                  onPressed: _retryLocation,
                   icon: const Icon(Icons.refresh_rounded),
                   label: const Text('Réessayer GPS'),
                 ),
@@ -212,7 +329,7 @@ class _TrackingScreenState extends State<TrackingScreen> {
   }
 
   Widget _buildMapContent() {
-    if (_loading) {
+    if (_locating) {
       return const Center(child: CircularProgressIndicator());
     }
 
@@ -226,12 +343,12 @@ class _TrackingScreenState extends State<TrackingScreen> {
               const Icon(Icons.location_off_rounded, size: 40),
               const SizedBox(height: 10),
               Text(
-                _error ?? 'Position indisponible.',
+                _locationError ?? 'Position indisponible.',
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 12),
               FilledButton.icon(
-                onPressed: _retry,
+                onPressed: _retryLocation,
                 icon: const Icon(Icons.refresh_rounded),
                 label: const Text('Réessayer'),
               ),
@@ -251,9 +368,7 @@ class _TrackingScreenState extends State<TrackingScreen> {
       options: MapOptions(
         initialCenter: center,
         initialZoom: 15.5,
-        onTap: _manualMode
-            ? (_, point) => _setManualLocation(point)
-            : null,
+        onTap: _manualMode ? (_, point) => _setManualLocation(point) : null,
       ),
       children: [
         TileLayer(
@@ -348,14 +463,23 @@ class _TrackingScreenState extends State<TrackingScreen> {
   }
 }
 
-class _StatusProgress extends StatelessWidget {
-  const _StatusProgress({required this.value});
-  final double value;
+class _OrderStatusCard extends StatelessWidget {
+  const _OrderStatusCard({required this.order});
+  final OrderView order;
 
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context);
+    final progress = orderStatusProgress(order.status);
+    final steps = [
+      ('pending', 'En attente'),
+      ('preparing', 'Préparation'),
+      ('on_the_way', 'En route'),
+      ('delivered', 'Livrée'),
+    ];
+
     return Container(
+      width: double.infinity,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: ChezMamaTheme.subtleSurface(context),
@@ -368,41 +492,176 @@ class _StatusProgress extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  'Préparation → En route → Livré',
-                  style: t.textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
+                  'Commande #${order.id}',
+                  style: t.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w900,
                   ),
                 ),
               ),
-              Text(
-                '${(value * 100).round()}%',
-                style: t.textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.w900,
-                  color: ChezMamaTheme.brandBrown,
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: ChezMamaTheme.brandOrange.withValues(alpha: 0.14),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  order.statusLabel,
+                  style: t.textTheme.labelMedium?.copyWith(
+                    color: ChezMamaTheme.brandBrown,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
               ),
             ],
           ),
+          const SizedBox(height: 8),
+          for (final item in order.items)
+            Text(
+              '${item.quantity} × ${item.mealName}',
+              style: t.textTheme.bodyMedium,
+            ),
           const SizedBox(height: 10),
-          TweenAnimationBuilder<double>(
-            tween: Tween(begin: 0, end: value),
-            duration: const Duration(milliseconds: 650),
-            curve: Curves.easeOutCubic,
-            builder: (context, v, _) {
-              return ClipRRect(
-                borderRadius: BorderRadius.circular(999),
-                child: LinearProgressIndicator(
-                  value: v,
-                  minHeight: 10,
-                  backgroundColor:
-                      ChezMamaTheme.brandBrown.withValues(alpha: 0.12),
-                  valueColor: const AlwaysStoppedAnimation(
-                    ChezMamaTheme.brandOrange,
+          ClipRRect(
+            borderRadius: BorderRadius.circular(999),
+            child: LinearProgressIndicator(
+              value: progress,
+              minHeight: 10,
+              backgroundColor: ChezMamaTheme.brandBrown.withValues(alpha: 0.12),
+              valueColor: const AlwaysStoppedAnimation(ChezMamaTheme.brandOrange),
+            ),
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              for (var i = 0; i < steps.length; i++) ...[
+                if (i > 0)
+                  Expanded(
+                    child: Container(
+                      height: 2,
+                      color: _stepDone(order.status, steps[i].$1)
+                          ? ChezMamaTheme.brandOrange
+                          : ChezMamaTheme.brandBrown.withValues(alpha: 0.15),
+                    ),
                   ),
+                _StepDot(
+                  label: steps[i].$2,
+                  active: order.status == steps[i].$1,
+                  done: _stepDone(order.status, steps[i].$1),
                 ),
-              );
-            },
-          )
+              ],
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '${order.fulfillment == 'pickup' ? 'Retrait' : 'Livraison'} • ${order.total} FCFA',
+            style: t.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w700),
+          ),
+        ],
+      ),
+    );
+  }
+
+  bool _stepDone(String current, String step) {
+    const order = ['pending', 'preparing', 'on_the_way', 'delivered'];
+    return order.indexOf(current) >= order.indexOf(step);
+  }
+}
+
+class _StepDot extends StatelessWidget {
+  const _StepDot({
+    required this.label,
+    required this.active,
+    required this.done,
+  });
+
+  final String label;
+  final bool active;
+  final bool done;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = done || active
+        ? ChezMamaTheme.brandOrange
+        : ChezMamaTheme.brandBrown.withValues(alpha: 0.25);
+    return Column(
+      children: [
+        Container(
+          width: 12,
+          height: 12,
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+        ),
+        const SizedBox(height: 4),
+        SizedBox(
+          width: 56,
+          child: Text(
+            label,
+            maxLines: 2,
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  fontWeight: active ? FontWeight.w800 : FontWeight.w600,
+                  color: active
+                      ? ChezMamaTheme.brandBrown
+                      : ChezMamaTheme.mutedInk(context),
+                ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _TrackingMessage extends StatelessWidget {
+  const _TrackingMessage({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    this.onRetry,
+    this.actionLabel,
+    this.onAction,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback? onRetry;
+  final String? actionLabel;
+  final VoidCallback? onAction;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = Theme.of(context);
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: ChezMamaTheme.subtleSurface(context),
+        borderRadius: BorderRadius.circular(ChezMamaTheme.rCard),
+      ),
+      child: Column(
+        children: [
+          Icon(icon, size: 42, color: ChezMamaTheme.brandBrown),
+          const SizedBox(height: 10),
+          Text(
+            title,
+            style: t.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 6),
+          Text(subtitle, textAlign: TextAlign.center),
+          if (onRetry != null || onAction != null) ...[
+            const SizedBox(height: 12),
+            if (onRetry != null)
+              FilledButton.icon(
+                onPressed: onRetry,
+                icon: const Icon(Icons.refresh_rounded),
+                label: const Text('Réessayer'),
+              ),
+            if (onAction != null)
+              OutlinedButton(
+                onPressed: onAction,
+                child: Text(actionLabel ?? 'Continuer'),
+              ),
+          ],
         ],
       ),
     );
