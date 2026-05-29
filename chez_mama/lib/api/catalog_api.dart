@@ -48,6 +48,21 @@ class CatalogApi {
     await _dio.delete('/catalog/meals/$id/');
   }
 
+  /// Updates the availability / "plat du jour" flags of a meal owned by the
+  /// current seller. Uses multipart to match the endpoint's parsers.
+  Future<Meal> updateMealFlags(
+    String id, {
+    bool? isAvailable,
+    bool? isSpecial,
+  }) async {
+    final form = FormData.fromMap({
+      if (isAvailable != null) 'is_available': isAvailable,
+      if (isSpecial != null) 'is_special': isSpecial,
+    });
+    final res = await _dio.patch('/catalog/meals/$id/', data: form);
+    return _mealFromJson(res.data as Map<String, dynamic>);
+  }
+
   Future<bool> toggleFavorite(String mealId) async {
     final res = await _dio.post('/catalog/meals/$mealId/favorite/');
     return res.data['favorited'] as bool? ?? false;

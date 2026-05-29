@@ -100,6 +100,23 @@ class _MyPublicationsScreenState extends State<MyPublicationsScreen>
     }
   }
 
+  Future<void> _updateMeal(Meal meal, {bool? available, bool? special}) async {
+    try {
+      final updated = await CatalogApi.instance.updateMealFlags(
+        meal.id,
+        isAvailable: available,
+        isSpecial: special,
+      );
+      if (!mounted) return;
+      setState(() {
+        final i = _meals.indexWhere((m) => m.id == meal.id);
+        if (i != -1) _meals[i] = updated;
+      });
+    } catch (e) {
+      _showError(e);
+    }
+  }
+
   Future<void> _deletePost(ApiPost post, bool isShort) async {
     if (!await _confirm(isShort ? 'ce short' : 'cette vidéo')) return;
     try {
@@ -141,7 +158,11 @@ class _MyPublicationsScreenState extends State<MyPublicationsScreen>
               : TabBarView(
                   controller: _tab,
                   children: [
-                    _MealsTab(meals: _meals, onDelete: _deleteMeal),
+                    _MealsTab(
+                      meals: _meals,
+                      onDelete: _deleteMeal,
+                      onUpdate: _updateMeal,
+                    ),
                     _PostsTab(
                       posts: _videos,
                       emptyText: 'Aucune vidéo publiée.',
