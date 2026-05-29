@@ -55,12 +55,14 @@ def _as_mock(intent: PaymentIntent) -> PaymentIntent:
 
 
 def verify_webhook_secret(provider: str, header_secret: str) -> bool:
+    from django.conf import settings
+
     if provider == "wave":
         expected = config("WAVE_WEBHOOK_SECRET", default="")
     elif provider == "orange_money":
         expected = config("ORANGE_MONEY_WEBHOOK_SECRET", default="")
     else:
-        expected = config("PAYMENT_WEBHOOK_SECRET", default="dev-webhook-secret")
+        expected = config("PAYMENT_WEBHOOK_SECRET", default="")
     if not expected:
-        return True  # dev mode
+        return settings.DEBUG
     return header_secret == expected

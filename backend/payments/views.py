@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.shortcuts import get_object_or_404
 from rest_framework import permissions, status
 from rest_framework.response import Response
@@ -8,6 +9,7 @@ from orders.models import Order
 from .models import PaymentIntent
 from .providers import initiate_payment, verify_webhook_secret
 from .serializers import PaymentIntentSerializer
+from .services import mark_intent_paid
 
 
 class PaymentInitiateView(APIView):
@@ -28,6 +30,25 @@ class PaymentInitiateView(APIView):
                 {"detail": "Commande déjà payée."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+        if order.status == Order.Status.CANCELLED:
+            return Response(
+                {"detail": "Commande annulée."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        existing = (
+            PaymentIntent.objects.filter(
+                order=order,
+                status__in=(
+                    PaymentIntent.Status.PROCESSING,
+                    PaymentIntent.Status.PAID,
+                ),
+            )
+            .order_by("-created_at")
+            .first()
+        )
+        if existing is not None:
+            return Response(PaymentIntentSerializer(existing).data)
 
         provider_map = {
             Order.Payment.WAVE: PaymentIntent.Provider.WAVE,
@@ -71,12 +92,14 @@ class MockPaymentCompleteView(APIView):
     permission_classes = [permissions.AllowAny]
 
     def get(self, request, pk):
+        if not settings.DEBUG:
+            return Response(
+                {"detail": "Non disponible."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
         intent = get_object_or_404(PaymentIntent, pk=pk)
-        intent.status = PaymentIntent.Status.PAID
-        intent.save(update_fields=["status", "updated_at"])
+        mark_intent_paid(intent)
         order = intent.order
-        order.payment_status = Order.PaymentStatus.PAID
-        order.save(update_fields=["payment_status"])
         return Response(
             {
                 "ok": True,
@@ -98,11 +121,7 @@ class WaveWebhookView(APIView):
         intent = PaymentIntent.objects.filter(external_id=external_id).first()
         if intent is None:
             return Response({"detail": "Intent introuvable."}, status=404)
-        intent.status = PaymentIntent.Status.PAID
-        intent.save(update_fields=["status", "updated_at"])
-        order = intent.order
-        order.payment_status = Order.PaymentStatus.PAID
-        order.save(update_fields=["payment_status"])
+        mark_intent_paid(intent)
         return Response({"ok": True})
 
 
