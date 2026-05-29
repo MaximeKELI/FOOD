@@ -46,6 +46,11 @@ class OrderView {
   final String address;
   final String phone;
   final String customerName;
+  final int subtotal;
+  final int deliveryFee;
+  final int discount;
+  final String promoCode;
+  final int pointsEarned;
   final int total;
   final String createdAt;
   final List<OrderItemView> items;
@@ -61,6 +66,11 @@ class OrderView {
       address: json['address'] as String? ?? '',
       phone: json['phone'] as String? ?? '',
       customerName: json['customer_name'] as String? ?? '',
+      subtotal: json['subtotal'] as int? ?? 0,
+      deliveryFee: json['delivery_fee'] as int? ?? 0,
+      discount: json['discount'] as int? ?? 0,
+      promoCode: json['promo_code'] as String? ?? '',
+      pointsEarned: json['points_earned'] as int? ?? 0,
       total: json['total'] as int? ?? 0,
       createdAt: json['created_at'] as String? ?? '',
       items: items
