@@ -33,13 +33,20 @@ class MealListCreateView(generics.ListCreateAPIView):
     parser_classes = [MultiPartParser, FormParser]
 
     def get_queryset(self):
-        qs = Meal.objects.select_related("seller", "category").all()
-        category = self.request.query_params.get("category")
+        qs = Meal.objects.select_related(
+            "seller", "seller__seller_profile", "category"
+        ).all()
+        params = self.request.query_params
+        category = params.get("category")
         if category:
             qs = qs.filter(category__name=category)
-        seller = self.request.query_params.get("seller")
+        seller = params.get("seller")
         if seller:
             qs = qs.filter(seller_id=seller)
+        if params.get("available") == "true":
+            qs = qs.filter(is_available=True)
+        if params.get("special") == "true":
+            qs = qs.filter(is_special=True)
         return qs
 
     def get_serializer_class(self):

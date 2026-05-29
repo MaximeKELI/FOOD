@@ -19,6 +19,8 @@ class MealSerializer(serializers.ModelSerializer):
     favorited_by_me = serializers.SerializerMethodField()
     effective_price = serializers.IntegerField(read_only=True)
     has_promo = serializers.BooleanField(read_only=True)
+    seller_lat = serializers.SerializerMethodField()
+    seller_lng = serializers.SerializerMethodField()
 
     class Meta:
         model = Meal
@@ -37,6 +39,8 @@ class MealSerializer(serializers.ModelSerializer):
             "category_name",
             "seller",
             "seller_name",
+            "seller_lat",
+            "seller_lng",
             "rating",
             "reviews_count",
             "favorited_by_me",
@@ -57,6 +61,17 @@ class MealSerializer(serializers.ModelSerializer):
         if user is None or not user.is_authenticated:
             return False
         return obj.favorited_by.filter(user=user).exists()
+
+    def _profile(self, obj):
+        return getattr(obj.seller, "seller_profile", None)
+
+    def get_seller_lat(self, obj):
+        p = self._profile(obj)
+        return p.latitude if p else None
+
+    def get_seller_lng(self, obj):
+        p = self._profile(obj)
+        return p.longitude if p else None
 
 
 class ReviewSerializer(serializers.ModelSerializer):

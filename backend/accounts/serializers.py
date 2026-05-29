@@ -45,6 +45,7 @@ class UserSerializer(serializers.ModelSerializer):
             "display_name",
             "name",
             "phone",
+            "loyalty_points",
             "seller_profile",
             "followers_count",
             "meals_count",

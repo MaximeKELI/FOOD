@@ -38,6 +38,7 @@ class User(AbstractUser):
     email = models.EmailField("adresse email", unique=True)
     display_name = models.CharField(max_length=120, blank=True)
     phone = models.CharField(max_length=30, blank=True)
+    loyalty_points = models.PositiveIntegerField(default=0)
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = []
@@ -84,6 +85,11 @@ class SellerProfile(models.Model):
     delivery_radius_km = models.PositiveIntegerField(default=5)
     accepts_delivery = models.BooleanField(default=True)
     accepts_pickup = models.BooleanField(default=True)
+
+    # Delivery pricing
+    delivery_fee_base = models.PositiveIntegerField(default=500)
+    delivery_fee_per_km = models.PositiveIntegerField(default=100)
+    free_delivery_over = models.PositiveIntegerField(default=0)  # 0 = disabled
 
     # Geo (filled later when the seller sets a location)
     latitude = models.FloatField(null=True, blank=True)
