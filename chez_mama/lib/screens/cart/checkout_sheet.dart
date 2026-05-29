@@ -10,6 +10,7 @@ import '../../cart/received_orders_notifier.dart';
 import '../../services/app_location_service.dart';
 import '../../l10n/app_strings.dart';
 import '../../ui/chezmama_theme.dart';
+import '../auth/login_screen.dart';
 
 class CheckoutSheet extends StatefulWidget {
   const CheckoutSheet({super.key});
@@ -137,7 +138,31 @@ class _CheckoutSheetState extends State<CheckoutSheet> {
   int get _grandTotal =>
       (_cart.total + _deliveryFee - _promoDiscount).clamp(0, 1 << 30);
 
+  bool _isDigitalPayment(String method) =>
+      method == 'wave' ||
+      method == 'orange_money' ||
+      method == 'free_money';
+
+  Future<bool> _waitForPayment(int paymentId) async {
+    for (var i = 0; i < 20; i++) {
+      await Future.delayed(const Duration(seconds: 2));
+      final intent = await PaymentsApi.instance.status(paymentId);
+      if (intent.status == 'paid') return true;
+      if (intent.status == 'failed' || intent.status == 'cancelled') {
+        return false;
+      }
+    }
+    return false;
+  }
+
   Future<void> _submit() async {
+    if (!AuthScope.of(context).isAuthed) {
+      Navigator.of(context).pop();
+      Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => const LoginScreen()),
+      );
+      return;
+    }
     if (_fulfillment == 'delivery' && _address.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Indique une adresse de livraison.')),
@@ -169,14 +194,14 @@ class _CheckoutSheetState extends State<CheckoutSheet> {
         longitude: _fulfillment == 'delivery' ? _loc?.longitude : null,
         promoCode: _promo.text.trim(),
       );
-      if (_payment == 'wave' ||
-          _payment == 'orange_money' ||
-          _payment == 'free_money') {
+      var paid = !_isDigitalPayment(_payment);
+      if (_isDigitalPayment(_payment)) {
         final intent = await PaymentsApi.instance.initiate(order.id);
         if (intent.checkoutUrl.isNotEmpty) {
           final uri = Uri.parse(intent.checkoutUrl);
           if (await canLaunchUrl(uri)) {
             await launchUrl(uri, mode: LaunchMode.externalApplication);
+            paid = await _waitForPayment(intent.id);
           }
         }
       }
@@ -188,10 +213,11 @@ class _CheckoutSheetState extends State<CheckoutSheet> {
       final extra = order.discount > 0
           ? ' (−${order.discount} FCFA promo)'
           : '';
+      final message = paid
+          ? 'Commande #${order.id} confirmée · ${order.total} FCFA$extra'
+          : 'Commande #${order.id} créée — paiement en cours (${order.total} FCFA$extra)';
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Commande #${order.id} confirmée · ${order.total} FCFA$extra'),
-        ),
+        SnackBar(content: Text(message)),
       );
     } catch (e) {
       if (!mounted) return;

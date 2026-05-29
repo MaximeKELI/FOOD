@@ -85,12 +85,18 @@ class _AppShellState extends State<AppShell> {
   @override
   void initState() {
     super.initState();
-    ReceivedOrdersNotifier.instance.refresh();
-    NotificationsNotifier.instance.refresh();
-    ChatUnreadNotifier.instance.refresh();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final auth = AuthScope.of(context);
+      if (auth.isAuthed) {
+        ReceivedOrdersNotifier.instance.refresh();
+        NotificationsNotifier.instance.refresh();
+        ChatUnreadNotifier.instance.refresh();
+      }
+    });
     _badgeTimer = Timer.periodic(
       const Duration(seconds: 30),
       (_) {
+        if (!AuthScope.of(context).isAuthed) return;
         ReceivedOrdersNotifier.instance.refresh();
         NotificationsNotifier.instance.refresh();
         ChatUnreadNotifier.instance.refresh();

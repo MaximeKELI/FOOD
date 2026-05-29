@@ -3,6 +3,7 @@ import 'auth/auth_scope.dart';
 import 'auth/auth_service.dart';
 import 'analytics/event_tracker.dart';
 import 'analytics/tracked_widgets.dart';
+import 'cart/cart_service.dart';
 import 'l10n/app_strings.dart';
 import 'ui/chezmama_theme.dart';
 import 'ui/theme_controller.dart';
@@ -60,6 +61,7 @@ class _AuthBootstrapState extends State<_AuthBootstrap> {
     ThemeController.instance.load();
     LocaleController.instance.load();
     PushService.instance.init();
+    CartService.instance.init();
     service.init();
   }
 
