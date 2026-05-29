@@ -16,6 +16,12 @@ class Order(models.Model):
         DELIVERY = "delivery", "Livraison"
         PICKUP = "pickup", "Retrait"
 
+    class Payment(models.TextChoices):
+        CASH = "cash", "À la livraison"
+        WAVE = "wave", "Wave"
+        ORANGE_MONEY = "orange_money", "Orange Money"
+        FREE_MONEY = "free_money", "Free Money"
+
     customer = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
