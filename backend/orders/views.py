@@ -6,9 +6,11 @@ from rest_framework.views import APIView
 from .models import Order, OrderItem
 from .serializers import OrderCreateSerializer, OrderSerializer
 
-_LINE_TOTAL = ExpressionWrapper(
-    F("unit_price") * F("quantity"), output_field=IntegerField()
-)
+def _line_total():
+    """Fresh expression each call (reusing one instance corrupts queries)."""
+    return ExpressionWrapper(
+        F("unit_price") * F("quantity"), output_field=IntegerField()
+    )
 
 
 class OrderListCreateView(generics.ListCreateAPIView):
@@ -70,10 +72,10 @@ class SellerStatsView(APIView):
         items = OrderItem.objects.filter(meal__seller=user)
         orders = Order.objects.filter(items__meal__seller=user).distinct()
 
-        revenue = items.aggregate(v=Sum(_LINE_TOTAL))["v"] or 0
+        revenue = items.aggregate(v=Sum(_line_total()))["v"] or 0
         delivered_revenue = (
             items.filter(order__status=Order.Status.DELIVERED)
-            .aggregate(v=Sum(_LINE_TOTAL))["v"]
+            .aggregate(v=Sum(_line_total()))["v"]
             or 0
         )
         items_sold = items.aggregate(v=Sum("quantity"))["v"] or 0
@@ -85,7 +87,7 @@ class SellerStatsView(APIView):
 
         top_meals = list(
             items.values("meal_name")
-            .annotate(quantity=Sum("quantity"), revenue=Sum(_LINE_TOTAL))
+            .annotate(quantity=Sum("quantity"), revenue=Sum(_line_total()))
             .order_by("-quantity")[:5]
         )
 
