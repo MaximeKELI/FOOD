@@ -6,7 +6,9 @@ import '../../ui/chezmama_theme.dart';
 import '../../utils/currency_format.dart';
 import '../../widgets/accessible_icon_button.dart';
 import '../../widgets/entrance.dart';
+import '../../widgets/food_card.dart';
 import '../../widgets/food_network_image.dart';
+import '../../widgets/quantity_stepper.dart';
 import '../auth/login_screen.dart';
 import 'checkout_sheet.dart';
 
@@ -53,57 +55,124 @@ class _CartScreenState extends State<CartScreen> {
           if (_cart.isEmpty) {
             return _EmptyCart(onSeeOrders: widget.onSeeOrders);
           }
-          return Padding(
-            padding: const EdgeInsets.fromLTRB(14, 14, 14, 110),
+          return Stack(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  ChezMamaTheme.spaceMd,
+                  ChezMamaTheme.spaceMd,
+                  ChezMamaTheme.spaceMd,
+                  ChezMamaTheme.navClearance,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      tr('cart.title'),
+                      style: t.textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: -0.3,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      trf('cart.summary', {
+                        'total': formatFcfa(_cart.total),
+                        'count': _cart.count,
+                      }),
+                      style: t.textTheme.bodyMedium?.copyWith(
+                        color: ChezMamaTheme.mutedInk(context),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: ChezMamaTheme.spaceMd),
+                    Expanded(
+                      child: ListView.separated(
+                        itemCount: _cart.items.length,
+                        separatorBuilder: (_, __) =>
+                            const SizedBox(height: ChezMamaTheme.spaceSm),
+                        itemBuilder: (context, index) {
+                          final item = _cart.items[index];
+                          return FadeInUp(
+                            index: index,
+                            child: _CartRow(
+                              item: item,
+                              onAdd: () => _cart.increment(item.mealId),
+                              onRemove: () => _cart.decrement(item.mealId),
+                              onDelete: () => _cart.removeItem(item.mealId),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Positioned(
+                left: ChezMamaTheme.spaceMd,
+                right: ChezMamaTheme.spaceMd,
+                bottom: ChezMamaTheme.navClearance - 8,
+                child: _CheckoutBar(
+                  total: _cart.total,
+                  onCheckout: _openCheckout,
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _CheckoutBar extends StatelessWidget {
+  const _CheckoutBar({required this.total, required this.onCheckout});
+
+  final int total;
+  final VoidCallback onCheckout;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.all(ChezMamaTheme.spaceMd),
+      decoration: ChezMamaTheme.cardDecoration(
+        context,
+        shadowOpacity: 0.16,
+        border: Border.all(
+          color: ChezMamaTheme.brandOrange.withValues(alpha: 0.12),
+        ),
+      ),
+      child: Row(
+        children: [
+          Expanded(
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Container(
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: ChezMamaTheme.subtleSurface(context),
-                    borderRadius:
-                        BorderRadius.circular(ChezMamaTheme.rCard),
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          '${tr('cart.total')}: ${formatFcfa(_cart.total)}',
-                          style: t.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w900,
-                          ),
-                        ),
-                      ),
-                      FilledButton(
-                        onPressed: _openCheckout,
-                        child: Text(tr('cart.checkout')),
-                      ),
-                    ],
+                Text(
+                  tr('cart.total'),
+                  style: t.textTheme.bodySmall?.copyWith(
+                    color: ChezMamaTheme.mutedInk(context),
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
-                const SizedBox(height: 12),
-                Expanded(
-                  child: ListView.separated(
-                    itemCount: _cart.items.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 12),
-                    itemBuilder: (context, index) {
-                      final item = _cart.items[index];
-                      return FadeInUp(
-                        index: index,
-                        child: _CartRow(
-                          item: item,
-                          onAdd: () => _cart.increment(item.mealId),
-                          onRemove: () => _cart.decrement(item.mealId),
-                          onDelete: () => _cart.removeItem(item.mealId),
-                        ),
-                      );
-                    },
+                Text(
+                  formatFcfa(total),
+                  style: t.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w900,
+                    color: ChezMamaTheme.brandBrown,
                   ),
                 ),
               ],
             ),
-          );
-        },
+          ),
+          FilledButton.icon(
+            onPressed: onCheckout,
+            icon: const Icon(Icons.shopping_bag_rounded, size: 20),
+            label: Text(tr('cart.checkout')),
+          ),
+        ],
       ),
     );
   }
@@ -125,95 +194,79 @@ class _CartRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context);
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: ChezMamaTheme.cardColor(context),
-        borderRadius: BorderRadius.circular(ChezMamaTheme.rCard),
-        boxShadow: ChezMamaTheme.softShadow(opacity: 0.10),
+    return Dismissible(
+      key: ValueKey(item.mealId),
+      direction: DismissDirection.endToStart,
+      onDismissed: (_) => onDelete(),
+      background: Container(
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: 20),
+        decoration: BoxDecoration(
+          color: ChezMamaTheme.promoRed.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(ChezMamaTheme.rCard),
+        ),
+        child: const Icon(Icons.delete_outline_rounded, color: ChezMamaTheme.promoRed),
       ),
-      child: Row(
-        children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(14),
-            child: SizedBox(
-              width: 52,
-              height: 52,
-              child: _buildItemImage(item.image),
+      child: FoodCard(
+        padding: const EdgeInsets.all(12),
+        shadowOpacity: 0.08,
+        child: Row(
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(ChezMamaTheme.rField),
+              child: SizedBox(
+                width: 64,
+                height: 64,
+                child: FoodNetworkImage(url: item.image, fit: BoxFit.cover),
+              ),
             ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    item.name,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: t.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    formatFcfa(item.unitPrice),
+                    style: t.textTheme.bodySmall?.copyWith(
+                      color: ChezMamaTheme.mutedInk(context),
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    formatFcfa(item.lineTotal),
+                    style: ChezMamaTheme.priceStyle(context, t),
+                  ),
+                ],
+              ),
+            ),
+            Column(
               children: [
-                Text(
-                  item.name,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: t.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w800,
-                  ),
+                AccessibleIconButton(
+                  icon: Icons.delete_outline_rounded,
+                  label: tr('action.delete'),
+                  onPressed: onDelete,
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  formatFcfa(item.unitPrice),
-                  style: t.textTheme.bodySmall?.copyWith(
-                    color: ChezMamaTheme.mutedInk(context),
-                    fontWeight: FontWeight.w600,
-                  ),
+                const SizedBox(height: 4),
+                QuantityStepper(
+                  quantity: item.quantity,
+                  onDecrement: onRemove,
+                  onIncrement: onAdd,
                 ),
               ],
             ),
-          ),
-          AccessibleIconButton(
-            icon: Icons.remove_rounded,
-            label: tr('action.decreaseQty'),
-            onPressed: onRemove,
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            child: Text(
-              '${item.quantity}',
-              style: t.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w900,
-              ),
-            ),
-          ),
-          AccessibleIconButton(
-            icon: Icons.add_rounded,
-            label: tr('action.increaseQty'),
-            onPressed: onAdd,
-          ),
-          AccessibleIconButton(
-            icon: Icons.delete_outline_rounded,
-            label: tr('action.delete'),
-            onPressed: onDelete,
-          ),
-        ],
+          ],
+        ),
       ),
-    );
-  }
-
-  Widget _buildItemImage(String image) {
-    if (image.startsWith('assets/')) {
-      return Image.asset(image, fit: BoxFit.cover);
-    }
-    if (image.startsWith('http')) {
-      return FoodNetworkImage(url: image, fit: BoxFit.cover);
-    }
-    return const _Thumb();
-  }
-}
-
-class _Thumb extends StatelessWidget {
-  const _Thumb();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      color: ChezMamaTheme.brandOrange.withValues(alpha: 0.12),
-      child: const Icon(Icons.restaurant_rounded, color: ChezMamaTheme.brandOrange),
     );
   }
 }
@@ -227,22 +280,38 @@ class _EmptyCart extends StatelessWidget {
     final t = Theme.of(context);
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(ChezMamaTheme.spaceXl),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.shopping_bag_outlined, size: 52),
-            const SizedBox(height: 12),
+            Container(
+              width: 96,
+              height: 96,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: ChezMamaTheme.brandGradient.scale(0.15),
+              ),
+              child: Icon(
+                Icons.shopping_bag_outlined,
+                size: 44,
+                color: ChezMamaTheme.brandOrange.withValues(alpha: 0.85),
+              ),
+            ),
+            const SizedBox(height: ChezMamaTheme.spaceLg),
             Text(
               tr('cart.empty'),
               style: t.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900),
+              textAlign: TextAlign.center,
             ),
             const SizedBox(height: 6),
             Text(
               tr('cart.emptyHint'),
               textAlign: TextAlign.center,
+              style: t.textTheme.bodyMedium?.copyWith(
+                color: ChezMamaTheme.mutedInk(context),
+              ),
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: ChezMamaTheme.spaceLg),
             OutlinedButton.icon(
               onPressed: onSeeOrders,
               icon: const Icon(Icons.receipt_long_rounded),
@@ -252,5 +321,19 @@ class _EmptyCart extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+extension on Gradient {
+  Gradient scale(double opacity) {
+    if (this is LinearGradient) {
+      final g = this as LinearGradient;
+      return LinearGradient(
+        begin: g.begin,
+        end: g.end,
+        colors: g.colors.map((c) => c.withValues(alpha: opacity)).toList(),
+      );
+    }
+    return this;
   }
 }
