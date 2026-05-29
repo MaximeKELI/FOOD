@@ -149,11 +149,12 @@ class _OrderCard extends StatelessWidget {
           if (order.deliveryFee > 0 ||
               order.discount > 0 ||
               order.subtotal > 0) ...[
-            _miniLine(t, 'Sous-total', '${order.subtotal} FCFA'),
+            _miniLine(context, t, 'Sous-total', '${order.subtotal} FCFA'),
             if (order.deliveryFee > 0)
-              _miniLine(t, 'Livraison', '${order.deliveryFee} FCFA'),
+              _miniLine(context, t, 'Livraison', '${order.deliveryFee} FCFA'),
             if (order.discount > 0)
               _miniLine(
+                context,
                 t,
                 'Promo${order.promoCode.isEmpty ? '' : ' (${order.promoCode})'}',
                 '−${order.discount} FCFA',
@@ -207,7 +208,8 @@ class _OrderCard extends StatelessWidget {
     );
   }
 
-  Widget _miniLine(ThemeData t, String label, String value, {Color? accent}) {
+  Widget _miniLine(BuildContext context, ThemeData t, String label,
+      String value, {Color? accent}) {
     final style = t.textTheme.bodySmall?.copyWith(
       color: accent ?? ChezMamaTheme.mutedInk(context),
       fontWeight: FontWeight.w600,

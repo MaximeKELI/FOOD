@@ -137,6 +137,23 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
           ),
           const SizedBox(height: 20),
           Text(
+            'Ventes des 7 derniers jours',
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w900,
+                ),
+          ),
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.fromLTRB(14, 16, 14, 12),
+            decoration: BoxDecoration(
+              color: ChezMamaTheme.cardColor(context),
+              borderRadius: BorderRadius.circular(ChezMamaTheme.rCard),
+              boxShadow: ChezMamaTheme.softShadow(opacity: 0.08),
+            ),
+            child: _SalesBarChart(days: s.salesByDay),
+          ),
+          const SizedBox(height: 20),
+          Text(
             'Commandes par statut',
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.w900,
