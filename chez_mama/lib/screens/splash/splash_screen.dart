@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:lottie/lottie.dart';
 import '../../ui/chezmama_theme.dart';
 import '../shell/app_shell.dart';
 

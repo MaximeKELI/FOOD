@@ -48,6 +48,27 @@ class Meal(models.Model):
         return self.name
 
 
+class MealFavorite(models.Model):
+    """A user bookmarking a meal."""
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="meal_favorites",
+    )
+    meal = models.ForeignKey(
+        Meal, on_delete=models.CASCADE, related_name="favorited_by"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        unique_together = ("user", "meal")
+
+    def __str__(self):
+        return f"{self.user.email} ♥ {self.meal.name}"
+
+
 class Review(models.Model):
     """A customer rating + optional comment on a meal."""
 
