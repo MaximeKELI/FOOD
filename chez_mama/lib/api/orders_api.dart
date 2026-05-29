@@ -33,6 +33,11 @@ class OrderView {
     required this.address,
     required this.phone,
     required this.customerName,
+    required this.subtotal,
+    required this.deliveryFee,
+    required this.discount,
+    required this.promoCode,
+    required this.pointsEarned,
     required this.total,
     required this.createdAt,
     required this.items,
@@ -109,6 +114,9 @@ class OrdersApi {
     required String phone,
     required String note,
     required List<Map<String, dynamic>> items,
+    double? latitude,
+    double? longitude,
+    String? promoCode,
   }) async {
     final res = await _dio.post('/orders/', data: {
       'fulfillment': fulfillment,
@@ -117,8 +125,25 @@ class OrdersApi {
       'phone': phone,
       'note': note,
       'items': items,
+      if (latitude != null) 'latitude': latitude,
+      if (longitude != null) 'longitude': longitude,
+      if (promoCode != null && promoCode.isNotEmpty) 'promo_code': promoCode,
     });
     return OrderView.fromJson(res.data as Map<String, dynamic>);
+  }
+
+  /// Previews the delivery fee for the given meals + customer location.
+  Future<int> deliveryQuote({
+    required List<int> mealIds,
+    double? latitude,
+    double? longitude,
+  }) async {
+    final res = await _dio.post('/orders/delivery-quote/', data: {
+      'meals': mealIds,
+      if (latitude != null) 'latitude': latitude,
+      if (longitude != null) 'longitude': longitude,
+    });
+    return res.data['delivery_fee'] as int? ?? 0;
   }
 
   Future<List<OrderView>> fetchOrders() async {
