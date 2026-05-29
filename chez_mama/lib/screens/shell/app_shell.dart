@@ -96,6 +96,7 @@ class _AppShellState extends State<AppShell> {
     _badgeTimer = Timer.periodic(
       const Duration(seconds: 30),
       (_) {
+        if (!mounted) return;
         if (!AuthScope.of(context).isAuthed) return;
         ReceivedOrdersNotifier.instance.refresh();
         NotificationsNotifier.instance.refresh();
@@ -107,6 +108,7 @@ class _AppShellState extends State<AppShell> {
   void _go(Widget screen) {
     Navigator.of(context).push(MaterialPageRoute(builder: (_) => screen)).then(
       (_) {
+        if (!mounted) return;
         if (!AuthScope.of(context).isAuthed) return;
         ReceivedOrdersNotifier.instance.refresh();
         NotificationsNotifier.instance.refresh();
@@ -169,12 +171,12 @@ class _AppShellState extends State<AppShell> {
     super.dispose();
   }
 
-  Widget _buildPage(int i, bool isSeller) {
+  Widget _buildPage(int i, bool isSeller, bool isAuthed) {
     switch (i) {
       case 0:
         return HomeScreen(
           isSeller: isSeller,
-          isAuthed: auth.isAuthed,
+          isAuthed: isAuthed,
           onNotifications: () => _requireAuth(() => _go(const NotificationsScreen())),
           onMessages: () => _requireAuth(() => _go(const ConversationsScreen())),
           onReceivedOrders: () => _go(const ReceivedOrdersScreen()),
@@ -273,7 +275,7 @@ class _AppShellState extends State<AppShell> {
             },
             child: KeyedSubtree(
               key: ValueKey('$index-${auth.isSeller}'),
-              child: _buildPage(index, auth.isSeller),
+              child: _buildPage(index, auth.isSeller, auth.isAuthed),
             ),
           );
         },

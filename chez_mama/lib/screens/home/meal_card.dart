@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import '../../models/meal.dart';
 import '../../ui/chezmama_theme.dart';
@@ -30,13 +31,12 @@ class _MealCardState extends State<MealCard> {
         filterQuality: FilterQuality.low,
       );
     }
-    return Image.network(
-      source,
+    return CachedNetworkImage(
+      imageUrl: source,
       fit: BoxFit.cover,
       filterQuality: FilterQuality.low,
-      errorBuilder: (context, error, stackTrace) {
-        return _ImageFallback(accent: widget.meal.accent);
-      },
+      placeholder: (_, __) => _ImageFallback(accent: widget.meal.accent),
+      errorWidget: (_, __, ___) => _ImageFallback(accent: widget.meal.accent),
     );
   }
 

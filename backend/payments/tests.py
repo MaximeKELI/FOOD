@@ -1,6 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from rest_framework.test import APIClient
 
 from accounts.models import SellerProfile
@@ -50,6 +50,7 @@ class PaymentFlowTests(TestCase):
         order.refresh_from_db()
         self.assertEqual(order.payment_status, Order.PaymentStatus.PROCESSING)
 
+    @override_settings(DEBUG=True)
     def test_mock_complete_marks_paid(self):
         order = Order.objects.create(
             customer=self.customer,
@@ -70,3 +71,26 @@ class PaymentFlowTests(TestCase):
         self.assertEqual(res.status_code, 200)
         order.refresh_from_db()
         self.assertEqual(order.payment_status, Order.PaymentStatus.PAID)
+
+    def test_mock_complete_blocked_when_not_debug(self):
+        from django.test import override_settings
+        from payments.models import PaymentIntent
+
+        order = Order.objects.create(
+            customer=self.customer,
+            payment_method=Order.Payment.WAVE,
+            payment_status=Order.PaymentStatus.PROCESSING,
+            subtotal=3000,
+            total=3000,
+        )
+        intent = PaymentIntent.objects.create(
+            order=order,
+            provider=PaymentIntent.Provider.MOCK,
+            amount=3000,
+            status=PaymentIntent.Status.PROCESSING,
+        )
+        with override_settings(DEBUG=False):
+            res = self.client.get(f"/api/payments/mock/complete/{intent.id}/")
+        self.assertEqual(res.status_code, 404)
+        order.refresh_from_db()
+        self.assertEqual(order.payment_status, Order.PaymentStatus.PROCESSING)
