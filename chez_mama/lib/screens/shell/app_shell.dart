@@ -5,6 +5,7 @@ import '../../cart/cart_service.dart';
 import '../../cart/received_orders_notifier.dart';
 import '../../notifications/notifications_notifier.dart';
 import '../../ui/chezmama_theme.dart';
+import '../../ui/theme_controller.dart';
 import '../home/home_screen.dart';
 import '../social/shorts_screen.dart';
 import '../social/videos_screen.dart';
