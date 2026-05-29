@@ -159,7 +159,8 @@ class _OrderCard extends StatelessWidget {
               ),
               const SizedBox(width: 6),
               Text(
-                order.fulfillment == 'pickup' ? 'Retrait' : 'Livraison',
+                '${order.fulfillment == 'pickup' ? 'Retrait' : 'Livraison'}'
+                '${order.paymentLabel.isEmpty ? '' : ' • ${order.paymentLabel}'}',
                 style: t.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w700),
               ),
               const Spacer(),

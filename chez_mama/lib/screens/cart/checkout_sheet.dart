@@ -18,6 +18,7 @@ class _CheckoutSheetState extends State<CheckoutSheet> {
   final _phone = TextEditingController();
   final _note = TextEditingController();
   String _fulfillment = 'delivery';
+  String _payment = 'cash';
   bool _submitting = false;
 
   @override
@@ -39,6 +40,7 @@ class _CheckoutSheetState extends State<CheckoutSheet> {
     try {
       await OrdersApi.instance.createOrder(
         fulfillment: _fulfillment,
+        paymentMethod: _payment,
         address: _address.text.trim(),
         phone: _phone.text.trim(),
         note: _note.text.trim(),
@@ -134,6 +136,28 @@ class _CheckoutSheetState extends State<CheckoutSheet> {
                 prefixIcon: Icon(Icons.notes_rounded),
                 border: OutlineInputBorder(),
               ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Mode de paiement',
+              style: t.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: kPaymentMethods.entries.map((e) {
+                final selected = _payment == e.key;
+                return ChoiceChip(
+                  label: Text(e.value),
+                  selected: selected,
+                  selectedColor:
+                      ChezMamaTheme.brandOrange.withValues(alpha: 0.18),
+                  onSelected: (_) => setState(() => _payment = e.key),
+                );
+              }).toList(),
             ),
             const SizedBox(height: 16),
             SizedBox(

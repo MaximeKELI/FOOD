@@ -94,6 +94,7 @@ class OrdersApi {
 
   Future<OrderView> createOrder({
     required String fulfillment,
+    required String paymentMethod,
     required String address,
     required String phone,
     required String note,
@@ -101,6 +102,7 @@ class OrdersApi {
   }) async {
     final res = await _dio.post('/orders/', data: {
       'fulfillment': fulfillment,
+      'payment_method': paymentMethod,
       'address': address,
       'phone': phone,
       'note': note,
