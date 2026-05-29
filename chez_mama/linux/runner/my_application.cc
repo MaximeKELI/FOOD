@@ -49,6 +49,20 @@ static void my_application_activate(GApplication* application) {
     gtk_window_set_title(window, "Food");
   }
 
+  // Use the bundled logo as the window icon.
+  {
+    char exe_path[1024];
+    ssize_t len = readlink("/proc/self/exe", exe_path, sizeof(exe_path) - 1);
+    if (len > 0) {
+      exe_path[len] = '\0';
+      g_autofree gchar* dir = g_path_get_dirname(exe_path);
+      g_autofree gchar* icon_path = g_build_filename(
+          dir, "data", "flutter_assets", "assets", "images", "app_logo.png",
+          nullptr);
+      gtk_window_set_icon_from_file(window, icon_path, nullptr);
+    }
+  }
+
   gtk_window_set_default_size(window, 1280, 720);
   gtk_widget_show(GTK_WIDGET(window));
 
