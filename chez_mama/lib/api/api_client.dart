@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
+import '../l10n/app_strings.dart';
+import '../storage/token_storage.dart';
 import 'api_config.dart';
 
 /// Thin wrapper around Dio that injects the JWT access token and
@@ -17,8 +18,7 @@ class ApiClient {
     _dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) async {
-          final prefs = await _prefs;
-          final token = prefs.getString(_kAccess);
+          final token = await TokenStorage.instance.readAccess();
           if (token != null && token.isNotEmpty) {
             options.headers['Authorization'] = 'Bearer $token';
           }
@@ -50,35 +50,24 @@ class ApiClient {
 
   static final ApiClient instance = ApiClient._();
 
-  static const _kAccess = 'auth.access';
-  static const _kRefresh = 'auth.refresh';
-
   late final Dio _dio;
   void Function()? onSessionExpired;
 
   Dio get dio => _dio;
 
-  Future<SharedPreferences> get _prefs => SharedPreferences.getInstance();
-
   Future<void> saveTokens({
     required String access,
     required String refresh,
   }) async {
-    final prefs = await _prefs;
-    await prefs.setString(_kAccess, access);
-    await prefs.setString(_kRefresh, refresh);
+    await TokenStorage.instance.write(access: access, refresh: refresh);
   }
 
   Future<void> clearTokens() async {
-    final prefs = await _prefs;
-    await prefs.remove(_kAccess);
-    await prefs.remove(_kRefresh);
+    await TokenStorage.instance.clear();
   }
 
   Future<bool> hasToken() async {
-    final prefs = await _prefs;
-    final token = prefs.getString(_kAccess);
-    return token != null && token.isNotEmpty;
+    return TokenStorage.instance.hasToken();
   }
 
   Future<void> _invalidateSession() async {
@@ -87,8 +76,7 @@ class ApiClient {
   }
 
   Future<bool> _tryRefresh() async {
-    final prefs = await _prefs;
-    final refresh = prefs.getString(_kRefresh);
+    final refresh = await TokenStorage.instance.readRefresh();
     if (refresh == null || refresh.isEmpty) return false;
     try {
       final res = await Dio(BaseOptions(baseUrl: ApiConfig.apiUrl)).post(
@@ -97,7 +85,7 @@ class ApiClient {
       );
       final access = res.data['access'] as String?;
       if (access == null) return false;
-      await prefs.setString(_kAccess, access);
+      await TokenStorage.instance.write(access: access, refresh: refresh);
       return true;
     } catch (_) {
       return false;
@@ -105,8 +93,7 @@ class ApiClient {
   }
 
   Future<Response<dynamic>> _retry(RequestOptions requestOptions) async {
-    final prefs = await _prefs;
-    final token = prefs.getString(_kAccess);
+    final token = await TokenStorage.instance.readAccess();
     final options = Options(
       method: requestOptions.method,
       headers: {
@@ -139,9 +126,9 @@ String apiErrorMessage(Object error) {
     }
     if (error.type == DioExceptionType.connectionError ||
         error.type == DioExceptionType.connectionTimeout) {
-      return 'Impossible de joindre le serveur. Vérifie ta connexion.';
+      return tr('error.network');
     }
-    return error.message ?? 'Erreur réseau';
+    return error.message ?? tr('error.generic');
   }
   return error.toString();
 }
