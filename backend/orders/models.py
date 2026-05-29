@@ -33,6 +33,9 @@ class Order(models.Model):
     fulfillment = models.CharField(
         max_length=20, choices=Fulfillment.choices, default=Fulfillment.DELIVERY
     )
+    payment_method = models.CharField(
+        max_length=20, choices=Payment.choices, default=Payment.CASH
+    )
     address = models.CharField(max_length=255, blank=True)
     phone = models.CharField(max_length=30, blank=True)
     note = models.TextField(blank=True)

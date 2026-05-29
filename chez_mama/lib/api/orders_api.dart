@@ -29,6 +29,7 @@ class OrderView {
     required this.status,
     required this.statusLabel,
     required this.fulfillment,
+    required this.paymentLabel,
     required this.address,
     required this.phone,
     required this.customerName,
@@ -41,6 +42,7 @@ class OrderView {
   final String status;
   final String statusLabel;
   final String fulfillment;
+  final String paymentLabel;
   final String address;
   final String phone;
   final String customerName;
@@ -55,6 +57,7 @@ class OrderView {
       status: json['status'] as String? ?? 'pending',
       statusLabel: json['status_label'] as String? ?? '',
       fulfillment: json['fulfillment'] as String? ?? '',
+      paymentLabel: json['payment_label'] as String? ?? '',
       address: json['address'] as String? ?? '',
       phone: json['phone'] as String? ?? '',
       customerName: json['customer_name'] as String? ?? '',
@@ -66,6 +69,13 @@ class OrderView {
     );
   }
 }
+
+const Map<String, String> kPaymentMethods = {
+  'cash': 'À la livraison',
+  'wave': 'Wave',
+  'orange_money': 'Orange Money',
+  'free_money': 'Free Money',
+};
 
 /// Order status values used by the API.
 const Map<String, String> kOrderStatuses = {
