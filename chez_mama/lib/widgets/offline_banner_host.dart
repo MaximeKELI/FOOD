@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 
-import '../l10n/app_strings.dart';
 import '../services/connectivity_service.dart';
 import '../ui/chezmama_theme.dart';
+import '../l10n/app_strings.dart';
 
-/// Wraps the app and shows a persistent offline strip when disconnected.
+/// Overlays a persistent offline strip at the top when disconnected.
 class OfflineBannerHost extends StatelessWidget {
   const OfflineBannerHost({super.key, required this.child});
 
@@ -16,14 +16,16 @@ class OfflineBannerHost extends StatelessWidget {
       animation: ConnectivityService.instance,
       builder: (context, _) {
         final offline = !ConnectivityService.instance.isOnline;
-        return Column(
+        return Stack(
           children: [
-            AnimatedCrossFade(
-              duration: const Duration(milliseconds: 260),
-              crossFadeState:
-                  offline ? CrossFadeState.showFirst : CrossFadeState.showSecond,
-              firstChild: Material(
+            child,
+            AnimatedSlide(
+              duration: const Duration(milliseconds: 280),
+              curve: Curves.easeOutCubic,
+              offset: offline ? Offset.zero : const Offset(0, -1),
+              child: Material(
                 color: ChezMamaTheme.brandBrown,
+                elevation: 2,
                 child: SafeArea(
                   bottom: false,
                   child: Padding(
@@ -51,9 +53,7 @@ class OfflineBannerHost extends StatelessWidget {
                   ),
                 ),
               ),
-              secondChild: const SizedBox.shrink(),
             ),
-            Expanded(child: child),
           ],
         );
       },
