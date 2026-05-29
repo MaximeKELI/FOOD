@@ -66,6 +66,19 @@ class PostCreateSerializer(serializers.ModelSerializer):
         model = Post
         fields = ("id", "caption", "kind", "media_type", "media")
 
+    def validate(self, attrs):
+        media = attrs.get("media")
+        media_type = attrs.get("media_type")
+        if media_type == Post.MediaType.VIDEO and media is not None:
+            if media.size < 1024:
+                raise serializers.ValidationError(
+                    {
+                        "media": "Fichier vidéo invalide ou trop petit. "
+                        "Utilise un vrai fichier mp4, mov ou webm."
+                    }
+                )
+        return attrs
+
     def create(self, validated_data):
         validated_data["author"] = self.context["request"].user
         return super().create(validated_data)

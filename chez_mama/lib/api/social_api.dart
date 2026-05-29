@@ -1,4 +1,6 @@
 import 'package:dio/dio.dart';
+import 'package:http_parser/http_parser.dart';
+import 'package:path/path.dart' as p;
 
 import 'api_client.dart';
 import 'api_config.dart';
@@ -106,11 +108,34 @@ class SocialApi {
     required bool isVideo,
     required String mediaPath,
   }) async {
+    final filename = p.basename(mediaPath);
+    final ext = p.extension(mediaPath).toLowerCase();
+    MediaType? contentType;
+    if (isVideo) {
+      contentType = switch (ext) {
+        '.mp4' || '.m4v' => MediaType('video', 'mp4'),
+        '.webm' => MediaType('video', 'webm'),
+        '.mov' => MediaType('video', 'quicktime'),
+        '.mkv' => MediaType('video', 'x-matroska'),
+        _ => MediaType('video', 'mp4'),
+      };
+    } else {
+      contentType = switch (ext) {
+        '.png' => MediaType('image', 'png'),
+        '.webp' => MediaType('image', 'webp'),
+        '.gif' => MediaType('image', 'gif'),
+        _ => MediaType('image', 'jpeg'),
+      };
+    }
     final form = FormData.fromMap({
       'caption': caption,
       'kind': isShort ? 'short' : 'video',
       'media_type': isVideo ? 'video' : 'image',
-      'media': await MultipartFile.fromFile(mediaPath),
+      'media': await MultipartFile.fromFile(
+        mediaPath,
+        filename: filename,
+        contentType: contentType,
+      ),
     });
     final res = await _dio.post('/social/posts/', data: form);
     return ApiPost.fromJson(res.data as Map<String, dynamic>);
