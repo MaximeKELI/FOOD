@@ -72,19 +72,21 @@ class _AppShellState extends State<AppShell> {
       appBar: AppBar(
         title: const Text('Food'),
         actions: [
-          IconButton(
-            tooltip: 'Ma boutique',
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const MyShopScreen()),
-            ),
-            icon: const Icon(Icons.storefront_rounded),
-          ),
-          IconButton(
-            tooltip: 'Mes publications',
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const MyPublicationsScreen()),
-            ),
-            icon: const Icon(Icons.video_library_rounded),
+          AnimatedBuilder(
+            animation: NotificationsNotifier.instance,
+            builder: (context, _) {
+              final count = NotificationsNotifier.instance.unread;
+              return IconButton(
+                tooltip: 'Notifications',
+                onPressed: () => _go(const NotificationsScreen()),
+                icon: count > 0
+                    ? Badge.count(
+                        count: count,
+                        child: const Icon(Icons.notifications_rounded),
+                      )
+                    : const Icon(Icons.notifications_none_rounded),
+              );
+            },
           ),
           AnimatedBuilder(
             animation: ReceivedOrdersNotifier.instance,
@@ -92,14 +94,7 @@ class _AppShellState extends State<AppShell> {
               final count = ReceivedOrdersNotifier.instance.activeCount;
               return IconButton(
                 tooltip: 'Commandes reçues',
-                onPressed: () async {
-                  await Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => const ReceivedOrdersScreen(),
-                    ),
-                  );
-                  ReceivedOrdersNotifier.instance.refresh();
-                },
+                onPressed: () => _go(const ReceivedOrdersScreen()),
                 icon: count > 0
                     ? Badge.count(
                         count: count,
@@ -109,8 +104,54 @@ class _AppShellState extends State<AppShell> {
               );
             },
           ),
+          PopupMenuButton<String>(
+            tooltip: 'Menu',
+            icon: const Icon(Icons.menu_rounded),
+            onSelected: (value) {
+              switch (value) {
+                case 'shop':
+                  _go(const MyShopScreen());
+                case 'publications':
+                  _go(const MyPublicationsScreen());
+                case 'favorites':
+                  _go(const FavoriteMealsScreen());
+                case 'logout':
+                  _logout();
+              }
+            },
+            itemBuilder: (context) => const [
+              PopupMenuItem(
+                value: 'shop',
+                child: ListTile(
+                  leading: Icon(Icons.storefront_rounded),
+                  title: Text('Ma boutique'),
+                ),
+              ),
+              PopupMenuItem(
+                value: 'publications',
+                child: ListTile(
+                  leading: Icon(Icons.video_library_rounded),
+                  title: Text('Mes publications'),
+                ),
+              ),
+              PopupMenuItem(
+                value: 'favorites',
+                child: ListTile(
+                  leading: Icon(Icons.favorite_rounded),
+                  title: Text('Mes favoris'),
+                ),
+              ),
+              PopupMenuItem(
+                value: 'logout',
+                child: ListTile(
+                  leading: Icon(Icons.logout_rounded),
+                  title: Text('Déconnexion'),
+                ),
+              ),
+            ],
+          ),
           IconButton(
-            tooltip: 'Déconnexion',
+            tooltip: 'Déconnexion (raccourci)',
             onPressed: () async {
               await AuthScope.of(context).signOut();
               if (!context.mounted) return;
