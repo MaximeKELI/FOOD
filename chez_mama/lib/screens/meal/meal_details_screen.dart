@@ -9,6 +9,7 @@ import '../../ui/chezmama_theme.dart';
 import '../../utils/currency_format.dart';
 import '../../widgets/food_network_image.dart';
 import '../../widgets/primary_button.dart';
+import '../../widgets/status_pill.dart';
 import '../chat/conversation_screen.dart';
 import '../profile/seller_profile_screen.dart';
 
@@ -137,7 +138,7 @@ class _MealDetailsScreenState extends State<MealDetailsScreen> {
                   _favorited
                       ? Icons.favorite_rounded
                       : Icons.favorite_border_rounded,
-                  color: _favorited ? Colors.red : null,
+                  color: _favorited ? ChezMamaTheme.favorite : null,
                 ),
               ),
             ],
@@ -225,7 +226,7 @@ class _MealDetailsScreenState extends State<MealDetailsScreen> {
                     Row(
                       children: [
                         if (meal.isSpecial)
-                          _Badge(
+                          StatusPill(
                             label: tr('home.filter.special'),
                             color: ChezMamaTheme.brandBrown,
                             icon: Icons.local_fire_department_rounded,
@@ -233,9 +234,9 @@ class _MealDetailsScreenState extends State<MealDetailsScreen> {
                         if (meal.isSpecial && !meal.isAvailable)
                           const SizedBox(width: 8),
                         if (!meal.isAvailable)
-                          _Badge(
+                          StatusPill(
                             label: tr('meal.soldOut'),
-                            color: const Color(0xFF8A8A8A),
+                            color: ChezMamaTheme.soldOutGray,
                             icon: Icons.block_rounded,
                           ),
                       ],
@@ -243,11 +244,8 @@ class _MealDetailsScreenState extends State<MealDetailsScreen> {
                   ],
                   const SizedBox(height: 16),
                   Container(
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: ChezMamaTheme.subtleSurface(context),
-                      borderRadius: BorderRadius.circular(ChezMamaTheme.rCard),
-                    ),
+                    padding: const EdgeInsets.all(ChezMamaTheme.spaceMd),
+                    decoration: ChezMamaTheme.subtleDecoration(context),
                     child: Row(
                       children: [
                         Expanded(
@@ -268,8 +266,8 @@ class _MealDetailsScreenState extends State<MealDetailsScreen> {
                                 style: t.textTheme.titleLarge?.copyWith(
                                   fontWeight: FontWeight.w900,
                                   color: meal.hasPromo
-                                      ? const Color(0xFFD7263D)
-                                      : null,
+                                      ? ChezMamaTheme.promoRed
+                                      : ChezMamaTheme.brandBrown,
                                 ),
                               ),
                             ],

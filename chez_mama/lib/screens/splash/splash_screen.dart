@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../l10n/app_strings.dart';
+import '../../ui/african_pattern_painter.dart';
 import '../../ui/chezmama_theme.dart';
+import '../../widgets/brand_logo.dart';
 import '../shell/app_shell.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -65,61 +67,53 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: DecoratedBox(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Color(0xFFFFF0D9),
-              Color(0xFFFFFBF6),
-            ],
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: ChezMamaTheme.headerGradient(context),
+            ),
           ),
-        ),
-        child: Center(
-          child: FadeTransition(
-            opacity: _fade,
-            child: ScaleTransition(
-              scale: _scale,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 104,
-                    height: 104,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(26),
-                      boxShadow: ChezMamaTheme.softShadow(opacity: 0.18),
+          CustomPaint(
+            painter: AfricanPatternPainter(
+              a: ChezMamaTheme.brandOrange.withValues(alpha: 0.35),
+              b: ChezMamaTheme.brandAmber.withValues(alpha: 0.25),
+              c: ChezMamaTheme.brandBrown.withValues(alpha: 0.2),
+            ),
+          ),
+          Center(
+            child: FadeTransition(
+              opacity: _fade,
+              child: ScaleTransition(
+                scale: _scale,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const BrandLogo(size: 104, radius: 26, showShadow: true),
+                    const SizedBox(height: ChezMamaTheme.spaceLg),
+                    Text(
+                      tr('app.name'),
+                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: -0.4,
+                          ),
                     ),
-                    clipBehavior: Clip.antiAlias,
-                    child: Image.asset(
-                      'assets/images/app_logo.png',
-                      fit: BoxFit.cover,
+                    const SizedBox(height: 8),
+                    Text(
+                      tr('app.tagline'),
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: ChezMamaTheme.mutedInk(context),
+                            fontWeight: FontWeight.w600,
+                          ),
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    tr('app.name'),
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: -0.4,
-                        ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    tr('app.tagline'),
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: ChezMamaTheme.ink.withValues(alpha: 0.65),
-                          fontWeight: FontWeight.w600,
-                        ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
-        ),
+        ],
       ),
     );
   }
 }
-
