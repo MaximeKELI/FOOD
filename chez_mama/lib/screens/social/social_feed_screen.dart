@@ -546,15 +546,17 @@ class _CreatePostSheetState extends State<_CreatePostSheet> {
   void _submit() {
     if (mediaPath == null || isVideo == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Choisis d’abord une photo ou une vidéo.')),
+        SnackBar(content: Text(tr('social.pickMediaFirst'))),
       );
       return;
     }
     var caption = captionController.text.trim();
     if (caption.isEmpty) {
       caption = isVideo!
-          ? (widget.isShort ? 'Mon short' : 'Ma vidéo')
-          : 'Ma photo';
+          ? (widget.isShort
+              ? tr('social.defaultShortCaption')
+              : tr('social.defaultVideoCaption'))
+          : tr('social.defaultPhotoCaption');
     }
     Navigator.of(context).pop(
       _PostDraft(caption: caption, mediaPath: mediaPath!, isVideo: isVideo!),
@@ -578,8 +580,9 @@ class _CreatePostSheetState extends State<_CreatePostSheet> {
               controller: captionController,
               maxLines: 3,
               decoration: InputDecoration(
-                labelText:
-                    widget.isShort ? 'Texte du short' : 'Description de la vidéo',
+                labelText: widget.isShort
+                    ? tr('social.shortCaptionLabel')
+                    : tr('social.videoCaptionLabel'),
                 border: const OutlineInputBorder(),
               ),
             ),
@@ -590,7 +593,7 @@ class _CreatePostSheetState extends State<_CreatePostSheet> {
                   child: OutlinedButton.icon(
                     onPressed: _pickPhoto,
                     icon: const Icon(Icons.photo_library_rounded),
-                    label: const Text('Photo (galerie)'),
+                    label: Text(tr('social.photoGallery')),
                   ),
                 ),
                 const SizedBox(width: 10),
@@ -598,7 +601,7 @@ class _CreatePostSheetState extends State<_CreatePostSheet> {
                   child: OutlinedButton.icon(
                     onPressed: _pickVideoFromGallery,
                     icon: const Icon(Icons.video_library_rounded),
-                    label: const Text('Vidéo (galerie)'),
+                    label: Text(tr('social.videoGallery')),
                   ),
                 ),
               ],
@@ -610,7 +613,7 @@ class _CreatePostSheetState extends State<_CreatePostSheet> {
                 child: OutlinedButton.icon(
                   onPressed: _captureVideo,
                   icon: const Icon(Icons.videocam_rounded),
-                  label: const Text('Filmer maintenant (caméra)'),
+                  label: Text(tr('social.recordVideo')),
                 ),
               ),
             const SizedBox(height: 12),
@@ -642,8 +645,9 @@ class _CreatePostSheetState extends State<_CreatePostSheet> {
               ),
               child: Text(
                 mediaPath == null
-                    ? 'Aucun média sélectionné — obligatoire pour publier'
-                    : 'Média sélectionné: ${p.basename(mediaPath!)}',
+                    ? tr('social.noMediaSelected')
+                    : trf('social.mediaSelected',
+                        {'name': p.basename(mediaPath!)}),
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       fontWeight: FontWeight.w700,
                     ),
@@ -658,7 +662,11 @@ class _CreatePostSheetState extends State<_CreatePostSheet> {
                   backgroundColor: ChezMamaTheme.brandOrange,
                   foregroundColor: Colors.white,
                 ),
-                child: Text(widget.isShort ? 'Publier short' : 'Publier vidéo'),
+                child: Text(
+                  widget.isShort
+                      ? tr('social.publishShortBtn')
+                      : tr('social.publishVideoBtn'),
+                ),
               ),
             ),
           ],
