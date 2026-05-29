@@ -75,6 +75,7 @@ class ReviewSerializer(serializers.ModelSerializer):
 
 class MealCreateSerializer(serializers.ModelSerializer):
     is_available = serializers.BooleanField(required=False, default=True)
+    is_special = serializers.BooleanField(required=False, default=False)
 
     class Meta:
         model = Meal
@@ -84,7 +85,9 @@ class MealCreateSerializer(serializers.ModelSerializer):
             "image",
             "subtitle",
             "price",
+            "promo_price",
             "is_available",
+            "is_special",
             "category",
         )
 
