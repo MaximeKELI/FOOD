@@ -20,12 +20,32 @@ class _MealDetailsScreenState extends State<MealDetailsScreen> {
   List<MealReview> _reviews = [];
   bool _loadingReviews = true;
   double _avg = 0;
+  late bool _favorited;
+  bool _favBusy = false;
 
   @override
   void initState() {
     super.initState();
     _avg = widget.meal.rating;
+    _favorited = widget.meal.favoritedByMe;
     _loadReviews();
+  }
+
+  Future<void> _toggleFavorite() async {
+    if (_favBusy) return;
+    setState(() => _favBusy = true);
+    try {
+      final fav = await CatalogApi.instance.toggleFavorite(widget.meal.id);
+      if (!mounted) return;
+      setState(() => _favorited = fav);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(apiErrorMessage(e))),
+      );
+    } finally {
+      if (mounted) setState(() => _favBusy = false);
+    }
   }
 
   Future<void> _loadReviews() async {

@@ -41,6 +41,17 @@ class CatalogApi {
     await _dio.delete('/catalog/meals/$id/');
   }
 
+  Future<bool> toggleFavorite(String mealId) async {
+    final res = await _dio.post('/catalog/meals/$mealId/favorite/');
+    return res.data['favorited'] as bool? ?? false;
+  }
+
+  Future<List<Meal>> fetchFavorites() async {
+    final res = await _dio.get('/catalog/favorites/');
+    final results = (res.data['results'] as List?) ?? const [];
+    return results.map((e) => _mealFromJson(e as Map<String, dynamic>)).toList();
+  }
+
   Future<List<MealReview>> fetchReviews(String mealId) async {
     final res = await _dio.get('/catalog/meals/$mealId/reviews/');
     final list = (res.data as List?) ?? const [];
