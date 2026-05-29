@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'auth/auth_scope.dart';
 import 'auth/auth_service.dart';
-import 'auth/session_handler.dart';
 import 'analytics/event_tracker.dart';
 import 'analytics/tracked_widgets.dart';
 import 'cart/cart_service.dart';

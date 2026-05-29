@@ -220,6 +220,7 @@ class _CheckoutSheetState extends State<CheckoutSheet> {
       }
       if (paid || _payment == 'cash') {
         _cart.clear();
+        PaymentPendingService.instance.clear();
       }
       ReceivedOrdersNotifier.instance.refresh();
       if (!mounted) return;
