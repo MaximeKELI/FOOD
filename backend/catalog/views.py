@@ -1,4 +1,4 @@
-from django.db.models import Q
+from django.db.models import Avg, Count, Exists, OuterRef, Q
 from django.shortcuts import get_object_or_404
 from rest_framework import generics, permissions
 from rest_framework.parsers import FormParser, MultiPartParser

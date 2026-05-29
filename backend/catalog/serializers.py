@@ -1,4 +1,4 @@
-from django.db.models import Avg, Q
+from django.db.models import Avg, Count, Exists, OuterRef, Q
 from rest_framework import serializers
 
 from food_api.validators import validate_image_upload
@@ -53,13 +53,19 @@ class MealSerializer(serializers.ModelSerializer):
         read_only_fields = ("seller",)
 
     def get_rating(self, obj):
+        if hasattr(obj, "rating_avg") and obj.rating_avg is not None:
+            return round(float(obj.rating_avg), 1)
         avg = obj.reviews.aggregate(v=Avg("rating"))["v"]
         return round(avg, 1) if avg is not None else 0
 
     def get_reviews_count(self, obj):
+        if hasattr(obj, "reviews_count_annotated"):
+            return obj.reviews_count_annotated
         return obj.reviews.count()
 
     def get_favorited_by_me(self, obj):
+        if hasattr(obj, "favorited_by_me_annotated"):
+            return obj.favorited_by_me_annotated
         request = self.context.get("request")
         user = getattr(request, "user", None)
         if user is None or not user.is_authenticated:
@@ -101,6 +107,12 @@ class ReviewSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("La note doit être entre 1 et 5.")
         return value
 
+    def validate_comment(self, value):
+        text = (value or "").strip()
+        if len(text) > 2000:
+            raise serializers.ValidationError("Commentaire trop long (max 2000).")
+        return text
+
 
 class MealCreateSerializer(serializers.ModelSerializer):
     is_available = serializers.BooleanField(required=False, default=True)
@@ -123,6 +135,8 @@ class MealCreateSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         validate_image_upload(attrs.get("image"))
         price = attrs.get("price")
+        if price is None:
+            raise serializers.ValidationError({"price": "Le prix est obligatoire."})
         promo = attrs.get("promo_price")
         if promo is not None and price is not None and promo >= price:
             raise serializers.ValidationError(
