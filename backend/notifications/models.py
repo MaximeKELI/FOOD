@@ -33,6 +33,26 @@ class Notification(models.Model):
         return f"{self.kind} -> {self.recipient.email}"
 
 
+class PushDevice(models.Model):
+    """FCM device token for push notifications."""
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="push_devices",
+    )
+    token = models.CharField(max_length=512, unique=True)
+    platform = models.CharField(max_length=20, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        indexes = [models.Index(fields=["user"])]
+
+    def __str__(self):
+        return f"Push {self.platform} — {self.user.email}"
+
+
 def notify(recipient, kind, title, body="", *, related_id=None, link=""):
     """Helper to create a notification (no-op if recipient is None)."""
     if recipient is None:

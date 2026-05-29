@@ -22,6 +22,13 @@ class Order(models.Model):
         ORANGE_MONEY = "orange_money", "Orange Money"
         FREE_MONEY = "free_money", "Free Money"
 
+    class PaymentStatus(models.TextChoices):
+        NOT_REQUIRED = "not_required", "Non requis"
+        PENDING = "pending", "En attente"
+        PROCESSING = "processing", "En cours"
+        PAID = "paid", "Payé"
+        FAILED = "failed", "Échoué"
+
     customer = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
@@ -35,6 +42,11 @@ class Order(models.Model):
     )
     payment_method = models.CharField(
         max_length=20, choices=Payment.choices, default=Payment.CASH
+    )
+    payment_status = models.CharField(
+        max_length=20,
+        choices=PaymentStatus.choices,
+        default=PaymentStatus.NOT_REQUIRED,
     )
     address = models.CharField(max_length=255, blank=True)
     phone = models.CharField(max_length=30, blank=True)
@@ -56,6 +68,11 @@ class Order(models.Model):
 
     class Meta:
         ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["customer", "-created_at"]),
+            models.Index(fields=["status"]),
+            models.Index(fields=["payment_status"]),
+        ]
 
     def __str__(self):
         return f"Commande #{self.id} de {self.customer.name}"

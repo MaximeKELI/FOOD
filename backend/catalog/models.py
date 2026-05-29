@@ -64,6 +64,23 @@ class Meal(models.Model):
         return self.name
 
 
+class MealImage(models.Model):
+    """Additional gallery photos for a meal."""
+
+    meal = models.ForeignKey(
+        Meal, on_delete=models.CASCADE, related_name="gallery"
+    )
+    image = models.ImageField(upload_to="meals/gallery/")
+    order = models.PositiveSmallIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["order", "id"]
+
+    def __str__(self):
+        return f"Photo {self.pk} — {self.meal.name}"
+
+
 class MealFavorite(models.Model):
     """A user bookmarking a meal."""
 

@@ -22,6 +22,9 @@ class Conversation(models.Model):
     class Meta:
         ordering = ["-updated_at"]
         unique_together = ("user_low", "user_high")
+        indexes = [
+            models.Index(fields=["-updated_at"]),
+        ]
 
     @classmethod
     def between(cls, a, b):
@@ -51,6 +54,9 @@ class Message(models.Model):
 
     class Meta:
         ordering = ["created_at"]
+        indexes = [
+            models.Index(fields=["conversation", "is_read", "created_at"]),
+        ]
 
     def __str__(self):
         return f"{self.sender.email}: {self.text[:30]}"

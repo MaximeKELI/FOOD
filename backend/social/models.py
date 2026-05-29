@@ -29,6 +29,10 @@ class Post(models.Model):
 
     class Meta:
         ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["author", "-created_at"]),
+            models.Index(fields=["kind", "-created_at"]),
+        ]
 
     def __str__(self):
         return f"{self.get_kind_display()} de {self.author.name}"
