@@ -2,19 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart';
 import '../../api/api_client.dart';
 import '../../api/catalog_api.dart';
-import '../../data/demo_data.dart';
 import '../../l10n/app_strings.dart';
 import '../../models/meal.dart';
 import '../../services/app_location_service.dart';
 import '../../ui/african_pattern_painter.dart';
 import '../../ui/chezmama_theme.dart';
 import '../../widgets/shimmer_skeleton.dart';
+import '../../widgets/shell_toolbar_actions.dart';
 import '../meal/meal_details_screen.dart';
 import 'hero_carousel.dart';
 import 'meal_card.dart';
 import 'publish_meal_sheet.dart';
 
 enum MealSort { recent, priceAsc, priceDesc, rating, distance }
+
+const _allCategory = 'Tous';
 
 const Map<MealSort, String> _sortLabels = {
   MealSort.recent: 'Récents',
@@ -25,7 +27,22 @@ const Map<MealSort, String> _sortLabels = {
 };
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  const HomeScreen({
+    super.key,
+    required this.isSeller,
+    required this.onNotifications,
+    required this.onMessages,
+    required this.onReceivedOrders,
+    required this.onMenuSelected,
+    required this.onPickLanguage,
+  });
+
+  final bool isSeller;
+  final VoidCallback onNotifications;
+  final VoidCallback onMessages;
+  final VoidCallback onReceivedOrders;
+  final ValueChanged<String> onMenuSelected;
+  final VoidCallback onPickLanguage;
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -36,12 +53,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   bool loading = true;
   String? error;
-  String activeCategory = DemoData.categories.first;
+  String activeCategory = _allCategory;
   String _query = '';
   final _searchCtrl = TextEditingController();
   List<Meal> _allMeals = [];
+  List<String> _categories = const [_allCategory];
 
-  // Filters & sort
   MealSort _sort = MealSort.recent;
   bool _availableOnly = false;
   bool _promoOnly = false;
@@ -67,10 +84,22 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       error = null;
     });
     try {
-      final meals = await CatalogApi.instance.fetchMeals();
+      final results = await Future.wait([
+        CatalogApi.instance.fetchMeals(),
+        CatalogApi.instance.fetchCategories(),
+      ]);
       if (!mounted) return;
+      final meals = results[0] as List<Meal>;
+      final apiCategories = results[1] as List<MealCategory>;
       setState(() {
         _allMeals = meals;
+        _categories = [
+          _allCategory,
+          ...apiCategories.map((c) => c.name),
+        ];
+        if (!_categories.contains(activeCategory)) {
+          activeCategory = _allCategory;
+        }
         loading = false;
       });
       _stagger.forward(from: 0);
@@ -103,16 +132,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 
   List<Meal> get _visibleMeals {
-    // Plats réels en premier ; sur « Popular », garder aussi les visuels d'accueil.
-    List<Meal> meals;
-    if (activeCategory == 'Popular') {
-      meals = [..._allMeals, ...DemoData.meals];
-    } else if (_allMeals.isNotEmpty) {
-      meals = _allMeals.where((m) => m.category == activeCategory).toList();
-    } else {
-      meals =
-          DemoData.meals.where((m) => m.category == activeCategory).toList();
-    }
+    var meals = activeCategory == _allCategory
+        ? List<Meal>.from(_allMeals)
+        : _allMeals.where((m) => m.category == activeCategory).toList();
+
     final q = _query.trim().toLowerCase();
     if (q.isNotEmpty) {
       meals = meals.where((m) {
@@ -185,11 +208,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     final meals = _visibleMeals;
 
     return Scaffold(
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _publishMeal,
-        icon: const Icon(Icons.add_rounded),
-        label: Text(tr('home.publishMeal')),
-      ),
+      floatingActionButton: widget.isSeller
+          ? FloatingActionButton.extended(
+              onPressed: _publishMeal,
+              icon: const Icon(Icons.add_rounded),
+              label: Text(tr('home.publishMeal')),
+            )
+          : null,
       body: CustomScrollView(
         controller: scroll,
         slivers: [
@@ -198,6 +223,16 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             expandedHeight: 220,
             automaticallyImplyLeading: false,
             backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+            actions: [
+              ShellToolbarActions(
+                isSeller: widget.isSeller,
+                onNotifications: widget.onNotifications,
+                onMessages: widget.onMessages,
+                onReceivedOrders: widget.onReceivedOrders,
+                onMenuSelected: widget.onMenuSelected,
+                onPickLanguage: widget.onPickLanguage,
+              ),
+            ],
             flexibleSpace: FlexibleSpaceBar(
               background: Stack(
                 fit: StackFit.expand,
@@ -234,10 +269,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   height: 44,
                   child: ListView.separated(
                     scrollDirection: Axis.horizontal,
-                    itemCount: DemoData.categories.length,
+                    itemCount: _categories.length,
                     separatorBuilder: (_, __) => const SizedBox(width: 10),
                     itemBuilder: (context, i) {
-                      final c = DemoData.categories[i];
+                      final c = _categories[i];
                       final selected = c == activeCategory;
                       return ChoiceChip(
                         label: Text(c),
@@ -359,43 +394,42 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                             ),
                           )
                         : SliverList.separated(
-                    itemCount: meals.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 14),
-                    itemBuilder: (context, i) {
-                      final meal = meals[i];
-                      final start = (i * 0.08).clamp(0.0, 0.7);
-                      final end = (start + 0.3).clamp(0.0, 1.0);
-                      final a = CurvedAnimation(
-                        parent: _stagger,
-                        curve: Interval(start, end, curve: Curves.easeOutCubic),
-                      );
+                            itemCount: meals.length,
+                            separatorBuilder: (_, __) =>
+                                const SizedBox(height: 14),
+                            itemBuilder: (context, i) {
+                              final meal = meals[i];
+                              final start = (i * 0.08).clamp(0.0, 0.7);
+                              final end = (start + 0.3).clamp(0.0, 1.0);
+                              final a = CurvedAnimation(
+                                parent: _stagger,
+                                curve: Interval(start, end,
+                                    curve: Curves.easeOutCubic),
+                              );
 
-                      return FadeTransition(
-                        opacity: a,
-                        child: SlideTransition(
-                          position: Tween<Offset>(
-                            begin: const Offset(0, 0.08),
-                            end: Offset.zero,
-                          ).animate(a),
-                          child: Builder(
-                            builder: (cardContext) {
-                              return MealCard(
-                                meal: meal,
-                                onTap: () {
-                                  Navigator.of(context).push(
-                                    MaterialPageRoute(
-                                      builder: (_) =>
-                                          MealDetailsScreen(meal: meal),
-                                    ),
-                                  );
-                                },
+                              return FadeTransition(
+                                opacity: a,
+                                child: SlideTransition(
+                                  position: Tween<Offset>(
+                                    begin: const Offset(0, 0.08),
+                                    end: Offset.zero,
+                                  ).animate(a),
+                                  child: MealCard(
+                                    meal: meal,
+                                    distanceKm: _distanceKm(meal),
+                                    onTap: () {
+                                      Navigator.of(context).push(
+                                        MaterialPageRoute(
+                                          builder: (_) =>
+                                              MealDetailsScreen(meal: meal),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ),
                               );
                             },
                           ),
-                        ),
-                      );
-                    },
-                  ),
           ),
         ],
       ),
@@ -500,4 +534,3 @@ class _HomeSkeleton extends StatelessWidget {
     );
   }
 }
-
