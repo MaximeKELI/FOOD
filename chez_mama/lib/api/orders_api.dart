@@ -191,6 +191,17 @@ class TopMeal {
   }
 }
 
+class DaySales {
+  DaySales({required this.date, required this.revenue});
+  final String date; // ISO yyyy-MM-dd
+  final int revenue;
+
+  factory DaySales.fromJson(Map<String, dynamic> json) => DaySales(
+        date: json['date'] as String? ?? '',
+        revenue: json['revenue'] as int? ?? 0,
+      );
+}
+
 class SellerStats {
   SellerStats({
     required this.ordersCount,
@@ -199,6 +210,7 @@ class SellerStats {
     required this.deliveredRevenue,
     required this.byStatus,
     required this.topMeals,
+    required this.salesByDay,
     required this.followers,
     required this.mealsCount,
   });
@@ -209,12 +221,14 @@ class SellerStats {
   final int deliveredRevenue;
   final Map<String, int> byStatus;
   final List<TopMeal> topMeals;
+  final List<DaySales> salesByDay;
   final int followers;
   final int mealsCount;
 
   factory SellerStats.fromJson(Map<String, dynamic> json) {
     final status = (json['by_status'] as Map?) ?? const {};
     final top = (json['top_meals'] as List?) ?? const [];
+    final days = (json['sales_by_day'] as List?) ?? const [];
     return SellerStats(
       ordersCount: json['orders_count'] as int? ?? 0,
       itemsSold: json['items_sold'] as int? ?? 0,
@@ -223,6 +237,8 @@ class SellerStats {
       byStatus: status.map((k, v) => MapEntry(k as String, v as int)),
       topMeals:
           top.map((e) => TopMeal.fromJson(e as Map<String, dynamic>)).toList(),
+      salesByDay:
+          days.map((e) => DaySales.fromJson(e as Map<String, dynamic>)).toList(),
       followers: json['followers'] as int? ?? 0,
       mealsCount: json['meals_count'] as int? ?? 0,
     );
