@@ -8,6 +8,7 @@ import '../../l10n/app_strings.dart';
 import '../../notifications/notifications_notifier.dart';
 import '../../ui/chezmama_theme.dart';
 import '../../ui/theme_controller.dart';
+import '../../widgets/brand_logo.dart';
 import '../../widgets/shell_toolbar_actions.dart';
 import '../home/home_screen.dart';
 import '../social/shorts_screen.dart';
@@ -216,19 +217,7 @@ class _AppShellState extends State<AppShell> {
               title: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Container(
-                    width: 30,
-                    height: 30,
-                    decoration: BoxDecoration(
-                      color: ChezMamaTheme.brandOrange.withValues(alpha: 0.14),
-                      borderRadius: BorderRadius.circular(9),
-                    ),
-                    child: const Icon(
-                      Icons.restaurant_rounded,
-                      size: 18,
-                      color: ChezMamaTheme.brandOrange,
-                    ),
-                  ),
+                  const BrandLogo(size: 30, radius: 9),
                   const SizedBox(width: 10),
                   Text(_titles[index]),
                 ],

@@ -289,7 +289,11 @@ class _EmptyCart extends StatelessWidget {
               height: 96,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                gradient: ChezMamaTheme.brandGradient.scale(0.15),
+                color: ChezMamaTheme.brandOrange.withValues(alpha: 0.12),
+                border: Border.all(
+                  color: ChezMamaTheme.brandAmber.withValues(alpha: 0.35),
+                  width: 1.5,
+                ),
               ),
               child: Icon(
                 Icons.shopping_bag_outlined,
@@ -321,19 +325,5 @@ class _EmptyCart extends StatelessWidget {
         ),
       ),
     );
-  }
-}
-
-extension on Gradient {
-  Gradient scale(double opacity) {
-    if (this is LinearGradient) {
-      final g = this as LinearGradient;
-      return LinearGradient(
-        begin: g.begin,
-        end: g.end,
-        colors: g.colors.map((c) => c.withValues(alpha: opacity)).toList(),
-      );
-    }
-    return this;
   }
 }
