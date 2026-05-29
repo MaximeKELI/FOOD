@@ -180,9 +180,14 @@ class _MyPublicationsScreenState extends State<MyPublicationsScreen>
 }
 
 class _MealsTab extends StatelessWidget {
-  const _MealsTab({required this.meals, required this.onDelete});
+  const _MealsTab({
+    required this.meals,
+    required this.onDelete,
+    required this.onUpdate,
+  });
   final List<Meal> meals;
   final ValueChanged<Meal> onDelete;
+  final void Function(Meal, {bool? available, bool? special}) onUpdate;
 
   @override
   Widget build(BuildContext context) {
@@ -197,9 +202,51 @@ class _MealsTab extends StatelessWidget {
         final meal = meals[i];
         return _Row(
           title: meal.name,
-          subtitle: meal.category,
+          subtitle: meal.isAvailable ? meal.category : '${meal.category} • Épuisé',
           imageUrl: meal.image,
           onDelete: () => onDelete(meal),
+          trailing: PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert_rounded),
+            onSelected: (v) {
+              switch (v) {
+                case 'avail':
+                  onUpdate(meal, available: !meal.isAvailable);
+                case 'special':
+                  onUpdate(meal, special: !meal.isSpecial);
+                case 'delete':
+                  onDelete(meal);
+              }
+            },
+            itemBuilder: (_) => [
+              PopupMenuItem(
+                value: 'avail',
+                child: ListTile(
+                  leading: Icon(meal.isAvailable
+                      ? Icons.block_rounded
+                      : Icons.check_circle_rounded),
+                  title: Text(meal.isAvailable
+                      ? 'Marquer épuisé'
+                      : 'Marquer disponible'),
+                ),
+              ),
+              PopupMenuItem(
+                value: 'special',
+                child: ListTile(
+                  leading: const Icon(Icons.local_fire_department_rounded),
+                  title: Text(meal.isSpecial
+                      ? 'Retirer plat du jour'
+                      : 'Marquer plat du jour'),
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'delete',
+                child: ListTile(
+                  leading: Icon(Icons.delete_outline_rounded, color: Colors.red),
+                  title: Text('Supprimer'),
+                ),
+              ),
+            ],
+          ),
         );
       },
     );
