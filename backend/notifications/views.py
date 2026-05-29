@@ -45,12 +45,19 @@ class PushDeviceRegisterView(APIView):
             return Response(
                 {"detail": "Token FCM requis."}, status=status.HTTP_400_BAD_REQUEST
             )
-        platform = (request.data.get("platform") or "").strip()
+        platform = (request.data.get("platform") or "").strip()[:32]
         from .models import PushDevice
 
+        existing = PushDevice.objects.filter(token=token).first()
+        if existing is not None and existing.user_id != request.user.id:
+            return Response(
+                {"detail": "Ce token est déjà enregistré pour un autre compte."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
         device, _ = PushDevice.objects.update_or_create(
+            user=request.user,
             token=token,
-            defaults={"user": request.user, "platform": platform},
+            defaults={"platform": platform},
         )
         return Response({"ok": True, "id": device.id})
 

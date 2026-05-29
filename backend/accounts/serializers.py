@@ -12,6 +12,19 @@ class SellerProfileSerializer(serializers.ModelSerializer):
         exclude = ("id", "user")
         read_only_fields = ("is_verified", "created_at", "updated_at")
 
+    def validate(self, attrs):
+        lat = attrs.get("latitude", getattr(self.instance, "latitude", None))
+        lng = attrs.get("longitude", getattr(self.instance, "longitude", None))
+        if lat is not None and not (-90 <= lat <= 90):
+            raise serializers.ValidationError(
+                {"latitude": "Latitude invalide (-90 à 90)."}
+            )
+        if lng is not None and not (-180 <= lng <= 180):
+            raise serializers.ValidationError(
+                {"longitude": "Longitude invalide (-180 à 180)."}
+            )
+        return attrs
+
 
 class SellerLocationSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(source="user.id", read_only=True)
@@ -64,6 +77,47 @@ class UserSerializer(serializers.ModelSerializer):
         user = getattr(request, "user", None)
         if user is None or not user.is_authenticated:
             return False
+        return obj.followers.filter(follower=user).exists()
+
+
+class PublicSellerSerializer(serializers.ModelSerializer):
+    """Public seller profile — no email, phone, or loyalty data."""
+
+    seller_profile = SellerProfileSerializer(read_only=True)
+    name = serializers.CharField(read_only=True)
+    followers_count = serializers.SerializerMethodField()
+    meals_count = serializers.SerializerMethodField()
+    followed_by_me = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = (
+            "id",
+            "display_name",
+            "name",
+            "seller_profile",
+            "followers_count",
+            "meals_count",
+            "followed_by_me",
+        )
+
+    def get_followers_count(self, obj):
+        if hasattr(obj, "followers_count_annotated"):
+            return obj.followers_count_annotated
+        return obj.followers.count()
+
+    def get_meals_count(self, obj):
+        if hasattr(obj, "meals_count_annotated"):
+            return obj.meals_count_annotated
+        return obj.meals.count()
+
+    def get_followed_by_me(self, obj):
+        request = self.context.get("request")
+        user = getattr(request, "user", None)
+        if user is None or not user.is_authenticated:
+            return False
+        if hasattr(obj, "followed_by_me_annotated"):
+            return obj.followed_by_me_annotated
         return obj.followers.filter(follower=user).exists()
 
 

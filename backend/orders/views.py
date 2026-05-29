@@ -2,7 +2,7 @@ from datetime import timedelta
 
 from django.contrib.auth import get_user_model
 from django.db import transaction
-from django.db.models import ExpressionWrapper, F, IntegerField, Sum
+from django.db.models import Count, ExpressionWrapper, F, IntegerField, Sum
 from django.db.models.functions import TruncDate
 from django.utils import timezone
 from rest_framework import generics, permissions, status
@@ -18,6 +18,7 @@ from .serializers import (
     OrderCreateSerializer,
     OrderSerializer,
     PromoValidateSerializer,
+    ReceivedOrderSerializer,
 )
 from .services import (
     ALLOWED_STATUS_TRANSITIONS,
@@ -42,7 +43,8 @@ class OrderListCreateView(generics.ListCreateAPIView):
     def get_queryset(self):
         return (
             Order.objects.filter(customer=self.request.user)
-            .prefetch_related("items")
+            .select_related("customer")
+            .prefetch_related("items", "items__meal")
             .all()
         )
 
@@ -66,21 +68,25 @@ class OrderDetailView(generics.RetrieveAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        return Order.objects.filter(customer=self.request.user).prefetch_related(
-            "items"
+        return (
+            Order.objects.filter(customer=self.request.user)
+            .select_related("customer")
+            .prefetch_related("items", "items__meal")
         )
 
 
 class ReceivedOrderListView(generics.ListAPIView):
     """Orders that contain at least one meal sold by the current user."""
 
-    serializer_class = OrderSerializer
+    serializer_class = ReceivedOrderSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
+        seller = self.request.user
         return (
-            Order.objects.filter(items__meal__seller=self.request.user)
-            .prefetch_related("items")
+            Order.objects.filter(items__meal__seller=seller)
+            .select_related("customer")
+            .prefetch_related("items", "items__meal")
             .distinct()
         )
 
@@ -103,10 +109,13 @@ class SellerStatsView(APIView):
         )
         items_sold = items.aggregate(v=Sum("quantity"))["v"] or 0
 
-        by_status = {
-            value: orders.filter(status=value).count()
-            for value, _ in Order.Status.choices
-        }
+        by_status = dict(
+            orders.values("status")
+            .annotate(c=Count("id", distinct=True))
+            .values_list("status", "c")
+        )
+        for value, _ in Order.Status.choices:
+            by_status.setdefault(value, 0)
 
         top_meals = list(
             items.values("meal_name")
@@ -189,7 +198,12 @@ class OrderStatusUpdateView(APIView):
             new_status == Order.Status.DELIVERED
             and not order.points_awarded
         ):
-            points = order.total // 100
+            seller_total = (
+                OrderItem.objects.filter(order=order, meal__seller=request.user)
+                .aggregate(v=Sum(_line_total()))["v"]
+                or 0
+            )
+            points = seller_total // 100
             order.points_earned = points
             order.points_awarded = True
             update_fields += ["points_earned", "points_awarded"]
@@ -210,6 +224,30 @@ class OrderStatusUpdateView(APIView):
                 link="order",
             )
 
+        return Response(
+            ReceivedOrderSerializer(order, context={"request": request}).data
+        )
+
+
+class OrderCancelView(APIView):
+    """Lets the customer cancel a pending order."""
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, pk):
+        order = Order.objects.filter(pk=pk, customer=request.user).first()
+        if order is None:
+            return Response(
+                {"detail": "Commande introuvable."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        if order.status != Order.Status.PENDING:
+            return Response(
+                {"detail": "Seules les commandes en attente peuvent être annulées."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        order.status = Order.Status.CANCELLED
+        order.save(update_fields=["status"])
         return Response(
             OrderSerializer(order, context={"request": request}).data
         )
@@ -238,14 +276,22 @@ class DeliveryQuoteView(APIView):
 
         meals = {
             meal.pk: meal
-            for meal in Meal.objects.filter(pk__in=meal_ids).select_related(
-                "seller__seller_profile"
-            )
+            for meal in Meal.objects.filter(
+                pk__in=meal_ids, is_available=True
+            ).select_related("seller__seller_profile")
         }
         if not meals:
-            return Response({"delivery_fee": 0})
+            return Response(
+                {"detail": "Aucun plat valide dans le panier."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
-        items = [{"meal": mid, "quantity": 1} for mid in meals]
+        qty_by_meal = {}
+        for mid in meal_ids:
+            qty_by_meal[mid] = qty_by_meal.get(mid, 0) + 1
+        items = [
+            {"meal": mid, "quantity": qty_by_meal[mid]} for mid in qty_by_meal
+        ]
         sellers = sellers_from_meals(meals, request.user.id)
         seller_subtotals = subtotal_by_seller(items, meals)
         try:

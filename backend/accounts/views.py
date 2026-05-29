@@ -1,3 +1,4 @@
+from django.db.models import Count, Exists, OuterRef, Q
 from django.contrib.auth import get_user_model
 from django.shortcuts import get_object_or_404
 from rest_framework import generics, status
@@ -9,6 +10,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from .models import Follow, SellerProfile
 from .serializers import (
     RegisterSerializer,
+    PublicSellerSerializer,
     SellerLocationSerializer,
     SellerProfileSerializer,
     UserSerializer,
@@ -43,9 +45,30 @@ class RegisterView(generics.GenericAPIView):
 class SellerDetailView(generics.RetrieveAPIView):
     """Public read-only profile of a seller."""
 
-    serializer_class = UserSerializer
+    serializer_class = PublicSellerSerializer
     permission_classes = [AllowAny]
-    queryset = User.objects.all()
+
+    def get_queryset(self):
+        qs = User.objects.filter(
+            Q(meals__isnull=False) | Q(seller_profile__shop_name__gt="")
+        ).select_related("seller_profile")
+        request = self.request
+        if request.user.is_authenticated:
+            qs = qs.annotate(
+                followers_count_annotated=Count("followers", distinct=True),
+                meals_count_annotated=Count("meals", distinct=True),
+                followed_by_me_annotated=Exists(
+                    Follow.objects.filter(
+                        seller_id=OuterRef("pk"), follower_id=request.user.id
+                    )
+                ),
+            )
+        else:
+            qs = qs.annotate(
+                followers_count_annotated=Count("followers", distinct=True),
+                meals_count_annotated=Count("meals", distinct=True),
+            )
+        return qs.distinct()
 
 
 class SellerLocationListView(generics.ListAPIView):
