@@ -5,6 +5,7 @@ from .views import (
     OrderDetailView,
     OrderListCreateView,
     OrderStatusUpdateView,
+    PromoValidateView,
     ReceivedOrderListView,
     SellerStatsView,
 )
@@ -17,6 +18,11 @@ urlpatterns = [
         "orders/delivery-quote/",
         DeliveryQuoteView.as_view(),
         name="delivery_quote",
+    ),
+    path(
+        "orders/promo-validate/",
+        PromoValidateView.as_view(),
+        name="promo_validate",
     ),
     path("orders/<int:pk>/", OrderDetailView.as_view(), name="order_detail"),
     path(

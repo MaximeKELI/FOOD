@@ -1,5 +1,7 @@
 from datetime import timedelta
 
+from django.contrib.auth import get_user_model
+from django.db import transaction
 from django.db.models import ExpressionWrapper, F, IntegerField, Sum
 from django.db.models.functions import TruncDate
 from django.utils import timezone
@@ -10,7 +12,20 @@ from rest_framework.views import APIView
 from catalog.models import Meal
 
 from .models import Order, OrderItem
-from .serializers import OrderCreateSerializer, OrderSerializer, _haversine_km
+from .serializers import (
+    OrderCreateSerializer,
+    OrderSerializer,
+    PromoValidateSerializer,
+)
+from .services import (
+    ALLOWED_STATUS_TRANSITIONS,
+    compute_delivery_fee,
+    sellers_from_meals,
+    subtotal_by_seller,
+)
+
+User = get_user_model()
+
 
 def _line_total():
     """Fresh expression each call (reusing one instance corrupts queries)."""
@@ -97,7 +112,6 @@ class SellerStatsView(APIView):
             .order_by("-qty")[:5]
         )
 
-        # Revenue per day for the last 7 days.
         since = timezone.now() - timedelta(days=6)
         per_day = {
             row["d"]: row["v"]
@@ -134,10 +148,16 @@ class OrderStatusUpdateView(APIView):
 
     permission_classes = [permissions.IsAuthenticated]
 
+    @transaction.atomic
     def patch(self, request, pk):
-        order = Order.objects.filter(
-            pk=pk, items__meal__seller=request.user
-        ).first()
+        from notifications.models import Notification, notify
+
+        order = (
+            Order.objects.select_for_update()
+            .filter(pk=pk, items__meal__seller=request.user)
+            .distinct()
+            .first()
+        )
         if order is None:
             return Response(
                 {"detail": "Commande introuvable ou non autorisée."},
@@ -150,10 +170,22 @@ class OrderStatusUpdateView(APIView):
                 {"detail": "Statut invalide."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+        allowed = ALLOWED_STATUS_TRANSITIONS.get(order.status, set())
+        if new_status != order.status and new_status not in allowed:
+            return Response(
+                {
+                    "detail": (
+                        f"Transition impossible : {order.get_status_display()} "
+                        f"→ {valid[new_status]}."
+                    )
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        old_status = order.status
         order.status = new_status
         update_fields = ["status"]
 
-        # Award loyalty points once, when the order is delivered.
         if (
             new_status == Order.Status.DELIVERED
             and not order.points_awarded
@@ -163,11 +195,22 @@ class OrderStatusUpdateView(APIView):
             order.points_awarded = True
             update_fields += ["points_earned", "points_awarded"]
             if points:
-                customer = order.customer
+                customer = User.objects.select_for_update().get(pk=order.customer_id)
                 customer.loyalty_points = (customer.loyalty_points or 0) + points
                 customer.save(update_fields=["loyalty_points"])
 
         order.save(update_fields=update_fields)
+
+        if new_status != old_status:
+            notify(
+                order.customer,
+                Notification.Kind.ORDER_STATUS,
+                "Mise à jour de commande",
+                f"Commande #{order.id} : {order.get_status_display()}.",
+                related_id=order.id,
+                link="order",
+            )
+
         return Response(
             OrderSerializer(order, context={"request": request}).data
         )
@@ -188,26 +231,47 @@ class DeliveryQuoteView(APIView):
         except (TypeError, ValueError):
             lat = lng = None
 
-        sellers = {}
-        for meal in Meal.objects.filter(pk__in=meal_ids).select_related(
-            "seller__seller_profile"
-        ):
-            if meal.seller_id != request.user.id:
-                sellers[meal.seller_id] = meal.seller
+        if lat is None or lng is None:
+            return Response(
+                {"detail": "La position GPS est requise pour estimer la livraison."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
-        fee = 0
-        for seller in sellers.values():
-            profile = getattr(seller, "seller_profile", None)
-            if profile is None:
-                continue
-            base = profile.delivery_fee_base
-            if (
-                lat is not None
-                and lng is not None
-                and profile.latitude is not None
-                and profile.longitude is not None
-            ):
-                km = _haversine_km(lat, lng, profile.latitude, profile.longitude)
-                base += int(round(km)) * profile.delivery_fee_per_km
-            fee += base
+        meals = {
+            meal.pk: meal
+            for meal in Meal.objects.filter(pk__in=meal_ids).select_related(
+                "seller__seller_profile"
+            )
+        }
+        if not meals:
+            return Response({"delivery_fee": 0})
+
+        items = [{"meal": mid, "quantity": 1} for mid in meals]
+        sellers = sellers_from_meals(meals, request.user.id)
+        seller_subtotals = subtotal_by_seller(items, meals)
+        try:
+            fee = compute_delivery_fee(sellers, seller_subtotals, lat, lng)
+        except Exception as exc:
+            if hasattr(exc, "detail"):
+                return Response(exc.detail, status=status.HTTP_400_BAD_REQUEST)
+            raise
         return Response({"delivery_fee": fee})
+
+
+class PromoValidateView(APIView):
+    """Previews a promo code discount for the current cart."""
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        serializer = PromoValidateSerializer(
+            data=request.data, context={"request": request}
+        )
+        serializer.is_valid(raise_exception=True)
+        return Response(
+            {
+                "promo_code": serializer.validated_data["promo_code"],
+                "discount": serializer.validated_data["discount"],
+                "subtotal": serializer.validated_data["subtotal"],
+            }
+        )

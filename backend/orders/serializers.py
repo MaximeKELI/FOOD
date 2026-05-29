@@ -1,22 +1,16 @@
-from math import asin, cos, radians, sin, sqrt
-
 from django.db import transaction
 from rest_framework import serializers
 
 from catalog.models import Meal
 
 from .models import Order, OrderItem, PromoCode
-
-
-def _haversine_km(lat1, lng1, lat2, lng2):
-    r = 6371.0
-    d_lat = radians(lat2 - lat1)
-    d_lng = radians(lng2 - lng1)
-    a = (
-        sin(d_lat / 2) ** 2
-        + cos(radians(lat1)) * cos(radians(lat2)) * sin(d_lng / 2) ** 2
-    )
-    return 2 * r * asin(sqrt(a))
+from .services import (
+    compute_delivery_fee,
+    resolve_promo,
+    sellers_from_meals,
+    subtotal_by_seller,
+    validate_fulfillment,
+)
 
 
 class OrderItemSerializer(serializers.ModelSerializer):
@@ -114,24 +108,34 @@ class OrderCreateSerializer(serializers.Serializer):
         if errors:
             raise serializers.ValidationError({"items": errors})
 
-        attrs["_meals"] = meals
-        return attrs
+        customer = self.context["request"].user
+        fulfillment = attrs.get("fulfillment", Order.Fulfillment.DELIVERY)
+        address = attrs.get("address", "") or ""
+        phone = attrs.get("phone", "") or ""
+        lat = attrs.get("latitude")
+        lng = attrs.get("longitude")
+        sellers = sellers_from_meals(meals, customer.id)
+        seller_subtotals = subtotal_by_seller(items, meals)
+        subtotal = sum(seller_subtotals.values())
 
-    def _delivery_fee(self, sellers, lat, lng):
-        """Sum of per-seller delivery fees based on distance."""
-        fee = 0
-        for seller in sellers:
-            profile = getattr(seller, "seller_profile", None)
-            if profile is None:
-                continue
-            base = profile.delivery_fee_base
-            if lat is not None and lng is not None and (
-                profile.latitude is not None and profile.longitude is not None
-            ):
-                km = _haversine_km(lat, lng, profile.latitude, profile.longitude)
-                base += int(round(km)) * profile.delivery_fee_per_km
-            fee += base
-        return fee
+        validate_fulfillment(fulfillment, sellers, address, phone, lat, lng)
+
+        delivery_fee = 0
+        if fulfillment == Order.Fulfillment.DELIVERY:
+            delivery_fee = compute_delivery_fee(
+                sellers, seller_subtotals, lat, lng
+            )
+
+        promo_code = attrs.get("promo_code", "")
+        discount, applied_code = resolve_promo(promo_code, subtotal, sellers)
+
+        attrs["_meals"] = meals
+        attrs["_sellers"] = sellers
+        attrs["_subtotal"] = subtotal
+        attrs["_delivery_fee"] = delivery_fee
+        attrs["_discount"] = discount
+        attrs["_applied_promo"] = applied_code
+        return attrs
 
     @transaction.atomic
     def create(self, validated_data):
@@ -139,12 +143,16 @@ class OrderCreateSerializer(serializers.Serializer):
 
         items = validated_data.pop("items")
         meals = validated_data.pop("_meals")
+        sellers = validated_data.pop("_sellers")
+        subtotal = validated_data.pop("_subtotal")
+        delivery_fee = validated_data.pop("_delivery_fee")
+        discount = validated_data.pop("_discount")
+        applied_promo = validated_data.pop("_applied_promo")
+
         customer = self.context["request"].user
         fulfillment = validated_data.get(
             "fulfillment", Order.Fulfillment.DELIVERY
         )
-        lat = validated_data.get("latitude")
-        lng = validated_data.get("longitude")
         order = Order.objects.create(
             customer=customer,
             fulfillment=fulfillment,
@@ -152,10 +160,13 @@ class OrderCreateSerializer(serializers.Serializer):
             address=validated_data.get("address", ""),
             phone=validated_data.get("phone", ""),
             note=validated_data.get("note", ""),
-            latitude=lat,
-            longitude=lng,
+            latitude=validated_data.get("latitude"),
+            longitude=validated_data.get("longitude"),
+            subtotal=subtotal,
+            delivery_fee=delivery_fee,
+            discount=discount,
+            promo_code=applied_promo,
         )
-        sellers = set()
         for item in items:
             meal = meals[item["meal"]]
             OrderItem.objects.create(
@@ -165,21 +176,6 @@ class OrderCreateSerializer(serializers.Serializer):
                 unit_price=meal.effective_price,
                 quantity=item["quantity"],
             )
-            if meal.seller_id and meal.seller_id != customer.id:
-                sellers.add(meal.seller)
-
-        order.subtotal = sum(i.line_total for i in order.items.all())
-
-        if fulfillment == Order.Fulfillment.DELIVERY:
-            order.delivery_fee = self._delivery_fee(sellers, lat, lng)
-
-        code = (validated_data.get("promo_code") or "").strip()
-        if code:
-            promo = PromoCode.objects.filter(code__iexact=code).first()
-            if promo:
-                order.discount = promo.discount_for(order.subtotal)
-                if order.discount > 0:
-                    order.promo_code = promo.code
 
         order.recompute_total()
         order.save()
@@ -189,5 +185,39 @@ class OrderCreateSerializer(serializers.Serializer):
                 Notification.Kind.ORDER,
                 "Nouvelle commande",
                 f"{customer.name} a passé une commande (#{order.id}).",
+                related_id=order.id,
+                link="received_order",
             )
         return order
+
+
+class PromoValidateSerializer(serializers.Serializer):
+    promo_code = serializers.CharField()
+    items = OrderItemInputSerializer(many=True)
+
+    def validate(self, attrs):
+        items = attrs.get("items", [])
+        if not items:
+            raise serializers.ValidationError({"items": "Le panier est vide."})
+        meal_ids = [item["meal"] for item in items]
+        meals = {
+            meal.pk: meal
+            for meal in Meal.objects.filter(pk__in=meal_ids).select_related(
+                "seller__seller_profile"
+            )
+        }
+        for item in items:
+            if item["meal"] not in meals:
+                raise serializers.ValidationError(
+                    {"items": f"Plat #{item['meal']} introuvable."}
+                )
+        customer = self.context["request"].user
+        sellers = sellers_from_meals(meals, customer.id)
+        subtotal = sum(
+            meals[item["meal"]].effective_price * item["quantity"] for item in items
+        )
+        discount, code = resolve_promo(attrs["promo_code"], subtotal, sellers)
+        attrs["discount"] = discount
+        attrs["promo_code"] = code
+        attrs["subtotal"] = subtotal
+        return attrs

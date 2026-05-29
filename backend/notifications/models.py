@@ -5,8 +5,10 @@ from django.db import models
 class Notification(models.Model):
     class Kind(models.TextChoices):
         ORDER = "order", "Commande"
+        ORDER_STATUS = "order_status", "Statut commande"
         FOLLOW = "follow", "Abonnement"
         REVIEW = "review", "Avis"
+        CHAT = "chat", "Message"
 
     recipient = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -16,20 +18,30 @@ class Notification(models.Model):
     kind = models.CharField(max_length=20, choices=Kind.choices)
     title = models.CharField(max_length=160)
     body = models.CharField(max_length=300, blank=True)
+    related_id = models.PositiveIntegerField(null=True, blank=True)
+    link = models.CharField(max_length=40, blank=True)
     is_read = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["recipient", "is_read", "-created_at"]),
+        ]
 
     def __str__(self):
         return f"{self.kind} -> {self.recipient.email}"
 
 
-def notify(recipient, kind, title, body=""):
+def notify(recipient, kind, title, body="", *, related_id=None, link=""):
     """Helper to create a notification (no-op if recipient is None)."""
     if recipient is None:
         return None
     return Notification.objects.create(
-        recipient=recipient, kind=kind, title=title, body=body
+        recipient=recipient,
+        kind=kind,
+        title=title,
+        body=body,
+        related_id=related_id,
+        link=link,
     )
