@@ -48,6 +48,7 @@ dependencies:
   video_player: ^2.10.1
   file_selector: ^1.0.4
   dio: ^5.9.2
+  http_parser: ^4.1.2
 
 dev_dependencies:
   flutter_test:

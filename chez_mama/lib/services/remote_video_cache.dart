@@ -41,7 +41,7 @@ class RemoteVideoCache {
     if (len < _minBytes) {
       await file.delete();
       throw StateError(
-        'Fichier vidéo invalide sur le serveur (${len} octets). '
+        'Fichier vidéo invalide sur le serveur ($len octets). '
         'Republie la vidéo.',
       );
     }
