@@ -77,10 +77,6 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
                 onPressed: _load,
                 icon: const Icon(Icons.refresh_rounded),
                 label: const Text('Réessayer'),
-                style: FilledButton.styleFrom(
-                  backgroundColor: ChezMamaTheme.brandOrange,
-                  foregroundColor: Colors.white,
-                ),
               ),
             ],
           ),
@@ -150,8 +146,8 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
+              color: ChezMamaTheme.cardColor(context),
+              borderRadius: BorderRadius.circular(ChezMamaTheme.rCard),
               boxShadow: ChezMamaTheme.softShadow(opacity: 0.08),
             ),
             child: Column(
@@ -193,8 +189,8 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
                 margin: const EdgeInsets.only(bottom: 8),
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(14),
+                  color: ChezMamaTheme.cardColor(context),
+                  borderRadius: BorderRadius.circular(ChezMamaTheme.rCard),
                   boxShadow: ChezMamaTheme.softShadow(opacity: 0.06),
                 ),
                 child: Row(
@@ -250,8 +246,8 @@ class _StatCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
+        color: ChezMamaTheme.cardColor(context),
+        borderRadius: BorderRadius.circular(ChezMamaTheme.rCard),
         boxShadow: ChezMamaTheme.softShadow(opacity: 0.08),
       ),
       child: Column(
@@ -270,7 +266,7 @@ class _StatCard extends StatelessWidget {
           Text(
             label,
             style: t.textTheme.bodySmall?.copyWith(
-              color: ChezMamaTheme.ink.withValues(alpha: 0.6),
+              color: ChezMamaTheme.mutedInk(context),
             ),
           ),
         ],

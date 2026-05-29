@@ -3,6 +3,7 @@ import '../../api/api_client.dart';
 import '../../api/orders_api.dart';
 import '../../cart/received_orders_notifier.dart';
 import '../../ui/chezmama_theme.dart';
+import '../../widgets/entrance.dart';
 
 const _activeStatuses = {'pending', 'preparing', 'on_the_way'};
 
@@ -79,8 +80,6 @@ class _ReceivedOrdersScreenState extends State<ReceivedOrdersScreen> {
         appBar: AppBar(
           title: const Text('Commandes reçues'),
           bottom: TabBar(
-            labelColor: ChezMamaTheme.brandOrange,
-            indicatorColor: ChezMamaTheme.brandOrange,
             tabs: [
               Tab(text: 'En cours (${_active.length})'),
               Tab(text: 'Terminées (${_done.length})'),
@@ -111,10 +110,6 @@ class _ReceivedOrdersScreenState extends State<ReceivedOrdersScreen> {
                 onPressed: _load,
                 icon: const Icon(Icons.refresh_rounded),
                 label: const Text('Réessayer'),
-                style: FilledButton.styleFrom(
-                  backgroundColor: ChezMamaTheme.brandOrange,
-                  foregroundColor: Colors.white,
-                ),
               ),
             ],
           ),
@@ -168,9 +163,12 @@ class _OrdersList extends StatelessWidget {
               padding: const EdgeInsets.all(14),
               itemCount: orders.length,
               separatorBuilder: (_, __) => const SizedBox(height: 12),
-              itemBuilder: (context, i) => _ReceivedOrderCard(
-                order: orders[i],
-                onStatusChange: (s) => onStatusChange(orders[i], s),
+              itemBuilder: (context, i) => FadeInUp(
+                index: i,
+                child: _ReceivedOrderCard(
+                  order: orders[i],
+                  onStatusChange: (s) => onStatusChange(orders[i], s),
+                ),
               ),
             ),
     );
@@ -188,8 +186,8 @@ class _ReceivedOrderCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
+        color: ChezMamaTheme.cardColor(context),
+        borderRadius: BorderRadius.circular(ChezMamaTheme.rCard),
         boxShadow: ChezMamaTheme.softShadow(opacity: 0.10),
       ),
       child: Column(

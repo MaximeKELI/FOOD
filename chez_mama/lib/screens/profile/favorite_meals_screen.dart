@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../api/api_client.dart';
 import '../../api/catalog_api.dart';
 import '../../models/meal.dart';
-import '../../ui/chezmama_theme.dart';
+import '../../widgets/entrance.dart';
 import '../home/meal_card.dart';
 import '../meal/meal_details_screen.dart';
 
@@ -72,10 +72,6 @@ class _FavoriteMealsScreenState extends State<FavoriteMealsScreen> {
                 onPressed: _load,
                 icon: const Icon(Icons.refresh_rounded),
                 label: const Text('Réessayer'),
-                style: FilledButton.styleFrom(
-                  backgroundColor: ChezMamaTheme.brandOrange,
-                  foregroundColor: Colors.white,
-                ),
               ),
             ],
           ),
@@ -101,16 +97,19 @@ class _FavoriteMealsScreenState extends State<FavoriteMealsScreen> {
         separatorBuilder: (_, __) => const SizedBox(height: 14),
         itemBuilder: (context, i) {
           final meal = _meals[i];
-          return MealCard(
-            meal: meal,
-            onTap: () async {
-              await Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => MealDetailsScreen(meal: meal),
-                ),
-              );
-              _load();
-            },
+          return FadeInUp(
+            index: i,
+            child: MealCard(
+              meal: meal,
+              onTap: () async {
+                await Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => MealDetailsScreen(meal: meal),
+                  ),
+                );
+                _load();
+              },
+            ),
           );
         },
       ),

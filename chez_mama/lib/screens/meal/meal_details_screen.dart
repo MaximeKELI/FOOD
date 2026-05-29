@@ -138,8 +138,8 @@ class _MealDetailsScreenState extends State<MealDetailsScreen> {
           SliverAppBar(
             pinned: true,
             expandedHeight: 290,
-            backgroundColor: Colors.white,
-            foregroundColor: ChezMamaTheme.ink,
+            backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+            foregroundColor: ChezMamaTheme.inkColor(context),
             actions: [
               IconButton(
                 tooltip: _favorited ? 'Retirer des favoris' : 'Ajouter aux favoris',
@@ -193,7 +193,7 @@ class _MealDetailsScreenState extends State<MealDetailsScreen> {
                   Text(
                     meal.subtitle,
                     style: t.textTheme.bodyMedium?.copyWith(
-                      color: ChezMamaTheme.ink.withValues(alpha: 0.65),
+                      color: ChezMamaTheme.mutedInk(context),
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -235,8 +235,8 @@ class _MealDetailsScreenState extends State<MealDetailsScreen> {
                   Container(
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
-                      color: ChezMamaTheme.surface2,
-                      borderRadius: BorderRadius.circular(18),
+                      color: ChezMamaTheme.subtleSurface(context),
+                      borderRadius: BorderRadius.circular(ChezMamaTheme.rCard),
                     ),
                     child: Row(
                       children: [
@@ -289,7 +289,7 @@ class _MealDetailsScreenState extends State<MealDetailsScreen> {
                     Text(
                       'Aucun avis pour le moment. Sois le premier !',
                       style: t.textTheme.bodyMedium?.copyWith(
-                        color: ChezMamaTheme.ink.withValues(alpha: 0.6),
+                        color: ChezMamaTheme.mutedInk(context),
                       ),
                     )
                   else
@@ -316,7 +316,7 @@ class _RatingSummary extends StatelessWidget {
       return Text(
         'Pas encore noté',
         style: t.textTheme.bodySmall?.copyWith(
-          color: ChezMamaTheme.ink.withValues(alpha: 0.6),
+          color: ChezMamaTheme.mutedInk(context),
         ),
       );
     }
@@ -365,8 +365,8 @@ class _ReviewTile extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
+        color: ChezMamaTheme.cardColor(context),
+        borderRadius: BorderRadius.circular(ChezMamaTheme.rCard),
         boxShadow: ChezMamaTheme.softShadow(opacity: 0.06),
       ),
       child: Column(
@@ -453,7 +453,6 @@ class _AddReviewSheetState extends State<_AddReviewSheet> {
             maxLines: 3,
             decoration: const InputDecoration(
               labelText: 'Commentaire (optionnel)',
-              border: OutlineInputBorder(),
             ),
           ),
           const SizedBox(height: 16),
@@ -466,10 +465,6 @@ class _AddReviewSheetState extends State<_AddReviewSheet> {
               ),
               icon: const Icon(Icons.send_rounded),
               label: const Text('Publier mon avis'),
-              style: FilledButton.styleFrom(
-                backgroundColor: ChezMamaTheme.brandOrange,
-                foregroundColor: Colors.white,
-              ),
             ),
           ),
         ],

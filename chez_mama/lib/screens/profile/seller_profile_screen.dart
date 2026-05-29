@@ -129,10 +129,6 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> {
                 onPressed: _load,
                 icon: const Icon(Icons.refresh_rounded),
                 label: const Text('Réessayer'),
-                style: FilledButton.styleFrom(
-                  backgroundColor: ChezMamaTheme.brandOrange,
-                  foregroundColor: Colors.white,
-                ),
               ),
             ],
           ),
@@ -213,8 +209,8 @@ class _Header extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        color: ChezMamaTheme.cardColor(context),
+        borderRadius: BorderRadius.circular(ChezMamaTheme.rCard),
         boxShadow: ChezMamaTheme.softShadow(opacity: 0.10),
       ),
       child: Column(

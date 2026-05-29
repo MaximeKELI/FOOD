@@ -137,10 +137,6 @@ class _SocialFeedScreenState extends State<SocialFeedScreen> {
       context: context,
       showDragHandle: true,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
       builder: (context) => _CommentsSheet(post: post),
     ).then((_) {
       if (mounted) setState(() {});
@@ -258,8 +254,8 @@ class _SocialPostCard extends StatelessWidget {
     final t = Theme.of(context);
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(22),
+        color: ChezMamaTheme.cardColor(context),
+        borderRadius: BorderRadius.circular(ChezMamaTheme.rCard),
         boxShadow: ChezMamaTheme.softShadow(opacity: 0.11),
       ),
       child: ClipRRect(
@@ -897,10 +893,11 @@ class _EmptyState extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
+            color: ChezMamaTheme.cardColor(context),
+            borderRadius: BorderRadius.circular(ChezMamaTheme.rCard),
             boxShadow: ChezMamaTheme.softShadow(opacity: 0.10),
           ),
+
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [

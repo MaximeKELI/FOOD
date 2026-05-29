@@ -153,19 +153,19 @@ class _TrackingScreenState extends State<TrackingScreen> {
                 'Lat: ${_userLocation!.latitude.toStringAsFixed(5)}  •  Lng: ${_userLocation!.longitude.toStringAsFixed(5)}',
                 style: t.textTheme.bodyMedium?.copyWith(
                   fontWeight: FontWeight.w700,
-                  color: ChezMamaTheme.ink.withValues(alpha: 0.7),
+                  color: ChezMamaTheme.mutedInk(context),
                 ),
               ),
             const SizedBox(height: 12),
             Expanded(
               child: Container(
                 decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
+                  color: ChezMamaTheme.cardColor(context),
+                  borderRadius: BorderRadius.circular(ChezMamaTheme.rCard),
                   boxShadow: ChezMamaTheme.softShadow(opacity: 0.10),
                 ),
                 child: ClipRRect(
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(ChezMamaTheme.rCard),
                   child: _buildMapContent(),
                 ),
               ),
@@ -190,10 +190,6 @@ class _TrackingScreenState extends State<TrackingScreen> {
                     onPressed: _retry,
                     icon: const Icon(Icons.refresh_rounded),
                     label: const Text('Réessayer'),
-                    style: FilledButton.styleFrom(
-                      backgroundColor: ChezMamaTheme.brandOrange,
-                      foregroundColor: Colors.white,
-                    ),
                   ),
                 ],
               ),
@@ -238,10 +234,6 @@ class _TrackingScreenState extends State<TrackingScreen> {
                 onPressed: _retry,
                 icon: const Icon(Icons.refresh_rounded),
                 label: const Text('Réessayer'),
-                style: FilledButton.styleFrom(
-                  backgroundColor: ChezMamaTheme.brandOrange,
-                  foregroundColor: Colors.white,
-                ),
               ),
             ],
           ),
@@ -347,10 +339,6 @@ class _TrackingScreenState extends State<TrackingScreen> {
                 },
                 icon: const Icon(Icons.storefront_rounded),
                 label: const Text('Voir la boutique'),
-                style: FilledButton.styleFrom(
-                  backgroundColor: ChezMamaTheme.brandOrange,
-                  foregroundColor: Colors.white,
-                ),
               ),
             ),
           ],
@@ -370,8 +358,8 @@ class _StatusProgress extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: ChezMamaTheme.surface2,
-        borderRadius: BorderRadius.circular(18),
+        color: ChezMamaTheme.subtleSurface(context),
+        borderRadius: BorderRadius.circular(ChezMamaTheme.rCard),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

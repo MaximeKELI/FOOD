@@ -4,7 +4,6 @@ import 'package:flutter/services.dart';
 import '../../api/api_client.dart';
 import '../../api/catalog_api.dart';
 import '../../services/app_media_picker.dart';
-import '../../ui/chezmama_theme.dart';
 
 /// Bottom sheet allowing a seller to publish a new meal to the catalog.
 /// Returns `true` when a meal was successfully created.
@@ -139,7 +138,6 @@ class _PublishMealSheetState extends State<PublishMealSheet> {
               decoration: const InputDecoration(
                 labelText: 'Nom du plat',
                 prefixIcon: Icon(Icons.restaurant_menu_rounded),
-                border: OutlineInputBorder(),
               ),
             ),
             const SizedBox(height: 12),
@@ -160,7 +158,6 @@ class _PublishMealSheetState extends State<PublishMealSheet> {
                 decoration: const InputDecoration(
                   labelText: 'Catégorie',
                   prefixIcon: Icon(Icons.category_rounded),
-                  border: OutlineInputBorder(),
                 ),
                 items: [
                   for (final c in _categories)
@@ -175,7 +172,6 @@ class _PublishMealSheetState extends State<PublishMealSheet> {
               decoration: const InputDecoration(
                 labelText: 'Description (optionnel)',
                 prefixIcon: Icon(Icons.notes_rounded),
-                border: OutlineInputBorder(),
               ),
             ),
             const SizedBox(height: 12),
@@ -186,7 +182,6 @@ class _PublishMealSheetState extends State<PublishMealSheet> {
               decoration: const InputDecoration(
                 labelText: 'Prix en FCFA (optionnel)',
                 prefixIcon: Icon(Icons.payments_rounded),
-                border: OutlineInputBorder(),
               ),
             ),
             const SizedBox(height: 12),
@@ -228,10 +223,6 @@ class _PublishMealSheetState extends State<PublishMealSheet> {
                       )
                     : const Icon(Icons.cloud_upload_rounded),
                 label: Text(_submitting ? 'Publication…' : 'Publier le plat'),
-                style: FilledButton.styleFrom(
-                  backgroundColor: ChezMamaTheme.brandOrange,
-                  foregroundColor: Colors.white,
-                ),
               ),
             ),
           ],

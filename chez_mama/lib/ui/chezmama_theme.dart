@@ -145,7 +145,7 @@ class ChezMamaTheme {
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: isDark ? darkCard : Colors.white,
+        fillColor: isDark ? darkSurface2 : surface2,
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         hintStyle: TextStyle(color: muted, fontWeight: FontWeight.w500),

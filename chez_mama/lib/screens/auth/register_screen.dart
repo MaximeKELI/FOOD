@@ -188,10 +188,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 420),
             child: Container(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
+                color: ChezMamaTheme.cardColor(context),
+                borderRadius: BorderRadius.circular(ChezMamaTheme.rCard),
                 boxShadow: ChezMamaTheme.softShadow(opacity: 0.10),
               ),
               child: Column(
@@ -208,7 +208,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   Text(
                     'Crée ton compte pour mettre tes produits en ligne.',
                     style: t.textTheme.bodyMedium?.copyWith(
-                      color: ChezMamaTheme.ink.withValues(alpha: 0.7),
+                      color: ChezMamaTheme.mutedInk(context),
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -225,9 +225,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     textInputAction: TextInputAction.next,
                     decoration: const InputDecoration(
                       labelText: 'Nom boutique / vendeur',
-                      prefixIcon: Icon(Icons.badge_rounded),
-                      border: OutlineInputBorder(),
-                    ),
+                      prefixIcon: Icon(Icons.badge_rounded),                    ),
                   ),
                   const SizedBox(height: 12),
                   TextField(
@@ -236,9 +234,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     textInputAction: TextInputAction.next,
                     decoration: const InputDecoration(
                       labelText: 'Téléphone (WhatsApp)',
-                      prefixIcon: Icon(Icons.phone_rounded),
-                      border: OutlineInputBorder(),
-                    ),
+                      prefixIcon: Icon(Icons.phone_rounded),                    ),
                   ),
                   const SizedBox(height: 12),
                   Row(
@@ -275,9 +271,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     textInputAction: TextInputAction.next,
                     decoration: const InputDecoration(
                       labelText: 'Quartier',
-                      prefixIcon: Icon(Icons.place_rounded),
-                      border: OutlineInputBorder(),
-                    ),
+                      prefixIcon: Icon(Icons.place_rounded),                    ),
                   ),
                   const SizedBox(height: 12),
                   Row(
@@ -290,7 +284,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           decoration: const InputDecoration(
                             labelText: 'Année de naissance',
                             prefixIcon: Icon(Icons.cake_rounded),
-                            border: OutlineInputBorder(),
                           ),
                         ),
                       ),
@@ -319,9 +312,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     textInputAction: TextInputAction.next,
                     decoration: const InputDecoration(
                       labelText: 'Nom du restaurant / boutique',
-                      prefixIcon: Icon(Icons.storefront_rounded),
-                      border: OutlineInputBorder(),
-                    ),
+                      prefixIcon: Icon(Icons.storefront_rounded),                    ),
                   ),
                   const SizedBox(height: 12),
                   Row(
@@ -420,9 +411,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     textInputAction: TextInputAction.next,
                     decoration: const InputDecoration(
                       labelText: 'Email',
-                      prefixIcon: Icon(Icons.alternate_email_rounded),
-                      border: OutlineInputBorder(),
-                    ),
+                      prefixIcon: Icon(Icons.alternate_email_rounded),                    ),
                   ),
                   const SizedBox(height: 12),
                   TextField(
@@ -431,9 +420,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     onSubmitted: (_) => _submit(),
                     decoration: const InputDecoration(
                       labelText: 'Mot de passe',
-                      prefixIcon: Icon(Icons.lock_rounded),
-                      border: OutlineInputBorder(),
-                    ),
+                      prefixIcon: Icon(Icons.lock_rounded),                    ),
                   ),
                   const SizedBox(height: 14),
                   SizedBox(
@@ -482,9 +469,8 @@ class _DropdownField extends StatelessWidget {
       decoration: InputDecoration(
         labelText: label,
         prefixIcon: Icon(icon),
-        border: const OutlineInputBorder(),
       ),
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(ChezMamaTheme.rField),
       items: [
         for (final item in items)
           DropdownMenuItem<String>(

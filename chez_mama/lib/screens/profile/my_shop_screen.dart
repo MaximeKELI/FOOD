@@ -184,8 +184,8 @@ class _MyShopScreenState extends State<MyShopScreen> {
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: ChezMamaTheme.surface2,
-            borderRadius: BorderRadius.circular(14),
+            color: ChezMamaTheme.subtleSurface(context),
+            borderRadius: BorderRadius.circular(ChezMamaTheme.rField),
           ),
           child: Row(
             children: [
@@ -261,10 +261,6 @@ class _MyShopScreenState extends State<MyShopScreen> {
                   )
                 : const Icon(Icons.save_rounded),
             label: Text(_saving ? 'Enregistrement…' : 'Enregistrer'),
-            style: FilledButton.styleFrom(
-              backgroundColor: ChezMamaTheme.brandOrange,
-              foregroundColor: Colors.white,
-            ),
           ),
         ),
       ],
@@ -297,7 +293,6 @@ class _MyShopScreenState extends State<MyShopScreen> {
         decoration: InputDecoration(
           labelText: label,
           prefixIcon: Icon(icon),
-          border: const OutlineInputBorder(),
         ),
       ),
     );
@@ -325,10 +320,6 @@ class _ErrorView extends StatelessWidget {
               onPressed: onRetry,
               icon: const Icon(Icons.refresh_rounded),
               label: const Text('Réessayer'),
-              style: FilledButton.styleFrom(
-                backgroundColor: ChezMamaTheme.brandOrange,
-                foregroundColor: Colors.white,
-              ),
             ),
           ],
         ),
