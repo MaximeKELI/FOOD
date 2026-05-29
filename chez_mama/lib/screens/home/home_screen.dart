@@ -412,7 +412,7 @@ class _SortMenu extends StatelessWidget {
           .toList(),
       child: Chip(
         avatar: const Icon(Icons.swap_vert_rounded, size: 18),
-        label: Text('Trier · ${_sortLabels[value]}'),
+        label: Text('${tr('home.sort')} · ${_sortLabels[value]}'),
       ),
     );
   }

@@ -3,6 +3,7 @@ import '../../api/api_client.dart';
 import '../../api/catalog_api.dart';
 import '../../auth/auth_scope.dart';
 import '../../cart/cart_service.dart';
+import '../../l10n/app_strings.dart';
 import '../../models/meal.dart';
 import '../../ui/chezmama_theme.dart';
 import '../../widgets/primary_button.dart';
@@ -290,8 +291,8 @@ class _MealDetailsScreenState extends State<MealDetailsScreen> {
                         ),
                         PrimaryButton(
                           label: meal.isAvailable
-                              ? 'Ajouter au panier'
-                              : 'Indisponible',
+                              ? tr('action.addToCart')
+                              : tr('action.unavailable'),
                           onPressed: meal.isAvailable
                               ? () {
                                   CartService.instance.addMeal(meal);
