@@ -62,8 +62,9 @@ class _CartScreenState extends State<CartScreen> {
                 Container(
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: ChezMamaTheme.surface2,
-                    borderRadius: BorderRadius.circular(18),
+                    color: ChezMamaTheme.subtleSurface(context),
+                    borderRadius:
+                        BorderRadius.circular(ChezMamaTheme.rCard),
                   ),
                   child: Row(
                     children: [
@@ -77,13 +78,6 @@ class _CartScreenState extends State<CartScreen> {
                       ),
                       FilledButton(
                         onPressed: _openCheckout,
-                        style: FilledButton.styleFrom(
-                          backgroundColor: ChezMamaTheme.brandOrange,
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                        ),
                         child: const Text('Commander'),
                       ),
                     ],
@@ -96,11 +90,14 @@ class _CartScreenState extends State<CartScreen> {
                     separatorBuilder: (_, __) => const SizedBox(height: 12),
                     itemBuilder: (context, index) {
                       final item = _cart.items[index];
-                      return _CartRow(
-                        item: item,
-                        onAdd: () => _cart.increment(item.mealId),
-                        onRemove: () => _cart.decrement(item.mealId),
-                        onDelete: () => _cart.removeItem(item.mealId),
+                      return FadeInUp(
+                        index: index,
+                        child: _CartRow(
+                          item: item,
+                          onAdd: () => _cart.increment(item.mealId),
+                          onRemove: () => _cart.decrement(item.mealId),
+                          onDelete: () => _cart.removeItem(item.mealId),
+                        ),
                       );
                     },
                   ),
