@@ -1,8 +1,12 @@
 from django.shortcuts import get_object_or_404
 from rest_framework import generics, permissions
 from rest_framework.parsers import FormParser, MultiPartParser
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
-from .models import Category, Meal, Review
+from notifications.models import Notification, notify
+
+from .models import Category, Meal, MealFavorite, Review
 from .serializers import (
     CategorySerializer,
     MealCreateSerializer,
