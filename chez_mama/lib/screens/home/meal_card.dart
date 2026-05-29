@@ -1,8 +1,11 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import '../../l10n/app_strings.dart';
 import '../../models/meal.dart';
 import '../../ui/chezmama_theme.dart';
+import '../../utils/currency_format.dart';
+import '../../widgets/food_network_image.dart';
 import '../../widgets/pressable_scale.dart';
+import '../../widgets/status_pill.dart';
 
 class MealCard extends StatefulWidget {
   const MealCard({
@@ -23,23 +26,6 @@ class MealCard extends StatefulWidget {
 class _MealCardState extends State<MealCard> {
   bool pressed = false;
 
-  Widget _buildMealImage(String source) {
-    if (source.startsWith('assets/')) {
-      return Image.asset(
-        source,
-        fit: BoxFit.cover,
-        filterQuality: FilterQuality.low,
-      );
-    }
-    return CachedNetworkImage(
-      imageUrl: source,
-      fit: BoxFit.cover,
-      filterQuality: FilterQuality.low,
-      placeholder: (_, __) => _ImageFallback(accent: widget.meal.accent),
-      errorWidget: (_, __, ___) => _ImageFallback(accent: widget.meal.accent),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context);
@@ -54,12 +40,12 @@ class _MealCardState extends State<MealCard> {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 160),
           curve: Curves.easeOutCubic,
-          decoration: BoxDecoration(
-            color: ChezMamaTheme.cardColor(context),
-            borderRadius: BorderRadius.circular(ChezMamaTheme.rCard),
-            boxShadow: pressed
-                ? ChezMamaTheme.softShadow(opacity: 0.16)
-                : ChezMamaTheme.softShadow(opacity: 0.10),
+          decoration: ChezMamaTheme.cardDecoration(
+            context,
+            shadowOpacity: pressed ? 0.16 : 0.10,
+            border: Border.all(
+              color: ChezMamaTheme.brandOrange.withValues(alpha: pressed ? 0.18 : 0.06),
+            ),
           ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(ChezMamaTheme.rCard),
@@ -73,34 +59,38 @@ class _MealCardState extends State<MealCard> {
                     child: Stack(
                       fit: StackFit.expand,
                       children: [
-                        _buildMealImage(m.image),
+                        FoodNetworkImage(
+                          url: m.image,
+                          accent: m.accent,
+                        ),
                         if (!m.isAvailable)
                           Container(
-                            color: Colors.black.withValues(alpha: 0.45),
+                            color: Colors.black.withValues(alpha: 0.48),
                             alignment: Alignment.center,
-                            child: const _Pill(
-                              label: 'Épuisé',
-                              color: Color(0xFF8A8A8A),
+                            child: StatusPill(
+                              label: tr('meal.soldOut'),
+                              color: ChezMamaTheme.soldOutGray,
+                              icon: Icons.block_rounded,
                             ),
                           ),
                         Positioned(
-                          top: 8,
-                          left: 8,
+                          top: 10,
+                          left: 10,
                           child: Row(
                             children: [
                               if (m.isSpecial)
-                                const _Pill(
-                                  label: 'Plat du jour',
+                                StatusPill(
+                                  label: tr('home.filter.special'),
                                   color: ChezMamaTheme.brandBrown,
                                   icon: Icons.local_fire_department_rounded,
                                 ),
                               if (m.isSpecial && m.hasPromo)
                                 const SizedBox(width: 6),
                               if (m.hasPromo)
-                                _Pill(
+                                StatusPill(
                                   label:
                                       '-${(100 - (m.promoPrice / m.price * 100)).round()}%',
-                                  color: const Color(0xFFD7263D),
+                                  color: ChezMamaTheme.promoRed,
                                   icon: Icons.sell_rounded,
                                 ),
                             ],
@@ -111,7 +101,12 @@ class _MealCardState extends State<MealCard> {
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
+                  padding: const EdgeInsets.fromLTRB(
+                    ChezMamaTheme.spaceMd,
+                    12,
+                    ChezMamaTheme.spaceMd,
+                    ChezMamaTheme.spaceMd,
+                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -126,17 +121,29 @@ class _MealCardState extends State<MealCard> {
                       ),
                       if (m.sellerName.isNotEmpty) ...[
                         const SizedBox(height: 4),
-                        Text(
-                          m.sellerName,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: t.textTheme.bodySmall?.copyWith(
-                            color: ChezMamaTheme.mutedInk(context),
-                            fontWeight: FontWeight.w600,
-                          ),
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.storefront_rounded,
+                              size: 13,
+                              color: ChezMamaTheme.mutedInk(context),
+                            ),
+                            const SizedBox(width: 4),
+                            Expanded(
+                              child: Text(
+                                m.sellerName,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: t.textTheme.bodySmall?.copyWith(
+                                  color: ChezMamaTheme.mutedInk(context),
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ],
-                      const SizedBox(height: 8),
+                      const SizedBox(height: ChezMamaTheme.spaceSm),
                       Row(
                         children: [
                           if (m.rating > 0) ...[
@@ -173,7 +180,7 @@ class _MealCardState extends State<MealCard> {
                             const Spacer(),
                           if (m.hasPromo && m.promoPrice > 0) ...[
                             Text(
-                              '${m.price.round()} FCFA',
+                              formatFcfa(m.price),
                               style: t.textTheme.bodySmall?.copyWith(
                                 decoration: TextDecoration.lineThrough,
                                 color: ChezMamaTheme.mutedInk(context),
@@ -182,17 +189,18 @@ class _MealCardState extends State<MealCard> {
                             const SizedBox(width: 6),
                           ],
                           Text(
-                            '${m.effectivePrice.round()} FCFA',
-                            style: t.textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.w900,
-                              color: ChezMamaTheme.brandBrown,
+                            formatFcfa(m.effectivePrice),
+                            style: ChezMamaTheme.priceStyle(
+                              context,
+                              t,
+                              promo: m.hasPromo,
                             ),
                           ),
                         ],
                       ),
                     ],
                   ),
-                )
+                ),
               ],
             ),
           ),
@@ -201,68 +209,3 @@ class _MealCardState extends State<MealCard> {
     );
   }
 }
-
-class _Pill extends StatelessWidget {
-  const _Pill({required this.label, required this.color, this.icon});
-  final String label;
-  final Color color;
-  final IconData? icon;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: color,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (icon != null) ...[
-            Icon(icon, size: 12, color: Colors.white),
-            const SizedBox(width: 4),
-          ],
-          Text(
-            label,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 11,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ImageFallback extends StatelessWidget {
-  const _ImageFallback({required this.accent});
-  final Color accent;
-
-  @override
-  Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            accent.withValues(alpha: 0.22),
-            ChezMamaTheme.surface2,
-            Colors.white,
-          ],
-        ),
-      ),
-      child: Center(
-        child: Icon(
-          Icons.restaurant_rounded,
-          size: 42,
-          color: ChezMamaTheme.brandBrown.withValues(alpha: 0.75),
-        ),
-      ),
-    );
-  }
-}
-
