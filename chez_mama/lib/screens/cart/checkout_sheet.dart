@@ -31,6 +31,12 @@ class _CheckoutSheetState extends State<CheckoutSheet> {
   bool _quoting = false;
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _refreshQuote());
+  }
+
+  @override
   void dispose() {
     _address.dispose();
     _phone.dispose();
@@ -248,6 +254,42 @@ class _CheckoutSheetState extends State<CheckoutSheet> {
               }).toList(),
             ),
             const SizedBox(height: 16),
+            TextField(
+              controller: _promo,
+              textCapitalization: TextCapitalization.characters,
+              decoration: const InputDecoration(
+                labelText: 'Code promo (optionnel)',
+                prefixIcon: Icon(Icons.local_offer_rounded),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: ChezMamaTheme.subtleSurface(context),
+                borderRadius: BorderRadius.circular(ChezMamaTheme.rCard),
+              ),
+              child: Column(
+                children: [
+                  _line(t, 'Sous-total', '${_cart.total} FCFA'),
+                  if (_fulfillment == 'delivery') ...[
+                    const SizedBox(height: 6),
+                    _line(
+                      t,
+                      'Livraison',
+                      _quoting
+                          ? '…'
+                          : (_deliveryFee == 0
+                              ? 'À estimer'
+                              : '$_deliveryFee FCFA'),
+                    ),
+                  ],
+                  const Divider(height: 18),
+                  _line(t, 'Total', '$_grandTotal FCFA', bold: true),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
             SizedBox(
               width: double.infinity,
               height: 50,
@@ -269,6 +311,20 @@ class _CheckoutSheetState extends State<CheckoutSheet> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _line(ThemeData t, String label, String value, {bool bold = false}) {
+    final style = t.textTheme.bodyMedium?.copyWith(
+      fontWeight: bold ? FontWeight.w900 : FontWeight.w600,
+      fontSize: bold ? 16 : null,
+    );
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(label, style: style),
+        Text(value, style: style),
+      ],
     );
   }
 }
