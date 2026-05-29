@@ -8,10 +8,12 @@ class MealCard extends StatefulWidget {
     super.key,
     required this.meal,
     required this.onTap,
+    this.distanceKm,
   });
 
   final Meal meal;
   final VoidCallback onTap;
+  final double? distanceKm;
 
   @override
   State<MealCard> createState() => _MealCardState();
@@ -121,6 +123,72 @@ class _MealCardState extends State<MealCard> {
                           fontWeight: FontWeight.w800,
                           letterSpacing: -0.2,
                         ),
+                      ),
+                      if (m.sellerName.isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          m.sellerName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: t.textTheme.bodySmall?.copyWith(
+                            color: ChezMamaTheme.mutedInk(context),
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          if (m.rating > 0) ...[
+                            const Icon(
+                              Icons.star_rounded,
+                              size: 16,
+                              color: ChezMamaTheme.brandAmber,
+                            ),
+                            const SizedBox(width: 2),
+                            Text(
+                              m.rating.toStringAsFixed(1),
+                              style: t.textTheme.bodySmall?.copyWith(
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                          ],
+                          if (widget.distanceKm != null) ...[
+                            Icon(
+                              Icons.near_me_rounded,
+                              size: 14,
+                              color: ChezMamaTheme.mutedInk(context),
+                            ),
+                            const SizedBox(width: 2),
+                            Text(
+                              '${widget.distanceKm!.toStringAsFixed(1)} km',
+                              style: t.textTheme.bodySmall?.copyWith(
+                                color: ChezMamaTheme.mutedInk(context),
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const Spacer(),
+                          ] else
+                            const Spacer(),
+                          if (m.hasPromo && m.promoPrice > 0) ...[
+                            Text(
+                              '${m.price.round()} FCFA',
+                              style: t.textTheme.bodySmall?.copyWith(
+                                decoration: TextDecoration.lineThrough,
+                                color: ChezMamaTheme.mutedInk(context),
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                          ],
+                          Text(
+                            '${m.effectivePrice.round()} FCFA',
+                            style: t.textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w900,
+                              color: ChezMamaTheme.brandBrown,
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),

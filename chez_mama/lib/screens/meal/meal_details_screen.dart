@@ -295,11 +295,15 @@ class _MealDetailsScreenState extends State<MealDetailsScreen> {
                               : tr('action.unavailable'),
                           onPressed: meal.isAvailable
                               ? () {
-                                  CartService.instance.addMeal(meal);
+                                  final added =
+                                      CartService.instance.addMeal(meal);
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(
-                                      content:
-                                          Text('${meal.name} ajouté au panier'),
+                                      content: Text(
+                                        added
+                                            ? '${meal.name} ajouté au panier'
+                                            : 'Ce plat ne peut pas être ajouté au panier.',
+                                      ),
                                       duration:
                                           const Duration(milliseconds: 900),
                                     ),

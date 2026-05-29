@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../auth/auth_scope.dart';
 import '../../cart/received_orders_notifier.dart';
 import '../../chat/chat_unread_notifier.dart';
 import '../../l10n/app_strings.dart';
@@ -170,9 +169,4 @@ class ShellToolbarActions extends StatelessWidget {
       ],
     );
   }
-}
-
-/// Resolves whether the current user should see seller tooling.
-bool shellIsSeller(BuildContext context) {
-  return AuthScope.of(context).isSeller;
 }

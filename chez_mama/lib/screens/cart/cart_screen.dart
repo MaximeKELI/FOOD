@@ -3,10 +3,11 @@ import '../../cart/cart_service.dart';
 import '../../ui/chezmama_theme.dart';
 import '../../widgets/entrance.dart';
 import 'checkout_sheet.dart';
-import 'orders_screen.dart';
 
 class CartScreen extends StatefulWidget {
-  const CartScreen({super.key});
+  const CartScreen({super.key, required this.onSeeOrders});
+
+  final VoidCallback onSeeOrders;
 
   @override
   State<CartScreen> createState() => _CartScreenState();
@@ -34,27 +35,11 @@ class _CartScreenState extends State<CartScreen> {
   Widget build(BuildContext context) {
     final t = Theme.of(context);
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Panier'),
-        actions: [
-          IconButton(
-            tooltip: 'Mes commandes',
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const OrdersScreen()),
-            ),
-            icon: const Icon(Icons.receipt_long_rounded),
-          ),
-        ],
-      ),
       body: AnimatedBuilder(
         animation: _cart,
         builder: (context, _) {
           if (_cart.isEmpty) {
-            return _EmptyCart(
-              onSeeOrders: () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const OrdersScreen()),
-              ),
-            );
+            return _EmptyCart(onSeeOrders: widget.onSeeOrders);
           }
           return Padding(
             padding: const EdgeInsets.fromLTRB(14, 14, 14, 110),

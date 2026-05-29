@@ -8,6 +8,7 @@ import '../../l10n/app_strings.dart';
 import '../../notifications/notifications_notifier.dart';
 import '../../ui/chezmama_theme.dart';
 import '../../ui/theme_controller.dart';
+import '../../widgets/shell_toolbar_actions.dart';
 import '../home/home_screen.dart';
 import '../social/shorts_screen.dart';
 import '../social/videos_screen.dart';
@@ -21,6 +22,7 @@ import '../profile/my_publications_screen.dart';
 import '../profile/my_shop_screen.dart';
 import '../profile/received_orders_screen.dart';
 import '../tracking/tracking_screen.dart';
+import '../cart/orders_screen.dart';
 import '../auth/login_screen.dart';
 
 class AppShell extends StatefulWidget {
@@ -32,14 +34,6 @@ class AppShell extends StatefulWidget {
 
 class _AppShellState extends State<AppShell> {
   int index = 0;
-
-  final pages = const [
-    HomeScreen(),
-    ShortsScreen(),
-    VideosScreen(),
-    TrackingScreen(),
-    CartScreen(),
-  ];
 
   List<String> get _titles => [
         tr('nav.home'),
@@ -114,6 +108,27 @@ class _AppShellState extends State<AppShell> {
     );
   }
 
+  void _handleMenu(String value) {
+    switch (value) {
+      case 'dashboard':
+        _go(const SellerDashboardScreen());
+      case 'shop':
+        _go(const MyShopScreen());
+      case 'publications':
+        _go(const MyPublicationsScreen());
+      case 'favorites':
+        _go(const FavoriteMealsScreen());
+      case 'loyalty':
+        _go(const LoyaltyScreen());
+      case 'messages':
+        _go(const ConversationsScreen());
+      case 'theme':
+        ThemeController.instance.toggleDark(!ThemeController.instance.isDark);
+      case 'logout':
+        _logout();
+    }
+  }
+
   Future<void> _logout() async {
     await AuthScope.of(context).signOut();
     if (!mounted) return;
@@ -132,205 +147,107 @@ class _AppShellState extends State<AppShell> {
     super.dispose();
   }
 
+  Widget _buildPage(int i, bool isSeller) {
+    switch (i) {
+      case 0:
+        return HomeScreen(
+          isSeller: isSeller,
+          onNotifications: () => _go(const NotificationsScreen()),
+          onMessages: () => _go(const ConversationsScreen()),
+          onReceivedOrders: () => _go(const ReceivedOrdersScreen()),
+          onMenuSelected: _handleMenu,
+          onPickLanguage: _pickLanguage,
+        );
+      case 1:
+        return const ShortsScreen();
+      case 2:
+        return const VideosScreen();
+      case 3:
+        return const TrackingScreen();
+      case 4:
+        return CartScreen(
+          onSeeOrders: () => _go(const OrdersScreen()),
+        );
+      default:
+        return const SizedBox.shrink();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final cardColor = ChezMamaTheme.cardColor(context);
+    final auth = AuthScope.of(context);
+    final isSeller = auth.isSeller;
+    final showShellAppBar = index != 0;
+
     return Scaffold(
-      appBar: AppBar(
-        titleSpacing: 16,
-        title: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 30,
-              height: 30,
-              decoration: BoxDecoration(
-                color: ChezMamaTheme.brandOrange.withValues(alpha: 0.14),
-                borderRadius: BorderRadius.circular(9),
-              ),
-              child: const Icon(
-                Icons.restaurant_rounded,
-                size: 18,
-                color: ChezMamaTheme.brandOrange,
-              ),
-            ),
-            const SizedBox(width: 10),
-            Text(_titles[index]),
-          ],
-        ),
-        actions: [
-          AnimatedBuilder(
-            animation: NotificationsNotifier.instance,
-            builder: (context, _) {
-              final count = NotificationsNotifier.instance.unread;
-              return IconButton(
-                tooltip: 'Notifications',
-                onPressed: () => _go(const NotificationsScreen()),
-                icon: count > 0
-                    ? Badge.count(
-                        count: count,
-                        child: const Icon(Icons.notifications_rounded),
-                      )
-                    : const Icon(Icons.notifications_none_rounded),
-              );
-            },
-          ),
-          AnimatedBuilder(
-            animation: ChatUnreadNotifier.instance,
-            builder: (context, _) {
-              final count = ChatUnreadNotifier.instance.unread;
-              return IconButton(
-                tooltip: 'Messages',
-                onPressed: () => _go(const ConversationsScreen()),
-                icon: count > 0
-                    ? Badge.count(
-                        count: count,
-                        child: const Icon(Icons.chat_bubble_rounded),
-                      )
-                    : const Icon(Icons.chat_bubble_outline_rounded),
-              );
-            },
-          ),
-          AnimatedBuilder(
-            animation: ReceivedOrdersNotifier.instance,
-            builder: (context, _) {
-              final count = ReceivedOrdersNotifier.instance.activeCount;
-              return IconButton(
-                tooltip: 'Commandes reçues',
-                onPressed: () => _go(const ReceivedOrdersScreen()),
-                icon: count > 0
-                    ? Badge.count(
-                        count: count,
-                        child: const Icon(Icons.inbox_rounded),
-                      )
-                    : const Icon(Icons.inbox_rounded),
-              );
-            },
-          ),
-          PopupMenuButton<String>(
-            tooltip: 'Menu',
-            icon: const Icon(Icons.menu_rounded),
-            onSelected: (value) {
-              switch (value) {
-                case 'dashboard':
-                  _go(const SellerDashboardScreen());
-                case 'shop':
-                  _go(const MyShopScreen());
-                case 'publications':
-                  _go(const MyPublicationsScreen());
-                case 'favorites':
-                  _go(const FavoriteMealsScreen());
-                case 'loyalty':
-                  _go(const LoyaltyScreen());
-                case 'messages':
-                  _go(const ConversationsScreen());
-                case 'language':
-                  _pickLanguage();
-                case 'theme':
-                  ThemeController.instance
-                      .toggleDark(!ThemeController.instance.isDark);
-                case 'logout':
-                  _logout();
-              }
-            },
-            itemBuilder: (context) {
-              final dark = ThemeController.instance.isDark;
-              return [
-                PopupMenuItem(
-                  value: 'dashboard',
-                  child: ListTile(
-                    leading: const Icon(Icons.insights_rounded),
-                    title: Text(tr('menu.dashboard')),
-                  ),
-                ),
-                PopupMenuItem(
-                  value: 'shop',
-                  child: ListTile(
-                    leading: const Icon(Icons.storefront_rounded),
-                    title: Text(tr('menu.shop')),
-                  ),
-                ),
-                PopupMenuItem(
-                  value: 'publications',
-                  child: ListTile(
-                    leading: const Icon(Icons.video_library_rounded),
-                    title: Text(tr('menu.publications')),
-                  ),
-                ),
-                PopupMenuItem(
-                  value: 'favorites',
-                  child: ListTile(
-                    leading: const Icon(Icons.favorite_rounded),
-                    title: Text(tr('menu.favorites')),
-                  ),
-                ),
-                PopupMenuItem(
-                  value: 'messages',
-                  child: ListTile(
-                    leading: const Icon(Icons.forum_rounded),
-                    title: Text(tr('menu.messages')),
-                  ),
-                ),
-                PopupMenuItem(
-                  value: 'loyalty',
-                  child: ListTile(
-                    leading: const Icon(Icons.workspace_premium_rounded),
-                    title: Text(tr('menu.loyalty')),
-                  ),
-                ),
-                PopupMenuItem(
-                  value: 'language',
-                  child: ListTile(
-                    leading: const Icon(Icons.translate_rounded),
-                    title: Text(tr('menu.language')),
-                    trailing: Text(
-                      LocaleController.instance.lang.flag,
-                      style: const TextStyle(fontSize: 18),
+      appBar: showShellAppBar
+          ? AppBar(
+              titleSpacing: 16,
+              title: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 30,
+                    height: 30,
+                    decoration: BoxDecoration(
+                      color: ChezMamaTheme.brandOrange.withValues(alpha: 0.14),
+                      borderRadius: BorderRadius.circular(9),
+                    ),
+                    child: const Icon(
+                      Icons.restaurant_rounded,
+                      size: 18,
+                      color: ChezMamaTheme.brandOrange,
                     ),
                   ),
-                ),
-                PopupMenuItem(
-                  value: 'theme',
-                  child: ListTile(
-                    leading: Icon(
-                      dark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
-                    ),
-                    title: Text(dark ? tr('menu.lightMode') : tr('menu.darkMode')),
+                  const SizedBox(width: 10),
+                  Text(_titles[index]),
+                ],
+              ),
+              actions: [
+                if (index == 4)
+                  IconButton(
+                    tooltip: 'Mes commandes',
+                    onPressed: () => _go(const OrdersScreen()),
+                    icon: const Icon(Icons.receipt_long_rounded),
                   ),
+                ShellToolbarActions(
+                  isSeller: isSeller,
+                  onNotifications: () => _go(const NotificationsScreen()),
+                  onMessages: () => _go(const ConversationsScreen()),
+                  onReceivedOrders: () => _go(const ReceivedOrdersScreen()),
+                  onMenuSelected: _handleMenu,
+                  onPickLanguage: _pickLanguage,
                 ),
-                PopupMenuItem(
-                  value: 'logout',
-                  child: ListTile(
-                    leading: const Icon(Icons.logout_rounded),
-                    title: Text(tr('menu.logout')),
-                  ),
+              ],
+            )
+          : null,
+      body: AnimatedBuilder(
+        animation: auth,
+        builder: (context, _) {
+          return AnimatedSwitcher(
+            duration: const Duration(milliseconds: 260),
+            switchInCurve: Curves.easeOutCubic,
+            switchOutCurve: Curves.easeInCubic,
+            transitionBuilder: (child, a) {
+              final fade = CurvedAnimation(parent: a, curve: Curves.easeOutCubic);
+              return FadeTransition(
+                opacity: fade,
+                child: SlideTransition(
+                  position: Tween<Offset>(
+                    begin: const Offset(0, 0.03),
+                    end: Offset.zero,
+                  ).animate(fade),
+                  child: child,
                 ),
-              ];
+              );
             },
-          ),
-        ],
-      ),
-      body: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 260),
-        switchInCurve: Curves.easeOutCubic,
-        switchOutCurve: Curves.easeInCubic,
-        transitionBuilder: (child, a) {
-          final fade = CurvedAnimation(parent: a, curve: Curves.easeOutCubic);
-          return FadeTransition(
-            opacity: fade,
-            child: SlideTransition(
-              position: Tween<Offset>(
-                begin: const Offset(0, 0.03),
-                end: Offset.zero,
-              ).animate(fade),
-              child: child,
+            child: KeyedSubtree(
+              key: ValueKey('$index-${auth.isSeller}'),
+              child: _buildPage(index, auth.isSeller),
             ),
           );
         },
-        child: KeyedSubtree(
-          key: ValueKey(index),
-          child: pages[index],
-        ),
       ),
       bottomNavigationBar: SafeArea(
         top: false,
@@ -387,4 +304,3 @@ class _AppShellState extends State<AppShell> {
     );
   }
 }
-
