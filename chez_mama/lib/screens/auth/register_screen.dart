@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../api/api_client.dart';
 import '../../auth/auth_scope.dart';
 import '../../analytics/event_tracker.dart';
+import '../../l10n/app_strings.dart';
 import '../../ui/chezmama_theme.dart';
 import '../../widgets/primary_button.dart';
 
@@ -123,9 +124,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     if (busy) return;
     if (email.text.trim().isEmpty || password.text.length < 6) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Email requis et mot de passe d’au moins 6 caractères.'),
-        ),
+        SnackBar(content: Text(tr('register.passwordRequired'))),
       );
       return;
     }
@@ -181,7 +180,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   Widget build(BuildContext context) {
     final t = Theme.of(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('Créer un compte')),
+      appBar: AppBar(title: Text(tr('auth.createAccount'))),
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(16),
@@ -198,7 +197,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Profil vendeur',
+                    tr('register.sellerProfile'),
                     style: t.textTheme.headlineSmall?.copyWith(
                       fontWeight: FontWeight.w900,
                       letterSpacing: -0.3,
@@ -206,7 +205,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    'Crée ton compte pour mettre tes produits en ligne.',
+                    tr('register.subtitle'),
                     style: t.textTheme.bodyMedium?.copyWith(
                       color: ChezMamaTheme.mutedInk(context),
                       fontWeight: FontWeight.w600,
@@ -214,7 +213,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'Infos personnelles',
+                    tr('register.personalInfo'),
                     style: t.textTheme.titleSmall?.copyWith(
                       fontWeight: FontWeight.w900,
                     ),
@@ -223,25 +222,27 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   TextField(
                     controller: name,
                     textInputAction: TextInputAction.next,
-                    decoration: const InputDecoration(
-                      labelText: 'Nom boutique / vendeur',
-                      prefixIcon: Icon(Icons.badge_rounded),                    ),
+                    decoration: InputDecoration(
+                      labelText: tr('register.shopSellerName'),
+                      prefixIcon: const Icon(Icons.badge_rounded),
+                    ),
                   ),
                   const SizedBox(height: 12),
                   TextField(
                     controller: phone,
                     keyboardType: TextInputType.phone,
                     textInputAction: TextInputAction.next,
-                    decoration: const InputDecoration(
-                      labelText: 'Téléphone (WhatsApp)',
-                      prefixIcon: Icon(Icons.phone_rounded),                    ),
+                    decoration: InputDecoration(
+                      labelText: tr('register.phoneWhatsapp'),
+                      prefixIcon: const Icon(Icons.phone_rounded),
+                    ),
                   ),
                   const SizedBox(height: 12),
                   Row(
                     children: [
                       Expanded(
                         child: _DropdownField(
-                          label: 'Pays',
+                          label: tr('register.country'),
                           icon: Icons.public_rounded,
                           value: country.text,
                           items: countries,
@@ -256,7 +257,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: _DropdownField(
-                          label: 'Ville',
+                          label: tr('register.city'),
                           icon: Icons.location_city_rounded,
                           value: city.text,
                           items: _cityOptions,
@@ -269,9 +270,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   TextField(
                     controller: neighborhood,
                     textInputAction: TextInputAction.next,
-                    decoration: const InputDecoration(
-                      labelText: 'Quartier',
-                      prefixIcon: Icon(Icons.place_rounded),                    ),
+                    decoration: InputDecoration(
+                      labelText: tr('register.neighborhood'),
+                      prefixIcon: const Icon(Icons.place_rounded),
+                    ),
                   ),
                   const SizedBox(height: 12),
                   Row(
@@ -281,16 +283,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           controller: birthYear,
                           keyboardType: TextInputType.number,
                           textInputAction: TextInputAction.next,
-                          decoration: const InputDecoration(
-                            labelText: 'Année de naissance',
-                            prefixIcon: Icon(Icons.cake_rounded),
+                          decoration: InputDecoration(
+                            labelText: tr('register.birthYear'),
+                            prefixIcon: const Icon(Icons.cake_rounded),
                           ),
                         ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: _DropdownField(
-                          label: 'Genre',
+                          label: tr('register.gender'),
                           icon: Icons.person_rounded,
                           value: gender.text,
                           items: genders,
@@ -301,7 +303,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ),
                   const SizedBox(height: 18),
                   Text(
-                    'Infos business',
+                    tr('register.businessInfo'),
                     style: t.textTheme.titleSmall?.copyWith(
                       fontWeight: FontWeight.w900,
                     ),
@@ -310,16 +312,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   TextField(
                     controller: shopName,
                     textInputAction: TextInputAction.next,
-                    decoration: const InputDecoration(
-                      labelText: 'Nom du restaurant / boutique',
-                      prefixIcon: Icon(Icons.storefront_rounded),                    ),
+                    decoration: InputDecoration(
+                      labelText: tr('register.restaurantName'),
+                      prefixIcon: const Icon(Icons.storefront_rounded),
+                    ),
                   ),
                   const SizedBox(height: 12),
                   Row(
                     children: [
                       Expanded(
                         child: _DropdownField(
-                          label: 'Type',
+                          label: tr('register.type'),
                           icon: Icons.category_rounded,
                           value: shopCategory.text,
                           items: shopCategories,
@@ -330,7 +333,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: _DropdownField(
-                          label: 'Cuisine',
+                          label: tr('register.cuisine'),
                           icon: Icons.restaurant_menu_rounded,
                           value: cuisine.text,
                           items: cuisines,
@@ -344,7 +347,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     children: [
                       Expanded(
                         child: _DropdownField(
-                          label: 'Ouverture',
+                          label: tr('register.opening'),
                           icon: Icons.schedule_rounded,
                           value: opensAt.text,
                           items: hours,
@@ -354,7 +357,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: _DropdownField(
-                          label: 'Fermeture',
+                          label: tr('register.closing'),
                           icon: Icons.schedule_rounded,
                           value: closesAt.text,
                           items: hours,
@@ -365,7 +368,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ),
                   const SizedBox(height: 12),
                   _DropdownField(
-                    label: 'Rayon de livraison (km)',
+                    label: tr('register.deliveryRadius'),
                     icon: Icons.route_rounded,
                     value: deliveryRadiusKm.text,
                     items: deliveryRadii,
@@ -379,7 +382,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       return SwitchListTile(
                         value: v,
                         onChanged: (x) => acceptsDelivery.value = x,
-                        title: const Text('Livraison disponible'),
+                        title: Text(tr('register.deliveryAvailable')),
                         activeColor: ChezMamaTheme.brandOrange,
                         contentPadding: EdgeInsets.zero,
                       );
@@ -391,7 +394,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       return SwitchListTile(
                         value: v,
                         onChanged: (x) => acceptsPickup.value = x,
-                        title: const Text('Retrait sur place'),
+                        title: Text(tr('register.pickupAvailable')),
                         activeColor: ChezMamaTheme.brandOrange,
                         contentPadding: EdgeInsets.zero,
                       );
@@ -399,7 +402,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ),
                   const SizedBox(height: 18),
                   Text(
-                    'Accès au compte',
+                    tr('register.accountAccess'),
                     style: t.textTheme.titleSmall?.copyWith(
                       fontWeight: FontWeight.w900,
                     ),
@@ -409,18 +412,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     controller: email,
                     keyboardType: TextInputType.emailAddress,
                     textInputAction: TextInputAction.next,
-                    decoration: const InputDecoration(
-                      labelText: 'Email',
-                      prefixIcon: Icon(Icons.alternate_email_rounded),                    ),
+                    decoration: InputDecoration(
+                      labelText: tr('auth.email'),
+                      prefixIcon: const Icon(Icons.alternate_email_rounded),
+                    ),
                   ),
                   const SizedBox(height: 12),
                   TextField(
                     controller: password,
                     obscureText: true,
                     onSubmitted: (_) => _submit(),
-                    decoration: const InputDecoration(
-                      labelText: 'Mot de passe',
-                      prefixIcon: Icon(Icons.lock_rounded),                    ),
+                    decoration: InputDecoration(
+                      labelText: tr('auth.password'),
+                      prefixIcon: const Icon(Icons.lock_rounded),
+                    ),
                   ),
                   const SizedBox(height: 14),
                   SizedBox(
@@ -429,7 +434,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     child: AbsorbPointer(
                       absorbing: busy,
                       child: PrimaryButton(
-                        label: busy ? 'Création…' : 'Créer le compte',
+                        label: busy ? tr('register.creating') : tr('register.submit'),
                         icon: Icons.person_add_alt_1_rounded,
                         onPressed: _submit,
                       ),

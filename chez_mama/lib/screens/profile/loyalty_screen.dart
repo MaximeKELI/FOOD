@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../auth/auth_scope.dart';
+import '../../l10n/app_strings.dart';
 import '../../ui/chezmama_theme.dart';
 
 class LoyaltyScreen extends StatefulWidget {
@@ -24,13 +25,12 @@ class _LoyaltyScreenState extends State<LoyaltyScreen> {
     final auth = AuthScope.of(context);
     final t = Theme.of(context);
     final points = auth.loyaltyPoints;
-    // Reward at every 100 points (e.g. a free meal).
     const goal = 100;
     final progress = (points % goal) / goal;
     final toNext = goal - (points % goal);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Programme de fidélité')),
+      appBar: AppBar(title: Text(tr('loyalty.programTitle'))),
       body: AnimatedBuilder(
         animation: auth,
         builder: (context, _) {
@@ -51,7 +51,7 @@ class _LoyaltyScreenState extends State<LoyaltyScreen> {
                         color: Colors.white, size: 32),
                     const SizedBox(height: 10),
                     Text(
-                      '${auth.loyaltyPoints} points',
+                      trf('loyalty.points', {'points': auth.loyaltyPoints}),
                       style: t.textTheme.headlineMedium?.copyWith(
                         color: Colors.white,
                         fontWeight: FontWeight.w900,
@@ -59,7 +59,7 @@ class _LoyaltyScreenState extends State<LoyaltyScreen> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Cumule des points à chaque commande livrée.',
+                      tr('loyalty.earnHint'),
                       style: t.textTheme.bodyMedium
                           ?.copyWith(color: Colors.white.withValues(alpha: 0.9)),
                     ),
@@ -68,7 +68,7 @@ class _LoyaltyScreenState extends State<LoyaltyScreen> {
               ),
               const SizedBox(height: 20),
               Text(
-                'Prochaine récompense',
+                tr('loyalty.nextReward'),
                 style:
                     t.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900),
               ),
@@ -82,7 +82,7 @@ class _LoyaltyScreenState extends State<LoyaltyScreen> {
               ),
               const SizedBox(height: 8),
               Text(
-                'Encore $toNext points pour débloquer un plat offert 🎁',
+                trf('loyalty.pointsToUnlock', {'points': toNext}),
                 style: t.textTheme.bodyMedium?.copyWith(
                   color: ChezMamaTheme.mutedInk(context),
                 ),
@@ -90,14 +90,13 @@ class _LoyaltyScreenState extends State<LoyaltyScreen> {
               const SizedBox(height: 24),
               _InfoTile(
                 icon: Icons.receipt_long_rounded,
-                title: 'Comment gagner des points ?',
-                body:
-                    '1 point pour 100 FCFA dépensés, crédité quand la commande est livrée.',
+                title: tr('loyalty.howToEarn'),
+                body: tr('loyalty.howToEarnBody'),
               ),
               _InfoTile(
                 icon: Icons.card_giftcard_rounded,
-                title: 'Récompense',
-                body: 'À 100 points, profite d\'un plat offert chez tes vendeurs.',
+                title: tr('loyalty.rewardTitle'),
+                body: tr('loyalty.rewardBody'),
               ),
             ],
           );

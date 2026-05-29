@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../api/api_client.dart';
 import '../../api/chat_api.dart';
+import '../../l10n/app_strings.dart';
 import '../../ui/chezmama_theme.dart';
 import '../../widgets/entrance.dart';
 import 'conversation_screen.dart';
@@ -62,7 +63,7 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
             FilledButton.icon(
               onPressed: _load,
               icon: const Icon(Icons.refresh_rounded),
-              label: const Text('Réessayer'),
+              label: Text(tr('action.retry')),
             ),
           ],
         ),
@@ -80,7 +81,7 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
               color: ChezMamaTheme.brandBrown,
             ),
             const SizedBox(height: 12),
-            const Center(child: Text('Aucune discussion pour le moment.')),
+            Center(child: Text(tr('chat.noDiscussions'))),
           ],
         ),
       );

@@ -489,7 +489,7 @@ class _CreatePostSheetState extends State<_CreatePostSheet> {
   void _showPickError(Object e) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Impossible de choisir le fichier: $e')),
+      SnackBar(content: Text(trf('social.pickFileFailed', {'error': e}))),
     );
   }
 

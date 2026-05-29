@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../api/api_client.dart';
 import '../../api/chat_api.dart';
 import '../../auth/auth_scope.dart';
+import '../../l10n/app_strings.dart';
 import '../../ui/chezmama_theme.dart';
 
 /// A 1:1 chat thread. Either [conversationId] or [otherUserId] must be given.
@@ -128,7 +129,9 @@ class _ConversationScreenState extends State<ConversationScreen> {
     final me = AuthScope.of(context).userId;
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.otherName.isEmpty ? 'Discussion' : widget.otherName),
+        title: Text(
+          widget.otherName.isEmpty ? tr('chat.threadTitle') : widget.otherName,
+        ),
       ),
       body: Column(
         children: [
@@ -140,7 +143,7 @@ class _ConversationScreenState extends State<ConversationScreen> {
                     : _messages.isEmpty
                         ? Center(
                             child: Text(
-                              'Démarre la conversation 👋',
+                              tr('chat.startConversation'),
                               style: TextStyle(
                                 color: ChezMamaTheme.mutedInk(context),
                               ),
@@ -167,8 +170,8 @@ class _ConversationScreenState extends State<ConversationScreen> {
                       controller: _input,
                       textInputAction: TextInputAction.send,
                       onSubmitted: (_) => _send(),
-                      decoration: const InputDecoration(
-                        hintText: 'Écrire un message…',
+                      decoration: InputDecoration(
+                        hintText: tr('chat.hint'),
                       ),
                     ),
                   ),

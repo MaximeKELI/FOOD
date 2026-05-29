@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../api/accounts_api.dart';
 import '../../api/api_client.dart';
 import '../../auth/auth_scope.dart';
+import '../../l10n/app_strings.dart';
 import '../../services/app_location_service.dart';
 import '../../ui/chezmama_theme.dart';
 
@@ -114,11 +115,13 @@ class _MyShopScreenState extends State<MyShopScreen> {
           _lng = result.location!.longitude;
         });
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Position enregistrée.')),
+          SnackBar(content: Text(tr('shop.locationSaved'))),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(result.error ?? 'Localisation indisponible.')),
+          SnackBar(
+            content: Text(result.error ?? tr('shop.locationUnavailable')),
+          ),
         );
       }
     } finally {
@@ -153,7 +156,7 @@ class _MyShopScreenState extends State<MyShopScreen> {
       );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Boutique mise à jour.')),
+        SnackBar(content: Text(tr('shop.updated'))),
       );
       Navigator.of(context).pop();
     } catch (e) {
@@ -169,7 +172,7 @@ class _MyShopScreenState extends State<MyShopScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Ma boutique')),
+      appBar: AppBar(title: Text(tr('shop.title'))),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
@@ -183,17 +186,17 @@ class _MyShopScreenState extends State<MyShopScreen> {
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 30),
       children: [
-        _section('Identité'),
-        _field(_displayName, 'Nom affiché', Icons.person_rounded),
-        _field(_phone, 'Téléphone', Icons.phone_rounded,
+        _section(tr('shop.sectionIdentity')),
+        _field(_displayName, tr('shop.displayName'), Icons.person_rounded),
+        _field(_phone, tr('checkout.phone'), Icons.phone_rounded,
             keyboard: TextInputType.phone),
-        _section('Boutique'),
-        _field(_shopName, 'Nom de la boutique', Icons.storefront_rounded),
-        _field(_shopCategory, 'Catégorie', Icons.category_rounded),
-        _field(_cuisine, 'Cuisine', Icons.restaurant_menu_rounded),
-        _section('Localisation'),
-        _field(_city, 'Ville', Icons.location_city_rounded),
-        _field(_neighborhood, 'Quartier', Icons.map_rounded),
+        _section(tr('shop.sectionShop')),
+        _field(_shopName, tr('shop.shopName'), Icons.storefront_rounded),
+        _field(_shopCategory, tr('shop.category'), Icons.category_rounded),
+        _field(_cuisine, tr('shop.cuisine'), Icons.restaurant_menu_rounded),
+        _section(tr('shop.sectionLocation')),
+        _field(_city, tr('shop.city'), Icons.location_city_rounded),
+        _field(_neighborhood, tr('shop.neighborhood'), Icons.map_rounded),
         const SizedBox(height: 8),
         Container(
           padding: const EdgeInsets.all(12),
@@ -213,8 +216,11 @@ class _MyShopScreenState extends State<MyShopScreen> {
               Expanded(
                 child: Text(
                   hasLocation
-                      ? 'Position: ${_lat!.toStringAsFixed(4)}, ${_lng!.toStringAsFixed(4)}'
-                      : 'Aucune position définie',
+                      ? trf('shop.positionSet', {
+                          'lat': _lat!.toStringAsFixed(4),
+                          'lng': _lng!.toStringAsFixed(4),
+                        })
+                      : tr('shop.noPosition'),
                 ),
               ),
               TextButton.icon(
@@ -226,56 +232,56 @@ class _MyShopScreenState extends State<MyShopScreen> {
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
                     : const Icon(Icons.my_location_rounded),
-                label: const Text('Utiliser ma position'),
+                label: Text(tr('checkout.useLocation')),
               ),
             ],
           ),
         ),
-        _section('Horaires & service'),
+        _section(tr('shop.sectionHours')),
         Row(
           children: [
             Expanded(
-              child: _field(_opensAt, 'Ouvre à', Icons.schedule_rounded),
+              child: _field(_opensAt, tr('shop.opensAt'), Icons.schedule_rounded),
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: _field(_closesAt, 'Ferme à', Icons.schedule_rounded),
+              child: _field(_closesAt, tr('shop.closesAt'), Icons.schedule_rounded),
             ),
           ],
         ),
-        _field(_radius, 'Rayon de livraison (km)', Icons.delivery_dining_rounded,
+        _field(_radius, tr('shop.deliveryRadius'), Icons.delivery_dining_rounded,
             keyboard: TextInputType.number),
         Row(
           children: [
             Expanded(
-              child: _field(_feeBase, 'Frais de base (FCFA)',
+              child: _field(_feeBase, tr('shop.feeBase'),
                   Icons.payments_rounded,
                   keyboard: TextInputType.number),
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: _field(_feePerKm, 'Frais / km (FCFA)', Icons.route_rounded,
+              child: _field(_feePerKm, tr('shop.feePerKm'), Icons.route_rounded,
                   keyboard: TextInputType.number),
             ),
           ],
         ),
         _field(
           _freeDeliveryOver,
-          'Livraison gratuite dès (FCFA, 0 = off)',
+          tr('shop.freeDeliveryOver'),
           Icons.card_giftcard_rounded,
           keyboard: TextInputType.number,
         ),
         SwitchListTile(
           value: _acceptsDelivery,
           onChanged: (v) => setState(() => _acceptsDelivery = v),
-          title: const Text('Livraison'),
+          title: Text(tr('checkout.delivery')),
           activeColor: ChezMamaTheme.brandOrange,
           contentPadding: EdgeInsets.zero,
         ),
         SwitchListTile(
           value: _acceptsPickup,
           onChanged: (v) => setState(() => _acceptsPickup = v),
-          title: const Text('Retrait sur place'),
+          title: Text(tr('shop.pickup')),
           activeColor: ChezMamaTheme.brandOrange,
           contentPadding: EdgeInsets.zero,
         ),
@@ -294,7 +300,7 @@ class _MyShopScreenState extends State<MyShopScreen> {
                     ),
                   )
                 : const Icon(Icons.save_rounded),
-            label: Text(_saving ? 'Enregistrement…' : 'Enregistrer'),
+            label: Text(_saving ? tr('shop.saving') : tr('action.save')),
           ),
         ),
       ],
@@ -353,7 +359,7 @@ class _ErrorView extends StatelessWidget {
             FilledButton.icon(
               onPressed: onRetry,
               icon: const Icon(Icons.refresh_rounded),
-              label: const Text('Réessayer'),
+              label: Text(tr('action.retry')),
             ),
           ],
         ),

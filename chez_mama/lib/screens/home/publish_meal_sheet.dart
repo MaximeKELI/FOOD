@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../api/api_client.dart';
 import '../../api/catalog_api.dart';
+import '../../l10n/app_strings.dart';
 import '../../services/app_media_picker.dart';
 
 /// Bottom sheet allowing a seller to publish a new meal to the catalog.
@@ -70,7 +71,9 @@ class _PublishMealSheetState extends State<PublishMealSheet> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Impossible de choisir l’image: $e')),
+        SnackBar(
+          content: Text(trf('publish.imagePickFailed', {'error': e})),
+        ),
       );
     }
   }
@@ -83,7 +86,9 @@ class _PublishMealSheetState extends State<PublishMealSheet> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Impossible d’ajouter la photo: $e')),
+        SnackBar(
+          content: Text(trf('publish.extraPhotoFailed', {'error': e})),
+        ),
       );
     }
   }
@@ -91,19 +96,19 @@ class _PublishMealSheetState extends State<PublishMealSheet> {
   Future<void> _submit() async {
     if (_name.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Donne un nom au plat.')),
+        SnackBar(content: Text(tr('publish.nameRequired'))),
       );
       return;
     }
     if (_selected == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Choisis une catégorie.')),
+        SnackBar(content: Text(tr('publish.categoryRequired'))),
       );
       return;
     }
     if (_imagePath == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Ajoute une photo du plat.')),
+        SnackBar(content: Text(tr('publish.photoRequired'))),
       );
       return;
     }
@@ -114,9 +119,7 @@ class _PublishMealSheetState extends State<PublishMealSheet> {
       final promo = int.tryParse(_promoPrice.text.trim());
       if (promo != null && price != null && promo >= price) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Le prix promo doit être inférieur au prix.'),
-          ),
+          SnackBar(content: Text(tr('publish.promoMustBeLower'))),
         );
         setState(() => _submitting = false);
         return;
@@ -136,7 +139,9 @@ class _PublishMealSheetState extends State<PublishMealSheet> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Échec: ${apiErrorMessage(e)}')),
+        SnackBar(
+          content: Text(trf('checkout.failed', {'error': apiErrorMessage(e)})),
+        ),
       );
     } finally {
       if (mounted) setState(() => _submitting = false);
@@ -159,16 +164,16 @@ class _PublishMealSheetState extends State<PublishMealSheet> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Publier un plat',
+              tr('home.publishMeal'),
               style: t.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900),
             ),
             const SizedBox(height: 14),
             TextField(
               controller: _name,
               textInputAction: TextInputAction.next,
-              decoration: const InputDecoration(
-                labelText: 'Nom du plat',
-                prefixIcon: Icon(Icons.restaurant_menu_rounded),
+              decoration: InputDecoration(
+                labelText: tr('publish.mealName'),
+                prefixIcon: const Icon(Icons.restaurant_menu_rounded),
               ),
             ),
             const SizedBox(height: 12),
@@ -186,9 +191,9 @@ class _PublishMealSheetState extends State<PublishMealSheet> {
               DropdownButtonFormField<MealCategory>(
                 value: _selected,
                 isExpanded: true,
-                decoration: const InputDecoration(
-                  labelText: 'Catégorie',
-                  prefixIcon: Icon(Icons.category_rounded),
+                decoration: InputDecoration(
+                  labelText: tr('publish.category'),
+                  prefixIcon: const Icon(Icons.category_rounded),
                 ),
                 items: [
                   for (final c in _categories)
@@ -200,9 +205,9 @@ class _PublishMealSheetState extends State<PublishMealSheet> {
             TextField(
               controller: _subtitle,
               textInputAction: TextInputAction.next,
-              decoration: const InputDecoration(
-                labelText: 'Description (optionnel)',
-                prefixIcon: Icon(Icons.notes_rounded),
+              decoration: InputDecoration(
+                labelText: tr('publish.description'),
+                prefixIcon: const Icon(Icons.notes_rounded),
               ),
             ),
             const SizedBox(height: 12),
@@ -210,9 +215,9 @@ class _PublishMealSheetState extends State<PublishMealSheet> {
               controller: _price,
               keyboardType: TextInputType.number,
               inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-              decoration: const InputDecoration(
-                labelText: 'Prix en FCFA (optionnel)',
-                prefixIcon: Icon(Icons.payments_rounded),
+              decoration: InputDecoration(
+                labelText: tr('publish.price'),
+                prefixIcon: const Icon(Icons.payments_rounded),
               ),
             ),
             const SizedBox(height: 12),
@@ -220,9 +225,9 @@ class _PublishMealSheetState extends State<PublishMealSheet> {
               controller: _promoPrice,
               keyboardType: TextInputType.number,
               inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-              decoration: const InputDecoration(
-                labelText: 'Prix promo en FCFA (optionnel)',
-                prefixIcon: Icon(Icons.sell_rounded),
+              decoration: InputDecoration(
+                labelText: tr('publish.promoPrice'),
+                prefixIcon: const Icon(Icons.sell_rounded),
               ),
             ),
             const SizedBox(height: 4),
@@ -230,7 +235,7 @@ class _PublishMealSheetState extends State<PublishMealSheet> {
               contentPadding: EdgeInsets.zero,
               value: _isSpecial,
               onChanged: (v) => setState(() => _isSpecial = v),
-              title: const Text('Marquer comme plat du jour'),
+              title: Text(tr('publications.markSpecial')),
               secondary: const Icon(Icons.local_fire_department_rounded),
             ),
             const SizedBox(height: 8),
@@ -283,8 +288,9 @@ class _PublishMealSheetState extends State<PublishMealSheet> {
                 icon: const Icon(Icons.collections_rounded),
                 label: Text(
                   _extraImages.isEmpty
-                      ? 'Photos supplémentaires (optionnel)'
-                      : 'Ajouter une photo (${_extraImages.length}/4)',
+                      ? tr('publish.extraPhotos')
+                      : trf('publish.addPhotoCount',
+                          {'count': _extraImages.length}),
                 ),
               ),
             ),
@@ -295,7 +301,9 @@ class _PublishMealSheetState extends State<PublishMealSheet> {
                 onPressed: _pickImage,
                 icon: const Icon(Icons.photo_library_rounded),
                 label: Text(
-                  _imagePath == null ? 'Choisir une photo' : 'Changer la photo',
+                  _imagePath == null
+                      ? tr('publish.choosePhoto')
+                      : tr('publish.changePhoto'),
                 ),
               ),
             ),
@@ -315,7 +323,9 @@ class _PublishMealSheetState extends State<PublishMealSheet> {
                         ),
                       )
                     : const Icon(Icons.cloud_upload_rounded),
-                label: Text(_submitting ? 'Publication…' : 'Publier le plat'),
+                label: Text(
+                  _submitting ? tr('publish.publishing') : tr('publish.submit'),
+                ),
               ),
             ),
           ],

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../api/accounts_api.dart';
 import '../../api/api_client.dart';
 import '../../api/catalog_api.dart';
+import '../../l10n/app_strings.dart';
 import '../../models/meal.dart';
 import '../../ui/chezmama_theme.dart';
 import '../home/meal_card.dart';
@@ -103,7 +104,9 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> {
         title: Text(
           _seller?.shopName.isNotEmpty == true
               ? _seller!.shopName
-              : (widget.sellerName.isEmpty ? 'Vendeur' : widget.sellerName),
+              : (widget.sellerName.isEmpty
+                  ? tr('seller.defaultName')
+                  : widget.sellerName),
         ),
       ),
       body: _buildBody(),
@@ -123,12 +126,12 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> {
             children: [
               const Icon(Icons.cloud_off_rounded, size: 46),
               const SizedBox(height: 10),
-              Text(_error ?? 'Vendeur introuvable', textAlign: TextAlign.center),
+              Text(_error ?? tr('seller.notFound'), textAlign: TextAlign.center),
               const SizedBox(height: 12),
               FilledButton.icon(
                 onPressed: _load,
                 icon: const Icon(Icons.refresh_rounded),
-                label: const Text('Réessayer'),
+                label: Text(tr('action.retry')),
               ),
             ],
           ),
@@ -148,16 +151,16 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> {
           ),
           const SizedBox(height: 18),
           Text(
-            'Ses plats (${_meals.length})',
+            trf('seller.theirMeals', {'count': _meals.length}),
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.w900,
                 ),
           ),
           const SizedBox(height: 10),
           if (_meals.isEmpty)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 24),
-              child: Center(child: Text('Aucun plat publié.')),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 24),
+              child: Center(child: Text(tr('publications.noMeals'))),
             )
           else
             GridView.builder(
@@ -247,9 +250,12 @@ class _Header extends StatelessWidget {
           const SizedBox(height: 12),
           Row(
             children: [
-              _Stat(value: '${seller.mealsCount}', label: 'Plats'),
+              _Stat(value: '${seller.mealsCount}', label: tr('dashboard.meals')),
               const SizedBox(width: 18),
-              _Stat(value: '${seller.followersCount}', label: 'Abonnés'),
+              _Stat(
+                value: '${seller.followersCount}',
+                label: tr('dashboard.followers'),
+              ),
             ],
           ),
           if (location.isNotEmpty) ...[
@@ -283,7 +289,11 @@ class _Header extends StatelessWidget {
                     ? Icons.check_rounded
                     : Icons.person_add_alt_1_rounded,
               ),
-              label: Text(seller.followedByMe ? 'Abonné' : 'S’abonner'),
+              label: Text(
+                seller.followedByMe
+                    ? tr('seller.followed')
+                    : tr('social.subscribe'),
+              ),
               style: FilledButton.styleFrom(
                 backgroundColor: seller.followedByMe
                     ? ChezMamaTheme.brandBrown

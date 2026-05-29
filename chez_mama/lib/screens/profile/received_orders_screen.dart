@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import '../../api/api_client.dart';
 import '../../api/orders_api.dart';
 import '../../cart/received_orders_notifier.dart';
+import '../../l10n/app_strings.dart';
 import '../../ui/chezmama_theme.dart';
+import '../../utils/currency_format.dart';
 import '../../widgets/entrance.dart';
 
 const _activeStatuses = {'pending', 'preparing', 'on_the_way'};
@@ -52,6 +54,11 @@ class _ReceivedOrdersScreenState extends State<ReceivedOrdersScreen> {
     }
   }
 
+  String _statusText(OrderView order) =>
+      kOrderStatusKeys.contains(order.status)
+          ? orderStatusLabel(order.status)
+          : order.statusLabel;
+
   Future<void> _changeStatus(OrderView order, String status) async {
     try {
       final updated = await OrdersApi.instance.updateStatus(order.id, status);
@@ -62,7 +69,11 @@ class _ReceivedOrdersScreenState extends State<ReceivedOrdersScreen> {
       });
       ReceivedOrdersNotifier.instance.refresh();
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Statut: ${updated.statusLabel}')),
+        SnackBar(
+          content: Text(
+            trf('orders.statusUpdated', {'status': _statusText(updated)}),
+          ),
+        ),
       );
     } catch (e) {
       if (!mounted) return;
@@ -78,11 +89,11 @@ class _ReceivedOrdersScreenState extends State<ReceivedOrdersScreen> {
       length: 2,
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('Commandes reçues'),
+          title: Text(tr('orders.received')),
           bottom: TabBar(
             tabs: [
-              Tab(text: 'En cours (${_active.length})'),
-              Tab(text: 'Terminées (${_done.length})'),
+              Tab(text: trf('orders.tabActive', {'count': _active.length})),
+              Tab(text: trf('orders.tabDone', {'count': _done.length})),
             ],
           ),
         ),
@@ -109,7 +120,7 @@ class _ReceivedOrdersScreenState extends State<ReceivedOrdersScreen> {
               FilledButton.icon(
                 onPressed: _load,
                 icon: const Icon(Icons.refresh_rounded),
-                label: const Text('Réessayer'),
+                label: Text(tr('action.retry')),
               ),
             ],
           ),
@@ -120,13 +131,13 @@ class _ReceivedOrdersScreenState extends State<ReceivedOrdersScreen> {
       children: [
         _OrdersList(
           orders: _active,
-          emptyText: 'Aucune commande en cours.',
+          emptyText: tr('orders.activeEmpty'),
           onRefresh: _load,
           onStatusChange: _changeStatus,
         ),
         _OrdersList(
           orders: _done,
-          emptyText: 'Aucune commande terminée.',
+          emptyText: tr('orders.doneEmpty'),
           onRefresh: _load,
           onStatusChange: _changeStatus,
         ),
@@ -180,9 +191,23 @@ class _ReceivedOrderCard extends StatelessWidget {
   final OrderView order;
   final ValueChanged<String> onStatusChange;
 
+  String get _statusText =>
+      kOrderStatusKeys.contains(order.status)
+          ? orderStatusLabel(order.status)
+          : order.statusLabel;
+
+  String get _fulfillmentText {
+    if (order.fulfillment == 'pickup') return tr('checkout.pickup');
+    if (order.address.isEmpty) return tr('checkout.delivery');
+    return trf('orders.deliveryWithAddress', {'address': order.address});
+  }
+
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context);
+    final paymentLine = order.paymentLabel.isEmpty
+        ? ''
+        : '\n${trf('orders.paymentLine', {'method': order.paymentLabel})}';
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -197,7 +222,7 @@ class _ReceivedOrderCard extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  'Commande #${order.id}',
+                  trf('tracking.orderLabel', {'id': order.id}),
                   style: t.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w900,
                   ),
@@ -210,7 +235,7 @@ class _ReceivedOrderCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(999),
                 ),
                 child: Text(
-                  order.statusLabel,
+                  _statusText,
                   style: t.textTheme.labelMedium?.copyWith(
                     color: ChezMamaTheme.brandBrown,
                     fontWeight: FontWeight.w800,
@@ -222,7 +247,7 @@ class _ReceivedOrderCard extends StatelessWidget {
           if (order.customerName.isNotEmpty) ...[
             const SizedBox(height: 4),
             Text(
-              'Client: ${order.customerName}',
+              trf('orders.customerLine', {'name': order.customerName}),
               style: t.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w700),
             ),
           ],
@@ -230,7 +255,7 @@ class _ReceivedOrderCard extends StatelessWidget {
           for (final item in order.items)
             Text(
               '${item.quantity} x ${item.mealName}'
-              '${item.unitPrice > 0 ? '  (${item.lineTotal} FCFA)' : ''}',
+              '${item.unitPrice > 0 ? '  (${formatFcfa(item.lineTotal)})' : ''}',
               style: t.textTheme.bodyMedium,
             ),
           const SizedBox(height: 6),
@@ -246,14 +271,13 @@ class _ReceivedOrderCard extends StatelessWidget {
               const SizedBox(width: 6),
               Expanded(
                 child: Text(
-                  '${order.fulfillment == 'pickup' ? 'Retrait' : (order.address.isEmpty ? 'Livraison' : 'Livraison • ${order.address}')}'
-                  '${order.paymentLabel.isEmpty ? '' : '\nPaiement: ${order.paymentLabel}'}',
+                  '$_fulfillmentText$paymentLine',
                   style:
                       t.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600),
                 ),
               ),
               Text(
-                '${order.total} FCFA',
+                formatFcfa(order.total),
                 style: t.textTheme.titleSmall?.copyWith(
                   fontWeight: FontWeight.w900,
                 ),
@@ -275,11 +299,11 @@ class _ReceivedOrderCard extends StatelessWidget {
               value: order.status,
               underline: const SizedBox.shrink(),
               borderRadius: BorderRadius.circular(14),
-              items: kOrderStatuses.entries
+              items: kOrderStatusKeys
                   .map(
-                    (e) => DropdownMenuItem(
-                      value: e.key,
-                      child: Text(e.value),
+                    (key) => DropdownMenuItem(
+                      value: key,
+                      child: Text(orderStatusLabel(key)),
                     ),
                   )
                   .toList(),

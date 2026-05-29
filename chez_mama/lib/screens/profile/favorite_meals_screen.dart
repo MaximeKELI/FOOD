@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../api/api_client.dart';
 import '../../api/catalog_api.dart';
+import '../../l10n/app_strings.dart';
 import '../../models/meal.dart';
 import '../../widgets/entrance.dart';
 import '../home/meal_card.dart';
@@ -48,7 +49,7 @@ class _FavoriteMealsScreenState extends State<FavoriteMealsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Mes favoris')),
+      appBar: AppBar(title: Text(tr('favorites.title'))),
       body: _buildBody(),
     );
   }
@@ -71,7 +72,7 @@ class _FavoriteMealsScreenState extends State<FavoriteMealsScreen> {
               FilledButton.icon(
                 onPressed: _load,
                 icon: const Icon(Icons.refresh_rounded),
-                label: const Text('Réessayer'),
+                label: Text(tr('action.retry')),
               ),
             ],
           ),
@@ -79,11 +80,11 @@ class _FavoriteMealsScreenState extends State<FavoriteMealsScreen> {
       );
     }
     if (_meals.isEmpty) {
-      return const Center(
+      return Center(
         child: Padding(
-          padding: EdgeInsets.all(24),
+          padding: const EdgeInsets.all(24),
           child: Text(
-            'Aucun plat favori.\nAppuie sur le cœur d’un plat pour l’ajouter ici.',
+            tr('favorites.emptyHint'),
             textAlign: TextAlign.center,
           ),
         ),
