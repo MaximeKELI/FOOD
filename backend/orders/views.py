@@ -154,13 +154,10 @@ class OrderStatusUpdateView(APIView):
     def patch(self, request, pk):
         from notifications.models import Notification, notify
 
-        order = (
-            Order.objects.select_for_update()
-            .filter(pk=pk, items__meal__seller=request.user)
-            .distinct()
-            .first()
-        )
-        if order is None:
+        order = Order.objects.select_for_update().filter(pk=pk).first()
+        if order is None or not OrderItem.objects.filter(
+            order=order, meal__seller=request.user
+        ).exists():
             return Response(
                 {"detail": "Commande introuvable ou non autorisée."},
                 status=status.HTTP_404_NOT_FOUND,
