@@ -122,4 +122,62 @@ class OrdersApi {
     );
     return OrderView.fromJson(res.data as Map<String, dynamic>);
   }
+
+  Future<SellerStats> fetchStats() async {
+    final res = await _dio.get('/orders/stats/');
+    return SellerStats.fromJson(res.data as Map<String, dynamic>);
+  }
+}
+
+class TopMeal {
+  TopMeal({required this.name, required this.quantity, required this.revenue});
+  final String name;
+  final int quantity;
+  final int revenue;
+
+  factory TopMeal.fromJson(Map<String, dynamic> json) {
+    return TopMeal(
+      name: json['meal_name'] as String? ?? '',
+      quantity: json['quantity'] as int? ?? 0,
+      revenue: json['revenue'] as int? ?? 0,
+    );
+  }
+}
+
+class SellerStats {
+  SellerStats({
+    required this.ordersCount,
+    required this.itemsSold,
+    required this.revenue,
+    required this.deliveredRevenue,
+    required this.byStatus,
+    required this.topMeals,
+    required this.followers,
+    required this.mealsCount,
+  });
+
+  final int ordersCount;
+  final int itemsSold;
+  final int revenue;
+  final int deliveredRevenue;
+  final Map<String, int> byStatus;
+  final List<TopMeal> topMeals;
+  final int followers;
+  final int mealsCount;
+
+  factory SellerStats.fromJson(Map<String, dynamic> json) {
+    final status = (json['by_status'] as Map?) ?? const {};
+    final top = (json['top_meals'] as List?) ?? const [];
+    return SellerStats(
+      ordersCount: json['orders_count'] as int? ?? 0,
+      itemsSold: json['items_sold'] as int? ?? 0,
+      revenue: json['revenue'] as int? ?? 0,
+      deliveredRevenue: json['delivered_revenue'] as int? ?? 0,
+      byStatus: status.map((k, v) => MapEntry(k as String, v as int)),
+      topMeals:
+          top.map((e) => TopMeal.fromJson(e as Map<String, dynamic>)).toList(),
+      followers: json['followers'] as int? ?? 0,
+      mealsCount: json['meals_count'] as int? ?? 0,
+    );
+  }
 }
