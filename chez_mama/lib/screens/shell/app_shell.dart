@@ -176,6 +176,10 @@ class _AppShellState extends State<AppShell> {
                   _go(const MyPublicationsScreen());
                 case 'favorites':
                   _go(const FavoriteMealsScreen());
+                case 'loyalty':
+                  _go(const LoyaltyScreen());
+                case 'messages':
+                  _go(const ConversationsScreen());
                 case 'theme':
                   ThemeController.instance
                       .toggleDark(!ThemeController.instance.isDark);
@@ -212,6 +216,20 @@ class _AppShellState extends State<AppShell> {
                   child: ListTile(
                     leading: Icon(Icons.favorite_rounded),
                     title: Text('Mes favoris'),
+                  ),
+                ),
+                const PopupMenuItem(
+                  value: 'messages',
+                  child: ListTile(
+                    leading: Icon(Icons.forum_rounded),
+                    title: Text('Messages'),
+                  ),
+                ),
+                const PopupMenuItem(
+                  value: 'loyalty',
+                  child: ListTile(
+                    leading: Icon(Icons.workspace_premium_rounded),
+                    title: Text('Mes points'),
                   ),
                 ),
                 PopupMenuItem(
