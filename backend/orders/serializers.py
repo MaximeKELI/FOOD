@@ -37,7 +37,7 @@ class OrderItemSerializer(serializers.ModelSerializer):
 
 class OrderItemInputSerializer(serializers.Serializer):
     meal = serializers.IntegerField()
-    quantity = serializers.IntegerField(min_value=1, default=1)
+    quantity = serializers.IntegerField(min_value=1, max_value=50, default=1)
 
 
 class OrderSerializer(serializers.ModelSerializer):
@@ -72,6 +72,62 @@ class OrderSerializer(serializers.ModelSerializer):
             "created_at",
         )
         read_only_fields = ("status", "total")
+
+
+class ReceivedOrderItemSerializer(serializers.ModelSerializer):
+    line_total = serializers.IntegerField(read_only=True)
+
+    class Meta:
+        model = OrderItem
+        fields = (
+            "id",
+            "meal",
+            "meal_name",
+            "unit_price",
+            "quantity",
+            "line_total",
+        )
+
+
+class ReceivedOrderSerializer(serializers.ModelSerializer):
+    """Seller-scoped view: only this seller's items and revenue."""
+
+    items = serializers.SerializerMethodField()
+    seller_subtotal = serializers.SerializerMethodField()
+    status_label = serializers.CharField(source="get_status_display", read_only=True)
+    payment_label = serializers.CharField(
+        source="get_payment_method_display", read_only=True
+    )
+    customer_name = serializers.CharField(source="customer.name", read_only=True)
+
+    class Meta:
+        model = Order
+        fields = (
+            "id",
+            "status",
+            "status_label",
+            "fulfillment",
+            "payment_method",
+            "payment_label",
+            "payment_status",
+            "address",
+            "phone",
+            "note",
+            "seller_subtotal",
+            "customer_name",
+            "items",
+            "created_at",
+        )
+
+    def _seller_items(self, obj):
+        seller = self.context["request"].user
+        return [i for i in obj.items.all() if i.meal_id and i.meal.seller_id == seller.id]
+
+    def get_items(self, obj):
+        return ReceivedOrderItemSerializer(self._seller_items(obj), many=True).data
+
+    def get_seller_subtotal(self, obj):
+        return sum(i.line_total for i in self._seller_items(obj))
 
 
 class OrderCreateSerializer(serializers.Serializer):
@@ -134,7 +190,9 @@ class OrderCreateSerializer(serializers.Serializer):
             )
 
         promo_code = attrs.get("promo_code", "")
-        discount, applied_code = resolve_promo(promo_code, subtotal, sellers)
+        discount, applied_code = resolve_promo(
+            promo_code, subtotal, sellers, seller_subtotals
+        )
 
         attrs["_meals"] = meals
         attrs["_sellers"] = sellers
@@ -223,10 +281,11 @@ class PromoValidateSerializer(serializers.Serializer):
                 )
         customer = self.context["request"].user
         sellers = sellers_from_meals(meals, customer.id)
-        subtotal = sum(
-            meals[item["meal"]].effective_price * item["quantity"] for item in items
+        seller_subtotals = subtotal_by_seller(items, meals)
+        subtotal = sum(seller_subtotals.values())
+        discount, code = resolve_promo(
+            attrs["promo_code"], subtotal, sellers, seller_subtotals
         )
-        discount, code = resolve_promo(attrs["promo_code"], subtotal, sellers)
         attrs["discount"] = discount
         attrs["promo_code"] = code
         attrs["subtotal"] = subtotal

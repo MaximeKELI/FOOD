@@ -116,7 +116,7 @@ def validate_fulfillment(fulfillment, sellers, address, phone, lat, lng):
         raise serializers.ValidationError(errors)
 
 
-def resolve_promo(code, subtotal, sellers):
+def resolve_promo(code, subtotal, sellers, seller_subtotals=None):
     """Returns (discount, promo_code_str) or raises ValidationError."""
     code = (code or "").strip()
     if not code:
@@ -136,7 +136,14 @@ def resolve_promo(code, subtotal, sellers):
             raise serializers.ValidationError(
                 {"promo_code": "Ce code promo ne s'applique pas à cette commande."}
             )
-    discount = promo.discount_for(subtotal)
+        discount_base = (
+            seller_subtotals.get(promo.seller_id, 0)
+            if seller_subtotals
+            else subtotal
+        )
+    else:
+        discount_base = subtotal
+    discount = promo.discount_for(discount_base)
     if discount <= 0:
         raise serializers.ValidationError(
             {

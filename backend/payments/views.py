@@ -138,9 +138,5 @@ class OrangeWebhookView(APIView):
         intent = PaymentIntent.objects.filter(external_id=external_id).first()
         if intent is None:
             return Response({"detail": "Intent introuvable."}, status=404)
-        intent.status = PaymentIntent.Status.PAID
-        intent.save(update_fields=["status", "updated_at"])
-        order = intent.order
-        order.payment_status = Order.PaymentStatus.PAID
-        order.save(update_fields=["payment_status"])
+        mark_intent_paid(intent)
         return Response({"ok": True})
