@@ -152,6 +152,7 @@ class CatalogApi {
       sellerLng: (json['seller_lng'] as num?)?.toDouble(),
       reviewsCount: json['reviews_count'] as int? ?? 0,
       favoritedByMe: json['favorited_by_me'] as bool? ?? false,
+      gallery: gallery,
     );
   }
 }

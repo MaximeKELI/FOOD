@@ -1,7 +1,8 @@
-import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:latlong2/latlong.dart';
 import '../../api/api_client.dart';
 import '../../api/orders_api.dart';
+import '../../api/payments_api.dart';
 import '../../auth/auth_scope.dart';
 import '../../cart/cart_service.dart';
 import '../../cart/received_orders_notifier.dart';
@@ -167,6 +168,17 @@ class _CheckoutSheetState extends State<CheckoutSheet> {
         longitude: _fulfillment == 'delivery' ? _loc?.longitude : null,
         promoCode: _promo.text.trim(),
       );
+      if (_payment == 'wave' ||
+          _payment == 'orange_money' ||
+          _payment == 'free_money') {
+        final intent = await PaymentsApi.instance.initiate(order.id);
+        if (intent.checkoutUrl.isNotEmpty) {
+          final uri = Uri.parse(intent.checkoutUrl);
+          if (await canLaunchUrl(uri)) {
+            await launchUrl(uri, mode: LaunchMode.externalApplication);
+          }
+        }
+      }
       _cart.clear();
       ReceivedOrdersNotifier.instance.refresh();
       if (!mounted) return;

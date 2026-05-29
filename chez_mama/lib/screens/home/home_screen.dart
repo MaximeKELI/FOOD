@@ -1,5 +1,6 @@
-import 'package:flutter/material.dart';
+import 'package:speech_to_text/speech_to_text.dart';
 import 'package:latlong2/latlong.dart';
+import '../../cache/meal_cache.dart';
 import '../../api/api_client.dart';
 import '../../api/catalog_api.dart';
 import '../../l10n/app_strings.dart';
@@ -58,6 +59,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   final _searchCtrl = TextEditingController();
   List<Meal> _allMeals = [];
   List<String> _categories = const [_allCategory];
+  bool _fromCache = false;
+  bool _listening = false;
+  final _speech = SpeechToText();
 
   MealSort _sort = MealSort.recent;
   bool _availableOnly = false;
@@ -82,15 +86,25 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     setState(() {
       loading = true;
       error = null;
+      _fromCache = false;
     });
     try {
+      final cached = await MealCache.instance.loadMeals();
+      if (cached.isNotEmpty && mounted) {
+        setState(() {
+          _allMeals = cached;
+          loading = false;
+          _fromCache = true;
+        });
+      }
       final results = await Future.wait([
-        CatalogApi.instance.fetchMeals(),
+        CatalogApi.instance.fetchMeals(query: _query.trim().isEmpty ? null : _query),
         CatalogApi.instance.fetchCategories(),
       ]);
       if (!mounted) return;
       final meals = results[0] as List<Meal>;
       final apiCategories = results[1] as List<MealCategory>;
+      await MealCache.instance.saveMeals(meals);
       setState(() {
         _allMeals = meals;
         _categories = [
@@ -101,15 +115,58 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           activeCategory = _allCategory;
         }
         loading = false;
+        _fromCache = false;
       });
       _stagger.forward(from: 0);
     } catch (e) {
       if (!mounted) return;
-      setState(() {
-        error = apiErrorMessage(e);
-        loading = false;
-      });
+      if (_allMeals.isEmpty) {
+        setState(() {
+          error = apiErrorMessage(e);
+          loading = false;
+        });
+      } else {
+        setState(() {
+          error = null;
+          loading = false;
+          _fromCache = true;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Mode hors ligne — ${tr('action.retry')}')),
+        );
+      }
     }
+  }
+
+  Future<void> _startVoiceSearch() async {
+    if (_listening) {
+      await _speech.stop();
+      setState(() => _listening = false);
+      return;
+    }
+    final available = await _speech.initialize();
+    if (!available) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Reconnaissance vocale indisponible.')),
+      );
+      return;
+    }
+    setState(() => _listening = true);
+    await _speech.listen(
+      onResult: (result) {
+        setState(() {
+          _searchCtrl.text = result.recognizedWords;
+          _query = result.recognizedWords;
+        });
+        if (result.finalResult) {
+          _speech.stop();
+          _listening = false;
+          _loadMeals();
+        }
+      },
+      localeId: 'fr_FR',
+    );
   }
 
   @override
@@ -298,22 +355,52 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(14, 14, 14, 0),
-              child: TextField(
+              child: Column(
+                children: [
+                  if (_fromCache)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Text(
+                        'Données en cache — reconnecte-toi pour actualiser.',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: ChezMamaTheme.brandBrown,
+                              fontWeight: FontWeight.w600,
+                            ),
+                      ),
+                    ),
+                  TextField(
                 controller: _searchCtrl,
-                onChanged: (v) => setState(() => _query = v),
+                onChanged: (v) {
+                  setState(() => _query = v);
+                  if (v.trim().length >= 2) _loadMeals();
+                },
                 textInputAction: TextInputAction.search,
+                onSubmitted: (_) => _loadMeals(),
                 decoration: InputDecoration(
                   hintText: tr('home.search'),
                   prefixIcon: const Icon(Icons.search_rounded),
-                  suffixIcon: _query.isEmpty
-                      ? null
-                      : IconButton(
+                  suffixIcon: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        tooltip: 'Recherche vocale',
+                        onPressed: _startVoiceSearch,
+                        icon: Icon(
+                          _listening ? Icons.mic_rounded : Icons.mic_none_rounded,
+                          color: _listening ? ChezMamaTheme.brandOrange : null,
+                        ),
+                      ),
+                      if (_query.isNotEmpty)
+                        IconButton(
                           icon: const Icon(Icons.close_rounded),
                           onPressed: () {
                             _searchCtrl.clear();
                             setState(() => _query = '');
+                            _loadMeals();
                           },
                         ),
+                    ],
+                  ),
                 ),
               ),
             ),
