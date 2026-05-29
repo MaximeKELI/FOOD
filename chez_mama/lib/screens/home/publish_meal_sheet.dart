@@ -18,6 +18,8 @@ class _PublishMealSheetState extends State<PublishMealSheet> {
   final _name = TextEditingController();
   final _subtitle = TextEditingController();
   final _price = TextEditingController();
+  final _promoPrice = TextEditingController();
+  bool _isSpecial = false;
 
   List<MealCategory> _categories = [];
   MealCategory? _selected;

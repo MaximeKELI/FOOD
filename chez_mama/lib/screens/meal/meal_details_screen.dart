@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import '../../api/api_client.dart';
 import '../../api/catalog_api.dart';
+import '../../auth/auth_scope.dart';
 import '../../cart/cart_service.dart';
 import '../../models/meal.dart';
 import '../../ui/chezmama_theme.dart';
 import '../../widgets/primary_button.dart';
+import '../chat/conversation_screen.dart';
 import '../profile/seller_profile_screen.dart';
 
 class MealDetailsScreen extends StatefulWidget {
@@ -308,7 +310,7 @@ class _MealDetailsScreenState extends State<MealDetailsScreen> {
                     ),
                   ),
                   if (meal.sellerId != null &&
-                      meal.sellerId != AuthService.instance?.userId) ...[
+                      meal.sellerId != AuthScope.of(context).userId) ...[
                     const SizedBox(height: 10),
                     SizedBox(
                       width: double.infinity,
@@ -358,6 +360,39 @@ class _MealDetailsScreenState extends State<MealDetailsScreen> {
                     ..._reviews.map((r) => _ReviewTile(review: r)),
                 ],
               ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _Badge extends StatelessWidget {
+  const _Badge({required this.label, required this.color, required this.icon});
+  final String label;
+  final Color color;
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: color),
+          const SizedBox(width: 5),
+          Text(
+            label,
+            style: TextStyle(
+              color: color,
+              fontSize: 12,
+              fontWeight: FontWeight.w800,
             ),
           ),
         ],
