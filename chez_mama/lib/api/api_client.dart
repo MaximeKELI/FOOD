@@ -1,7 +1,16 @@
+import 'dart:io' show Platform;
+
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'api_config.dart';
+
+bool get _useSecureStorage {
+  if (kIsWeb) return false;
+  return Platform.isAndroid || Platform.isIOS || Platform.isMacOS;
+}
 
 /// Thin wrapper around Dio that injects the JWT access token and
 /// transparently refreshes it on a 401 response.
@@ -49,7 +58,7 @@ class ApiClient {
 
   static const _kAccess = 'auth.access';
   static const _kRefresh = 'auth.refresh';
-  static const _storage = FlutterSecureStorage(
+  static const _secure = FlutterSecureStorage(
     aOptions: AndroidOptions(encryptedSharedPreferences: true),
   );
 
@@ -57,19 +66,43 @@ class ApiClient {
 
   Dio get dio => _dio;
 
-  Future<String?> _readAccess() => _storage.read(key: _kAccess);
+  Future<String?> _read(String key) async {
+    if (_useSecureStorage) return _secure.read(key: key);
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(key);
+  }
+
+  Future<void> _write(String key, String value) async {
+    if (_useSecureStorage) {
+      await _secure.write(key: key, value: value);
+      return;
+    }
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(key, value);
+  }
+
+  Future<void> _delete(String key) async {
+    if (_useSecureStorage) {
+      await _secure.delete(key: key);
+      return;
+    }
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(key);
+  }
+
+  Future<String?> _readAccess() => _read(_kAccess);
 
   Future<void> saveTokens({
     required String access,
     required String refresh,
   }) async {
-    await _storage.write(key: _kAccess, value: access);
-    await _storage.write(key: _kRefresh, value: refresh);
+    await _write(_kAccess, access);
+    await _write(_kRefresh, refresh);
   }
 
   Future<void> clearTokens() async {
-    await _storage.delete(key: _kAccess);
-    await _storage.delete(key: _kRefresh);
+    await _delete(_kAccess);
+    await _delete(_kRefresh);
   }
 
   Future<bool> hasToken() async {
@@ -78,7 +111,7 @@ class ApiClient {
   }
 
   Future<bool> _tryRefresh() async {
-    final refresh = await _storage.read(key: _kRefresh);
+    final refresh = await _read(_kRefresh);
     if (refresh == null || refresh.isEmpty) return false;
     try {
       final res = await Dio(BaseOptions(baseUrl: ApiConfig.apiUrl)).post(
@@ -87,7 +120,7 @@ class ApiClient {
       );
       final access = res.data['access'] as String?;
       if (access == null) return false;
-      await _storage.write(key: _kAccess, value: access);
+      await _write(_kAccess, access);
       return true;
     } catch (_) {
       return false;
