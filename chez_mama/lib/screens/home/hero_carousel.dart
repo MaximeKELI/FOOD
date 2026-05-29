@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import '../../l10n/app_strings.dart';
 import '../../ui/chezmama_theme.dart';
 
 class HeroCarousel extends StatefulWidget {
@@ -19,81 +20,56 @@ class _HeroCarouselState extends State<HeroCarousel> {
   Timer? timer;
   int index = 0;
 
-  final items = const <_HeroItem>[
-    _HeroItem(
-      title: 'Mafé chaud près de toi',
-      subtitle: 'Découvre les vendeurs locaux les mieux notés',
-      gradient: [Color(0xFFFF7A18), Color(0xFFFFC24C), Color(0xFFFFFBF6)],
-      asset: 'assets/images/food_hero_mafe.png',
-    ),
-    _HeroItem(
-      title: 'Yassa du jour',
-      subtitle: 'Suis les créateurs, like et commande',
-      gradient: [Color(0xFF6E3B1F), Color(0xFFFF7A18), Color(0xFFFFFBF6)],
-      asset: 'assets/images/food_hero_yassa.png',
-    ),
-    _HeroItem(
-      title: 'Suya grillé maintenant',
-      subtitle: 'Vidéos, shorts et plats à proximité',
-      gradient: [Color(0xFFE2A83B), Color(0xFFFF7A18), Color(0xFFFFFBF6)],
-      asset: 'assets/images/food_hero_suya.png',
-    ),
-    _HeroItem(
-      title: 'Thiéboudienne maison',
-      subtitle: 'Le goût local, livré rapidement',
-      gradient: [Color(0xFFFF7A18), Color(0xFF6E3B1F), Color(0xFFFFFBF6)],
-      asset: 'assets/images/food_hero_thieboudienne.png',
-    ),
-    _HeroItem(
-      title: 'Ndolé gourmand',
-      subtitle: 'Trouve les meilleurs vendeurs autour de toi',
-      gradient: [Color(0xFF5BBF72), Color(0xFF6E3B1F), Color(0xFFFFFBF6)],
-      asset: 'assets/images/food_hero_ndole.png',
-    ),
-    _HeroItem(
-      title: 'Jollof & poulet braisé',
-      subtitle: 'Commande, like, partage',
-      gradient: [Color(0xFFFF7A18), Color(0xFFFFC24C), Color(0xFF6E3B1F)],
-      asset: 'assets/images/food_hero_jollof.png',
-    ),
-    _HeroItem(
-      title: 'Attiéké poisson',
-      subtitle: 'Les saveurs côtières près de toi',
-      gradient: [Color(0xFFFFC24C), Color(0xFFFF7A18), Color(0xFFFFFBF6)],
-      asset: 'assets/images/food_hero_attieke.png',
-    ),
-    _HeroItem(
-      title: 'Plantains dorés',
-      subtitle: 'Sauces piquantes et vendeurs favoris',
-      gradient: [Color(0xFFE2A83B), Color(0xFFFF7A18), Color(0xFFFFFBF6)],
-      asset: 'assets/images/food_hero_plantain.png',
-    ),
-    _HeroItem(
-      title: 'Egusi & fufu',
-      subtitle: 'Découvre, commente, abonne-toi',
-      gradient: [Color(0xFF6E3B1F), Color(0xFFB85C38), Color(0xFFFFFBF6)],
-      asset: 'assets/images/food_hero_egusi.png',
-    ),
-    _HeroItem(
-      title: 'Brochettes fumées',
-      subtitle: 'Des shorts appétissants à partager',
-      gradient: [Color(0xFF1B1B1F), Color(0xFFFF7A18), Color(0xFFFFFBF6)],
-      asset: 'assets/images/food_hero_brochettes.png',
-    ),
-    _HeroItem(
-      title: 'Bissap & gingembre',
-      subtitle: 'Boissons fraîches disponibles maintenant',
-      gradient: [Color(0xFFE2A83B), Color(0xFFFF7A18), Color(0xFFFFFBF6)],
-      asset: 'assets/images/food_hero_drinks.png',
-    ),
+  static const _slideKeys = [
+    'mafe',
+    'yassa',
+    'suya',
+    'thieb',
+    'ndole',
+    'jollof',
+    'attieke',
+    'plantain',
+    'egusi',
+    'brochettes',
+    'drinks',
   ];
+
+  static const _assets = [
+    'assets/images/food_hero_mafe.png',
+    'assets/images/food_hero_yassa.png',
+    'assets/images/food_hero_suya.png',
+    'assets/images/food_hero_thieboudienne.png',
+    'assets/images/food_hero_ndole.png',
+    'assets/images/food_hero_jollof.png',
+    'assets/images/food_hero_attieke.png',
+    'assets/images/food_hero_plantain.png',
+    'assets/images/food_hero_egusi.png',
+    'assets/images/food_hero_brochettes.png',
+    'assets/images/food_hero_drinks.png',
+  ];
+
+  static const _gradients = [
+    [Color(0xFFFF7A18), Color(0xFFFFC24C), Color(0xFFFFFBF6)],
+    [Color(0xFF6E3B1F), Color(0xFFFF7A18), Color(0xFFFFFBF6)],
+    [Color(0xFFE2A83B), Color(0xFFFF7A18), Color(0xFFFFFBF6)],
+    [Color(0xFFFF7A18), Color(0xFF6E3B1F), Color(0xFFFFFBF6)],
+    [Color(0xFF5BBF72), Color(0xFF6E3B1F), Color(0xFFFFFBF6)],
+    [Color(0xFFFF7A18), Color(0xFFFFC24C), Color(0xFF6E3B1F)],
+    [Color(0xFFFFC24C), Color(0xFFFF7A18), Color(0xFFFFFBF6)],
+    [Color(0xFFE2A83B), Color(0xFFFF7A18), Color(0xFFFFFBF6)],
+    [Color(0xFF6E3B1F), Color(0xFFB85C38), Color(0xFFFFFBF6)],
+    [Color(0xFF1B1B1F), Color(0xFFFF7A18), Color(0xFFFFFBF6)],
+    [Color(0xFFE2A83B), Color(0xFFFF7A18), Color(0xFFFFFBF6)],
+  ];
+
+  int get _count => _slideKeys.length;
 
   @override
   void initState() {
     super.initState();
     timer = Timer.periodic(const Duration(seconds: 4), (_) {
       if (!mounted) return;
-      index = (index + 1) % items.length;
+      index = (index + 1) % _count;
       controller.animateToPage(
         index,
         duration: const Duration(milliseconds: 520),
@@ -113,32 +89,73 @@ class _HeroCarouselState extends State<HeroCarousel> {
   Widget build(BuildContext context) {
     return SizedBox(
       height: widget.height,
-      child: PageView.builder(
-        controller: controller,
-        itemCount: items.length,
-        onPageChanged: (v) => setState(() => index = v),
-        itemBuilder: (context, i) {
-          return AnimatedBuilder(
-            animation: controller,
-            builder: (context, child) {
-              final page = controller.hasClients && controller.position.haveDimensions
-                  ? controller.page ?? controller.initialPage.toDouble()
-                  : controller.initialPage.toDouble();
-              final delta = (page - i).abs().clamp(0.0, 1.0);
-              final scale = 1 - (0.04 * delta);
-              return Transform.scale(scale: scale, child: child);
-            },
-            child: _HeroCard(item: items[i]),
-          );
-        },
+      child: Column(
+        children: [
+          Expanded(
+            child: PageView.builder(
+              controller: controller,
+              itemCount: _count,
+              onPageChanged: (v) => setState(() => index = v),
+              itemBuilder: (context, i) {
+                return AnimatedBuilder(
+                  animation: controller,
+                  builder: (context, child) {
+                    final page = controller.hasClients &&
+                            controller.position.haveDimensions
+                        ? controller.page ?? controller.initialPage.toDouble()
+                        : controller.initialPage.toDouble();
+                    final delta = (page - i).abs().clamp(0.0, 1.0);
+                    final scale = 1 - (0.04 * delta);
+                    return Transform.scale(scale: scale, child: child);
+                  },
+                  child: _HeroCard(
+                    title: tr('hero.${_slideKeys[i]}.title'),
+                    subtitle: tr('hero.${_slideKeys[i]}.subtitle'),
+                    gradient: _gradients[i],
+                    asset: _assets[i],
+                  ),
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: List.generate(_count, (i) {
+              final active = i == index;
+              return AnimatedContainer(
+                duration: const Duration(milliseconds: 260),
+                curve: Curves.easeOutCubic,
+                margin: const EdgeInsets.symmetric(horizontal: 3),
+                width: active ? 18 : 6,
+                height: 6,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(999),
+                  color: active
+                      ? ChezMamaTheme.brandOrange
+                      : ChezMamaTheme.brandBrown.withValues(alpha: 0.25),
+                ),
+              );
+            }),
+          ),
+        ],
       ),
     );
   }
 }
 
 class _HeroCard extends StatelessWidget {
-  const _HeroCard({required this.item});
-  final _HeroItem item;
+  const _HeroCard({
+    required this.title,
+    required this.subtitle,
+    required this.gradient,
+    required this.asset,
+  });
+
+  final String title;
+  final String subtitle;
+  final List<Color> gradient;
+  final String asset;
 
   @override
   Widget build(BuildContext context) {
@@ -146,12 +163,13 @@ class _HeroCard extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 6),
       child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: ChezMamaTheme.softShadow(opacity: 0.12),
+        decoration: ChezMamaTheme.cardDecoration(
+          context,
+          radius: ChezMamaTheme.rCard,
+          shadowOpacity: 0.14,
         ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(ChezMamaTheme.rCard),
           child: Stack(
             fit: StackFit.expand,
             children: [
@@ -160,23 +178,22 @@ class _HeroCard extends StatelessWidget {
                   gradient: LinearGradient(
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
-                    colors: item.gradient,
+                    colors: gradient,
                   ),
                 ),
               ),
-              if (item.asset != null)
-                Image.asset(
-                  item.asset!,
-                  fit: BoxFit.cover,
-                  filterQuality: FilterQuality.low,
-                ),
+              Image.asset(
+                asset,
+                fit: BoxFit.cover,
+                filterQuality: FilterQuality.low,
+              ),
               DecoratedBox(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.bottomCenter,
                     end: Alignment.topCenter,
                     colors: [
-                      Colors.black.withValues(alpha: 0.45),
+                      Colors.black.withValues(alpha: 0.55),
                       Colors.transparent,
                     ],
                   ),
@@ -185,23 +202,28 @@ class _HeroCard extends StatelessWidget {
               Positioned(
                 left: 16,
                 right: 16,
-                bottom: 16,
+                bottom: 14,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      item.title,
+                      title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                       style: t.textTheme.titleLarge?.copyWith(
                         color: Colors.white,
                         fontWeight: FontWeight.w900,
                         letterSpacing: -0.2,
+                        height: 1.1,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      item.subtitle,
+                      subtitle,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                       style: t.textTheme.bodyMedium?.copyWith(
-                        color: Colors.white.withValues(alpha: 0.9),
+                        color: Colors.white.withValues(alpha: 0.92),
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -215,17 +237,3 @@ class _HeroCard extends StatelessWidget {
     );
   }
 }
-
-class _HeroItem {
-  const _HeroItem({
-    required this.title,
-    required this.subtitle,
-    required this.gradient,
-    required this.asset,
-  });
-  final String title;
-  final String subtitle;
-  final List<Color> gradient;
-  final String? asset;
-}
-
