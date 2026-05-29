@@ -85,30 +85,16 @@ class _SplashScreenState extends State<SplashScreen>
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Container(
-                    width: 92,
-                    height: 92,
+                    width: 104,
+                    height: 104,
                     decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(22),
-                      boxShadow: ChezMamaTheme.softShadow(opacity: 0.10),
+                      borderRadius: BorderRadius.circular(26),
+                      boxShadow: ChezMamaTheme.softShadow(opacity: 0.18),
                     ),
-                    child: Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        // Optional Lottie: add an asset later without changing code path.
-                        // It will silently no-op if you keep it removed.
-                        IgnorePointer(
-                          child: Opacity(
-                            opacity: 0.0,
-                            child: Lottie.asset('assets/lottie/chef.json'),
-                          ),
-                        ),
-                        const Icon(
-                          Icons.restaurant_rounded,
-                          size: 44,
-                          color: ChezMamaTheme.brandOrange,
-                        ),
-                      ],
+                    clipBehavior: Clip.antiAlias,
+                    child: Image.asset(
+                      'assets/images/app_logo.png',
+                      fit: BoxFit.cover,
                     ),
                   ),
                   const SizedBox(height: 16),
