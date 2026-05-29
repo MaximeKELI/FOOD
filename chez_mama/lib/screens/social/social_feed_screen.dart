@@ -8,6 +8,7 @@ import '../../l10n/app_strings.dart';
 import '../../services/app_media_picker.dart';
 import '../../services/platform_utils.dart';
 import '../../ui/chezmama_theme.dart';
+import '../../widgets/empty_state_view.dart';
 import '../../widgets/food_network_image.dart';
 import '../../widgets/post_video_player.dart';
 
@@ -194,15 +195,23 @@ class _SocialFeedScreenState extends State<SocialFeedScreen> {
       return const Center(child: CircularProgressIndicator());
     }
     if (_error != null) {
-      return _ErrorState(message: _error!, onRetry: _load);
+      return EmptyStateView(
+        icon: Icons.cloud_off_rounded,
+        title: tr('home.connectionFailed'),
+        subtitle: _error!,
+        actionLabel: tr('action.retry'),
+        onAction: _load,
+      );
     }
     if (_posts.isEmpty) {
       return RefreshIndicator(
         onRefresh: _load,
         child: ListView(
           children: [
-            SizedBox(height: MediaQuery.sizeOf(context).height * 0.18),
-            _EmptyState(
+            SizedBox(height: MediaQuery.sizeOf(context).height * 0.12),
+            EmptyStateView(
+              icon: _isShort ? Icons.bolt_rounded : Icons.videocam_rounded,
+              lottieAsset: LottieAssets.empty,
               title: _isShort ? tr('social.emptyShort') : tr('social.emptyVideo'),
               subtitle: _isShort
                   ? tr('social.emptyShortHint')
@@ -215,7 +224,12 @@ class _SocialFeedScreenState extends State<SocialFeedScreen> {
     return RefreshIndicator(
       onRefresh: _load,
       child: ListView.separated(
-        padding: const EdgeInsets.fromLTRB(14, 0, 14, 110),
+        padding: const EdgeInsets.fromLTRB(
+          ChezMamaTheme.spaceMd,
+          0,
+          ChezMamaTheme.spaceMd,
+          ChezMamaTheme.navClearance,
+        ),
         itemCount: _posts.length,
         separatorBuilder: (_, __) => const SizedBox(height: 14),
         itemBuilder: (context, i) {
@@ -877,83 +891,6 @@ class _CommentsSheetState extends State<_CommentsSheet> {
                   child: const Icon(Icons.send_rounded),
                 ),
               ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _EmptyState extends StatelessWidget {
-  const _EmptyState({required this.title, required this.subtitle});
-
-  final String title;
-  final String subtitle;
-
-  @override
-  Widget build(BuildContext context) {
-    final t = Theme.of(context);
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: ChezMamaTheme.cardColor(context),
-            borderRadius: BorderRadius.circular(ChezMamaTheme.rCard),
-            boxShadow: ChezMamaTheme.softShadow(opacity: 0.10),
-          ),
-
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.video_collection_outlined, size: 46),
-              const SizedBox(height: 10),
-              Text(
-                title,
-                style: t.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 6),
-              Text(
-                subtitle,
-                style: t.textTheme.bodyMedium,
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _ErrorState extends StatelessWidget {
-  const _ErrorState({required this.message, required this.onRetry});
-  final String message;
-  final VoidCallback onRetry;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.cloud_off_rounded, size: 46),
-            const SizedBox(height: 10),
-            Text(message, textAlign: TextAlign.center),
-            const SizedBox(height: 12),
-            FilledButton.icon(
-              onPressed: onRetry,
-              icon: const Icon(Icons.refresh_rounded),
-              label: Text(tr('action.retry')),
-              style: FilledButton.styleFrom(
-                backgroundColor: ChezMamaTheme.brandOrange,
-                foregroundColor: Colors.white,
-              ),
             ),
           ],
         ),

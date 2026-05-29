@@ -29,6 +29,7 @@ class _MealDetailsScreenState extends State<MealDetailsScreen> {
   double _avg = 0;
   late bool _favorited;
   bool _favBusy = false;
+  final _addButtonKey = GlobalKey();
 
   @override
   void initState() {
@@ -279,28 +280,37 @@ class _MealDetailsScreenState extends State<MealDetailsScreen> {
                             ],
                           ),
                         ),
-                        PrimaryButton(
-                          label: meal.isAvailable
-                              ? tr('action.addToCart')
-                              : tr('action.unavailable'),
-                          onPressed: meal.isAvailable
-                              ? () {
-                                  final added =
-                                      CartService.instance.addMeal(meal);
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                        added
-                                            ? trf('meal.addedToCart',
-                                                {'name': meal.name})
-                                            : tr('meal.cannotAddToCart'),
+                        KeyedSubtree(
+                          key: _addButtonKey,
+                          child: PrimaryButton(
+                            label: meal.isAvailable
+                                ? tr('action.addToCart')
+                                : tr('action.unavailable'),
+                            onPressed: meal.isAvailable
+                                ? () {
+                                    final added =
+                                        CartService.instance.addMeal(meal);
+                                    if (added) {
+                                      CartFlyService.instance.flyFromContext(
+                                        _addButtonKey.currentContext!,
+                                        color: meal.accent,
+                                      );
+                                    }
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          added
+                                              ? trf('meal.addedToCart',
+                                                  {'name': meal.name})
+                                              : tr('meal.cannotAddToCart'),
+                                        ),
+                                        duration:
+                                            const Duration(milliseconds: 900),
                                       ),
-                                      duration:
-                                          const Duration(milliseconds: 900),
-                                    ),
-                                  );
-                                }
-                              : null,
+                                    );
+                                  }
+                                : null,
+                          ),
                         ),
                       ],
                     ),

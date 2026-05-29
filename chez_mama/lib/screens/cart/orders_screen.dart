@@ -4,6 +4,7 @@ import '../../api/orders_api.dart';
 import '../../l10n/app_strings.dart';
 import '../../ui/chezmama_theme.dart';
 import '../../utils/currency_format.dart';
+import '../../widgets/empty_state_view.dart';
 import '../../widgets/entrance.dart';
 
 class OrdersScreen extends StatefulWidget {
@@ -58,28 +59,21 @@ class _OrdersScreenState extends State<OrdersScreen> {
       return const Center(child: CircularProgressIndicator());
     }
     if (_error != null) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.cloud_off_rounded, size: 46),
-              const SizedBox(height: 10),
-              Text(_error!, textAlign: TextAlign.center),
-              const SizedBox(height: 12),
-              FilledButton.icon(
-                onPressed: _load,
-                icon: const Icon(Icons.refresh_rounded),
-                label: Text(tr('action.retry')),
-              ),
-            ],
-          ),
-        ),
+      return EmptyStateView(
+        icon: Icons.cloud_off_rounded,
+        title: tr('home.connectionFailed'),
+        subtitle: _error!,
+        actionLabel: tr('action.retry'),
+        onAction: _load,
       );
     }
     if (_orders.isEmpty) {
-      return Center(child: Text(tr('orders.empty')));
+      return EmptyStateView(
+        icon: Icons.receipt_long_outlined,
+        lottieAsset: LottieAssets.empty,
+        title: tr('orders.empty'),
+        subtitle: tr('tracking.noneHint'),
+      );
     }
     return RefreshIndicator(
       onRefresh: _load,
@@ -111,12 +105,8 @@ class _OrderCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = Theme.of(context);
     return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: ChezMamaTheme.cardColor(context),
-        borderRadius: BorderRadius.circular(ChezMamaTheme.rCard),
-        boxShadow: ChezMamaTheme.softShadow(opacity: 0.10),
-      ),
+      padding: const EdgeInsets.all(ChezMamaTheme.spaceMd),
+      decoration: ChezMamaTheme.cardDecoration(context, shadowOpacity: 0.08),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

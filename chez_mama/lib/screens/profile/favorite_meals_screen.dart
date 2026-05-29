@@ -3,6 +3,7 @@ import '../../api/api_client.dart';
 import '../../api/catalog_api.dart';
 import '../../l10n/app_strings.dart';
 import '../../models/meal.dart';
+import '../../widgets/empty_state_view.dart';
 import '../../widgets/entrance.dart';
 import '../home/meal_card.dart';
 import '../meal/meal_details_screen.dart';
@@ -59,35 +60,20 @@ class _FavoriteMealsScreenState extends State<FavoriteMealsScreen> {
       return const Center(child: CircularProgressIndicator());
     }
     if (_error != null) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.cloud_off_rounded, size: 46),
-              const SizedBox(height: 10),
-              Text(_error!, textAlign: TextAlign.center),
-              const SizedBox(height: 12),
-              FilledButton.icon(
-                onPressed: _load,
-                icon: const Icon(Icons.refresh_rounded),
-                label: Text(tr('action.retry')),
-              ),
-            ],
-          ),
-        ),
+      return EmptyStateView(
+        icon: Icons.cloud_off_rounded,
+        title: tr('home.connectionFailed'),
+        subtitle: _error!,
+        actionLabel: tr('action.retry'),
+        onAction: _load,
       );
     }
     if (_meals.isEmpty) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Text(
-            tr('favorites.emptyHint'),
-            textAlign: TextAlign.center,
-          ),
-        ),
+      return EmptyStateView(
+        icon: Icons.favorite_border_rounded,
+        lottieAsset: LottieAssets.empty,
+        title: tr('favorites.empty'),
+        subtitle: tr('favorites.emptyHint'),
       );
     }
     return RefreshIndicator(

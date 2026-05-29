@@ -6,6 +6,7 @@ import '../../ui/chezmama_theme.dart';
 import '../../utils/currency_format.dart';
 import '../../widgets/accessible_icon_button.dart';
 import '../../widgets/entrance.dart';
+import '../../widgets/empty_state_view.dart';
 import '../../widgets/food_card.dart';
 import '../../widgets/food_network_image.dart';
 import '../../widgets/quantity_stepper.dart';
@@ -277,53 +278,13 @@ class _EmptyCart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final t = Theme.of(context);
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(ChezMamaTheme.spaceXl),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 96,
-              height: 96,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: ChezMamaTheme.brandOrange.withValues(alpha: 0.12),
-                border: Border.all(
-                  color: ChezMamaTheme.brandAmber.withValues(alpha: 0.35),
-                  width: 1.5,
-                ),
-              ),
-              child: Icon(
-                Icons.shopping_bag_outlined,
-                size: 44,
-                color: ChezMamaTheme.brandOrange.withValues(alpha: 0.85),
-              ),
-            ),
-            const SizedBox(height: ChezMamaTheme.spaceLg),
-            Text(
-              tr('cart.empty'),
-              style: t.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 6),
-            Text(
-              tr('cart.emptyHint'),
-              textAlign: TextAlign.center,
-              style: t.textTheme.bodyMedium?.copyWith(
-                color: ChezMamaTheme.mutedInk(context),
-              ),
-            ),
-            const SizedBox(height: ChezMamaTheme.spaceLg),
-            OutlinedButton.icon(
-              onPressed: onSeeOrders,
-              icon: const Icon(Icons.receipt_long_rounded),
-              label: Text(tr('cart.orders')),
-            ),
-          ],
-        ),
-      ),
+    return EmptyStateView(
+      icon: Icons.shopping_bag_outlined,
+      lottieAsset: LottieAssets.empty,
+      title: tr('cart.empty'),
+      subtitle: tr('cart.emptyHint'),
+      secondaryActionLabel: tr('cart.orders'),
+      onSecondaryAction: onSeeOrders,
     );
   }
 }

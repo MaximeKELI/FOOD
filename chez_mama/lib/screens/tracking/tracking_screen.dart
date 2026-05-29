@@ -12,6 +12,7 @@ import '../../services/app_location_service.dart';
 import '../../services/platform_utils.dart';
 import '../../ui/chezmama_theme.dart';
 import '../../utils/currency_format.dart';
+import '../../widgets/empty_state_view.dart';
 import '../auth/login_screen.dart';
 import '../cart/orders_screen.dart';
 import '../profile/seller_profile_screen.dart';
@@ -237,19 +238,25 @@ class _TrackingScreenState extends State<TrackingScreen> {
                 child: CircularProgressIndicator(),
               ))
             else if (_ordersError != null && _orders.isEmpty)
-              _TrackingMessage(
+              EmptyStateView(
+                compact: true,
+                wrapInCard: false,
                 icon: Icons.cloud_off_rounded,
                 title: tr('tracking.loadError'),
                 subtitle: _ordersError!,
-                onRetry: _loadOrders,
+                actionLabel: tr('action.retry'),
+                onAction: _loadOrders,
               )
             else if (tracked == null)
-              _TrackingMessage(
+              EmptyStateView(
+                compact: true,
+                wrapInCard: false,
                 icon: Icons.delivery_dining_outlined,
+                lottieAsset: LottieAssets.empty,
                 title: tr('tracking.none'),
                 subtitle: tr('tracking.noneHint'),
-                actionLabel: tr('tracking.seeAll'),
-                onAction: () => Navigator.of(context).push(
+                secondaryActionLabel: tr('tracking.seeAll'),
+                onSecondaryAction: () => Navigator.of(context).push(
                   MaterialPageRoute(builder: (_) => const OrdersScreen()),
                 ),
               )
