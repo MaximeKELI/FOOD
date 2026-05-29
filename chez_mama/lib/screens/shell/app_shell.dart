@@ -224,6 +224,8 @@ class _AppShellState extends State<AppShell> {
                   _go(const LoyaltyScreen());
                 case 'messages':
                   _go(const ConversationsScreen());
+                case 'language':
+                  _pickLanguage();
                 case 'theme':
                   ThemeController.instance
                       .toggleDark(!ThemeController.instance.isDark);
@@ -234,46 +236,57 @@ class _AppShellState extends State<AppShell> {
             itemBuilder: (context) {
               final dark = ThemeController.instance.isDark;
               return [
-                const PopupMenuItem(
+                PopupMenuItem(
                   value: 'dashboard',
                   child: ListTile(
-                    leading: Icon(Icons.insights_rounded),
-                    title: Text('Tableau de bord'),
+                    leading: const Icon(Icons.insights_rounded),
+                    title: Text(tr('menu.dashboard')),
                   ),
                 ),
-                const PopupMenuItem(
+                PopupMenuItem(
                   value: 'shop',
                   child: ListTile(
-                    leading: Icon(Icons.storefront_rounded),
-                    title: Text('Ma boutique'),
+                    leading: const Icon(Icons.storefront_rounded),
+                    title: Text(tr('menu.shop')),
                   ),
                 ),
-                const PopupMenuItem(
+                PopupMenuItem(
                   value: 'publications',
                   child: ListTile(
-                    leading: Icon(Icons.video_library_rounded),
-                    title: Text('Mes publications'),
+                    leading: const Icon(Icons.video_library_rounded),
+                    title: Text(tr('menu.publications')),
                   ),
                 ),
-                const PopupMenuItem(
+                PopupMenuItem(
                   value: 'favorites',
                   child: ListTile(
-                    leading: Icon(Icons.favorite_rounded),
-                    title: Text('Mes favoris'),
+                    leading: const Icon(Icons.favorite_rounded),
+                    title: Text(tr('menu.favorites')),
                   ),
                 ),
-                const PopupMenuItem(
+                PopupMenuItem(
                   value: 'messages',
                   child: ListTile(
-                    leading: Icon(Icons.forum_rounded),
-                    title: Text('Messages'),
+                    leading: const Icon(Icons.forum_rounded),
+                    title: Text(tr('menu.messages')),
                   ),
                 ),
-                const PopupMenuItem(
+                PopupMenuItem(
                   value: 'loyalty',
                   child: ListTile(
-                    leading: Icon(Icons.workspace_premium_rounded),
-                    title: Text('Mes points'),
+                    leading: const Icon(Icons.workspace_premium_rounded),
+                    title: Text(tr('menu.loyalty')),
+                  ),
+                ),
+                PopupMenuItem(
+                  value: 'language',
+                  child: ListTile(
+                    leading: const Icon(Icons.translate_rounded),
+                    title: Text(tr('menu.language')),
+                    trailing: Text(
+                      LocaleController.instance.lang.flag,
+                      style: const TextStyle(fontSize: 18),
+                    ),
                   ),
                 ),
                 PopupMenuItem(
@@ -282,14 +295,14 @@ class _AppShellState extends State<AppShell> {
                     leading: Icon(
                       dark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
                     ),
-                    title: Text(dark ? 'Mode clair' : 'Mode sombre'),
+                    title: Text(dark ? tr('menu.lightMode') : tr('menu.darkMode')),
                   ),
                 ),
-                const PopupMenuItem(
+                PopupMenuItem(
                   value: 'logout',
                   child: ListTile(
-                    leading: Icon(Icons.logout_rounded),
-                    title: Text('Déconnexion'),
+                    leading: const Icon(Icons.logout_rounded),
+                    title: Text(tr('menu.logout')),
                   ),
                 ),
               ];
