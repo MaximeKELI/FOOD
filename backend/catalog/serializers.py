@@ -16,6 +16,7 @@ class MealSerializer(serializers.ModelSerializer):
     image = serializers.ImageField(read_only=True)
     rating = serializers.SerializerMethodField()
     reviews_count = serializers.SerializerMethodField()
+    favorited_by_me = serializers.SerializerMethodField()
 
     class Meta:
         model = Meal
@@ -32,6 +33,7 @@ class MealSerializer(serializers.ModelSerializer):
             "seller_name",
             "rating",
             "reviews_count",
+            "favorited_by_me",
             "created_at",
         )
         read_only_fields = ("seller",)
@@ -42,6 +44,13 @@ class MealSerializer(serializers.ModelSerializer):
 
     def get_reviews_count(self, obj):
         return obj.reviews.count()
+
+    def get_favorited_by_me(self, obj):
+        request = self.context.get("request")
+        user = getattr(request, "user", None)
+        if user is None or not user.is_authenticated:
+            return False
+        return obj.favorited_by.filter(user=user).exists()
 
 
 class ReviewSerializer(serializers.ModelSerializer):
