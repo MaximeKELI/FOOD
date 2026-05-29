@@ -37,9 +37,25 @@ class Meal(models.Model):
     # Optional details
     subtitle = models.CharField(max_length=200, blank=True)
     price = models.PositiveIntegerField(null=True, blank=True)
+    # Discounted price (must be < price to be considered a promo).
+    promo_price = models.PositiveIntegerField(null=True, blank=True)
     is_available = models.BooleanField(default=True)
+    # "Plat du jour" highlight.
+    is_special = models.BooleanField(default=False)
 
     created_at = models.DateTimeField(auto_now_add=True)
+
+    @property
+    def effective_price(self):
+        if self.promo_price and self.price and self.promo_price < self.price:
+            return self.promo_price
+        return self.price or 0
+
+    @property
+    def has_promo(self):
+        return bool(
+            self.promo_price and self.price and self.promo_price < self.price
+        )
 
     class Meta:
         ordering = ["-created_at"]

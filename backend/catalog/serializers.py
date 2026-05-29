@@ -17,6 +17,8 @@ class MealSerializer(serializers.ModelSerializer):
     rating = serializers.SerializerMethodField()
     reviews_count = serializers.SerializerMethodField()
     favorited_by_me = serializers.SerializerMethodField()
+    effective_price = serializers.IntegerField(read_only=True)
+    has_promo = serializers.BooleanField(read_only=True)
 
     class Meta:
         model = Meal
@@ -26,7 +28,11 @@ class MealSerializer(serializers.ModelSerializer):
             "image",
             "subtitle",
             "price",
+            "promo_price",
+            "effective_price",
+            "has_promo",
             "is_available",
+            "is_special",
             "category",
             "category_name",
             "seller",
