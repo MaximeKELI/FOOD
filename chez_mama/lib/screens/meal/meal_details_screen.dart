@@ -231,6 +231,27 @@ class _MealDetailsScreenState extends State<MealDetailsScreen> {
                       ),
                     ),
                   ],
+                  if (meal.isSpecial || !meal.isAvailable) ...[
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        if (meal.isSpecial)
+                          _Badge(
+                            label: 'Plat du jour',
+                            color: ChezMamaTheme.brandBrown,
+                            icon: Icons.local_fire_department_rounded,
+                          ),
+                        if (meal.isSpecial && !meal.isAvailable)
+                          const SizedBox(width: 8),
+                        if (!meal.isAvailable)
+                          const _Badge(
+                            label: 'Épuisé',
+                            color: Color(0xFF8A8A8A),
+                            icon: Icons.block_rounded,
+                          ),
+                      ],
+                    ),
+                  ],
                   const SizedBox(height: 16),
                   Container(
                     padding: const EdgeInsets.all(14),
@@ -241,29 +262,70 @@ class _MealDetailsScreenState extends State<MealDetailsScreen> {
                     child: Row(
                       children: [
                         Expanded(
-                          child: Text(
-                            '${meal.price.toStringAsFixed(0)} FCFA',
-                            style: t.textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.w900,
-                            ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              if (meal.hasPromo)
+                                Text(
+                                  '${meal.price.toStringAsFixed(0)} FCFA',
+                                  style: t.textTheme.bodyMedium?.copyWith(
+                                    color: ChezMamaTheme.mutedInk(context),
+                                    decoration: TextDecoration.lineThrough,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              Text(
+                                '${meal.effectivePrice.toStringAsFixed(0)} FCFA',
+                                style: t.textTheme.titleLarge?.copyWith(
+                                  fontWeight: FontWeight.w900,
+                                  color: meal.hasPromo
+                                      ? const Color(0xFFD7263D)
+                                      : null,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                         PrimaryButton(
-                          label: 'Ajouter au panier',
-                          onPressed: () {
-                            CartService.instance.addMeal(meal);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content:
-                                    Text('${meal.name} ajouté au panier'),
-                                duration: const Duration(milliseconds: 900),
-                              ),
-                            );
-                          },
+                          label: meal.isAvailable
+                              ? 'Ajouter au panier'
+                              : 'Indisponible',
+                          onPressed: meal.isAvailable
+                              ? () {
+                                  CartService.instance.addMeal(meal);
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content:
+                                          Text('${meal.name} ajouté au panier'),
+                                      duration:
+                                          const Duration(milliseconds: 900),
+                                    ),
+                                  );
+                                }
+                              : null,
                         ),
                       ],
                     ),
                   ),
+                  if (meal.sellerId != null &&
+                      meal.sellerId != AuthService.instance?.userId) ...[
+                    const SizedBox(height: 10),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: () => Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => ConversationScreen(
+                              otherUserId: meal.sellerId!,
+                              otherName: meal.sellerName,
+                            ),
+                          ),
+                        ),
+                        icon: const Icon(Icons.chat_bubble_outline_rounded),
+                        label: const Text('Contacter le vendeur'),
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 24),
                   Row(
                     children: [
