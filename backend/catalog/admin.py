@@ -1,6 +1,8 @@
 from django.contrib import admin
 
-from .models import Category, Meal, Review
+from .models import Category, Meal, MealFavorite, Review
+
+admin.site.register(MealFavorite)
 
 
 @admin.register(Review)

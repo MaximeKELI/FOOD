@@ -75,4 +75,35 @@ class ReviewListCreateView(generics.ListCreateAPIView):
             existing.save()
             serializer.instance = existing
         else:
-            serializer.save(meal=meal, user=self.request.user)
+            review = serializer.save(meal=meal, user=self.request.user)
+            if meal.seller_id != self.request.user.id:
+                notify(
+                    meal.seller,
+                    Notification.Kind.REVIEW,
+                    "Nouvel avis",
+                    f"{self.request.user.name} a noté « {meal.name} » {review.rating}/5.",
+                )
+
+
+class MealFavoriteToggleView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, meal_id):
+        meal = get_object_or_404(Meal, pk=meal_id)
+        fav, created = MealFavorite.objects.get_or_create(
+            user=request.user, meal=meal
+        )
+        if not created:
+            fav.delete()
+            return Response({"favorited": False})
+        return Response({"favorited": True})
+
+
+class MyFavoriteMealsView(generics.ListAPIView):
+    serializer_class = MealSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return Meal.objects.filter(
+            favorited_by__user=self.request.user
+        ).select_related("seller", "category")
