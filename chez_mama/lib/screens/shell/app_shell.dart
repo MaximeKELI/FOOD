@@ -41,9 +41,52 @@ class _AppShellState extends State<AppShell> {
     CartScreen(),
   ];
 
-  static const _titles = ['Accueil', 'Shorts', 'Vidéos', 'Suivi', 'Panier'];
+  List<String> get _titles => [
+        tr('nav.home'),
+        tr('nav.shorts'),
+        tr('nav.videos'),
+        tr('nav.tracking'),
+        tr('nav.cart'),
+      ];
 
   Timer? _badgeTimer;
+
+  Future<void> _pickLanguage() async {
+    await showModalBottomSheet(
+      context: context,
+      showDragHandle: true,
+      builder: (_) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: Text(
+                tr('lang.choose'),
+                style: Theme.of(context)
+                    .textTheme
+                    .titleMedium
+                    ?.copyWith(fontWeight: FontWeight.w900),
+              ),
+            ),
+            for (final l in AppLang.values)
+              ListTile(
+                leading: Text(l.flag, style: const TextStyle(fontSize: 22)),
+                title: Text(l.label),
+                trailing: LocaleController.instance.lang == l
+                    ? const Icon(Icons.check_circle_rounded,
+                        color: ChezMamaTheme.brandOrange)
+                    : null,
+                onTap: () {
+                  LocaleController.instance.setLang(l);
+                  Navigator.of(context).pop();
+                },
+              ),
+          ],
+        ),
+      ),
+    );
+  }
 
   @override
   void initState() {
