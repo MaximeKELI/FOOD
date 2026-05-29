@@ -294,6 +294,7 @@ class _Row extends StatelessWidget {
     required this.imageUrl,
     required this.onDelete,
     this.leadingIcon,
+    this.trailing,
   });
 
   final String title;
@@ -301,6 +302,7 @@ class _Row extends StatelessWidget {
   final String imageUrl;
   final IconData? leadingIcon;
   final VoidCallback onDelete;
+  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
@@ -351,10 +353,12 @@ class _Row extends StatelessWidget {
               ],
             ),
           ),
-          IconButton(
-            onPressed: onDelete,
-            icon: const Icon(Icons.delete_outline_rounded, color: Colors.red),
-          ),
+          trailing ??
+              IconButton(
+                onPressed: onDelete,
+                icon: const Icon(Icons.delete_outline_rounded,
+                    color: Colors.red),
+              ),
         ],
       ),
     );
