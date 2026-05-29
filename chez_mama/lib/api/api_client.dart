@@ -1,16 +1,7 @@
-import 'dart:io' show Platform;
-
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'api_config.dart';
-
-bool get _useSecureStorage {
-  if (kIsWeb) return false;
-  return Platform.isAndroid || Platform.isIOS || Platform.isMacOS;
-}
 
 /// Thin wrapper around Dio that injects the JWT access token and
 /// transparently refreshes it on a 401 response.
@@ -26,7 +17,8 @@ class ApiClient {
     _dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) async {
-          final token = await _readAccess();
+          final prefs = await _prefs;
+          final token = prefs.getString(_kAccess);
           if (token != null && token.isNotEmpty) {
             options.headers['Authorization'] = 'Bearer $token';
           }
@@ -58,60 +50,37 @@ class ApiClient {
 
   static const _kAccess = 'auth.access';
   static const _kRefresh = 'auth.refresh';
-  static const _secure = FlutterSecureStorage(
-    aOptions: AndroidOptions(encryptedSharedPreferences: true),
-  );
 
   late final Dio _dio;
 
   Dio get dio => _dio;
 
-  Future<String?> _read(String key) async {
-    if (_useSecureStorage) return _secure.read(key: key);
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString(key);
-  }
-
-  Future<void> _write(String key, String value) async {
-    if (_useSecureStorage) {
-      await _secure.write(key: key, value: value);
-      return;
-    }
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(key, value);
-  }
-
-  Future<void> _delete(String key) async {
-    if (_useSecureStorage) {
-      await _secure.delete(key: key);
-      return;
-    }
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(key);
-  }
-
-  Future<String?> _readAccess() => _read(_kAccess);
+  Future<SharedPreferences> get _prefs => SharedPreferences.getInstance();
 
   Future<void> saveTokens({
     required String access,
     required String refresh,
   }) async {
-    await _write(_kAccess, access);
-    await _write(_kRefresh, refresh);
+    final prefs = await _prefs;
+    await prefs.setString(_kAccess, access);
+    await prefs.setString(_kRefresh, refresh);
   }
 
   Future<void> clearTokens() async {
-    await _delete(_kAccess);
-    await _delete(_kRefresh);
+    final prefs = await _prefs;
+    await prefs.remove(_kAccess);
+    await prefs.remove(_kRefresh);
   }
 
   Future<bool> hasToken() async {
-    final token = await _readAccess();
+    final prefs = await _prefs;
+    final token = prefs.getString(_kAccess);
     return token != null && token.isNotEmpty;
   }
 
   Future<bool> _tryRefresh() async {
-    final refresh = await _read(_kRefresh);
+    final prefs = await _prefs;
+    final refresh = prefs.getString(_kRefresh);
     if (refresh == null || refresh.isEmpty) return false;
     try {
       final res = await Dio(BaseOptions(baseUrl: ApiConfig.apiUrl)).post(
@@ -120,7 +89,7 @@ class ApiClient {
       );
       final access = res.data['access'] as String?;
       if (access == null) return false;
-      await _write(_kAccess, access);
+      await prefs.setString(_kAccess, access);
       return true;
     } catch (_) {
       return false;
@@ -128,7 +97,8 @@ class ApiClient {
   }
 
   Future<Response<dynamic>> _retry(RequestOptions requestOptions) async {
-    final token = await _readAccess();
+    final prefs = await _prefs;
+    final token = prefs.getString(_kAccess);
     final options = Options(
       method: requestOptions.method,
       headers: {
