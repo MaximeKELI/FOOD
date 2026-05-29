@@ -13,6 +13,7 @@ class Meal {
     this.sellerId,
     this.sellerName = '',
     this.reviewsCount = 0,
+    this.favoritedByMe = false,
   });
 
   final String id;
@@ -26,5 +27,6 @@ class Meal {
   final int? sellerId;
   final String sellerName;
   final int reviewsCount;
+  final bool favoritedByMe;
 }
 

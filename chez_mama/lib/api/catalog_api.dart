@@ -93,6 +93,7 @@ class CatalogApi {
       sellerId: json['seller'] as int?,
       sellerName: json['seller_name'] as String? ?? '',
       reviewsCount: json['reviews_count'] as int? ?? 0,
+      favoritedByMe: json['favorited_by_me'] as bool? ?? false,
     );
   }
 }
