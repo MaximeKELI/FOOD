@@ -45,7 +45,11 @@ class _PrimaryButtonState extends State<PrimaryButton>
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context);
-    return AnimatedBuilder(
+    return Semantics(
+      button: true,
+      label: widget.label,
+      enabled: widget.onPressed != null,
+      child: AnimatedBuilder(
       animation: _c,
       builder: (context, child) {
         final s = 1 + (0.06 * Curves.elasticOut.transform(_c.value));

@@ -24,6 +24,7 @@ class _PublishMealSheetState extends State<PublishMealSheet> {
   List<MealCategory> _categories = [];
   MealCategory? _selected;
   String? _imagePath;
+  final List<String> _extraImages = [];
   bool _loadingCategories = true;
   bool _submitting = false;
   String? _categoriesError;
@@ -74,6 +75,19 @@ class _PublishMealSheetState extends State<PublishMealSheet> {
     }
   }
 
+  Future<void> _pickExtraImages() async {
+    try {
+      final media = await AppMediaPicker.instance.pickPhotoFromGallery();
+      if (!mounted || media == null) return;
+      setState(() => _extraImages.add(media.path));
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Impossible d’ajouter la photo: $e')),
+      );
+    }
+  }
+
   Future<void> _submit() async {
     if (_name.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -111,6 +125,7 @@ class _PublishMealSheetState extends State<PublishMealSheet> {
         name: _name.text.trim(),
         categoryId: _selected!.id,
         imagePath: _imagePath!,
+        extraImagePaths: _extraImages,
         subtitle: _subtitle.text.trim(),
         price: price,
         promoPrice: promo,
@@ -229,6 +244,50 @@ class _PublishMealSheetState extends State<PublishMealSheet> {
                   fit: BoxFit.cover,
                 ),
               ),
+            const SizedBox(height: 10),
+            if (_extraImages.isNotEmpty)
+              SizedBox(
+                height: 72,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: _extraImages.length,
+                  separatorBuilder: (_, __) => const SizedBox(width: 8),
+                  itemBuilder: (_, i) => Stack(
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Image.file(
+                          File(_extraImages[i]),
+                          width: 72,
+                          height: 72,
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                      Positioned(
+                        top: 0,
+                        right: 0,
+                        child: IconButton(
+                          icon: const Icon(Icons.close_rounded, size: 18),
+                          onPressed: () =>
+                              setState(() => _extraImages.removeAt(i)),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: _pickExtraImages,
+                icon: const Icon(Icons.collections_rounded),
+                label: Text(
+                  _extraImages.isEmpty
+                      ? 'Photos supplémentaires (optionnel)'
+                      : 'Ajouter une photo (${_extraImages.length}/4)',
+                ),
+              ),
+            ),
             const SizedBox(height: 10),
             SizedBox(
               width: double.infinity,
