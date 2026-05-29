@@ -45,7 +45,7 @@ class CartService extends ChangeNotifier {
         CartItem(
           mealId: id,
           name: meal.name,
-          unitPrice: meal.price.round(),
+          unitPrice: meal.effectivePrice.round(),
           image: meal.image,
         ),
       );
@@ -84,4 +84,6 @@ class CartService extends ChangeNotifier {
         .map((i) => {'meal': i.mealId, 'quantity': i.quantity})
         .toList();
   }
+
+  List<int> get mealIds => _items.map((i) => i.mealId).toList();
 }
