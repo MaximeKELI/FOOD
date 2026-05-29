@@ -41,9 +41,22 @@ class _AppShellState extends State<AppShell> {
   void initState() {
     super.initState();
     ReceivedOrdersNotifier.instance.refresh();
+    NotificationsNotifier.instance.refresh();
     _badgeTimer = Timer.periodic(
       const Duration(seconds: 30),
-      (_) => ReceivedOrdersNotifier.instance.refresh(),
+      (_) {
+        ReceivedOrdersNotifier.instance.refresh();
+        NotificationsNotifier.instance.refresh();
+      },
+    );
+  }
+
+  void _go(Widget screen) {
+    Navigator.of(context).push(MaterialPageRoute(builder: (_) => screen)).then(
+      (_) {
+        ReceivedOrdersNotifier.instance.refresh();
+        NotificationsNotifier.instance.refresh();
+      },
     );
   }
 
