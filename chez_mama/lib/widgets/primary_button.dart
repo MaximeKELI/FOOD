@@ -10,7 +10,7 @@ class PrimaryButton extends StatefulWidget {
   });
 
   final String label;
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
   final IconData? icon;
 
   @override
