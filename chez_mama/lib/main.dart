@@ -3,6 +3,7 @@ import 'auth/auth_scope.dart';
 import 'auth/auth_service.dart';
 import 'analytics/event_tracker.dart';
 import 'analytics/tracked_widgets.dart';
+import 'l10n/app_strings.dart';
 import 'ui/chezmama_theme.dart';
 import 'ui/theme_controller.dart';
 import 'screens/auth/auth_gate.dart';
@@ -19,7 +20,9 @@ class ChezMamaApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return _AuthBootstrap(
       child: AnimatedBuilder(
-        animation: ThemeController.instance,
+        animation: Listenable.merge(
+          [ThemeController.instance, LocaleController.instance],
+        ),
         builder: (context, _) {
           return MaterialApp(
             debugShowCheckedModeBanner: false,
@@ -52,6 +55,7 @@ class _AuthBootstrapState extends State<_AuthBootstrap> {
     super.initState();
     EventTracker.instance.init();
     ThemeController.instance.load();
+    LocaleController.instance.load();
     service.init();
   }
 
