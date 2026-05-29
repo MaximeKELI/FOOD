@@ -15,13 +15,15 @@ class NotificationListView(generics.ListAPIView):
 
     def list(self, request, *args, **kwargs):
         qs = self.filter_queryset(self.get_queryset())
-        page = self.paginate_queryset(qs)
         unread = qs.filter(is_read=False).count()
+        page = self.paginate_queryset(qs)
         if page is not None:
-            data = self.get_serializer(page, many=True).data
-            return self.get_paginated_response({"unread": unread, "results": data})
-        data = self.get_serializer(qs, many=True).data
-        return Response({"unread": unread, "results": data})
+            serializer = self.get_serializer(page, many=True)
+            response = self.get_paginated_response(serializer.data)
+            response.data["unread"] = unread
+            return response
+        serializer = self.get_serializer(qs, many=True)
+        return Response({"unread": unread, "results": serializer.data})
 
 
 class NotificationMarkReadView(APIView):

@@ -1,6 +1,7 @@
 from django.db.models import Avg
-from food_api.validators import validate_image_upload
 from rest_framework import serializers
+
+from food_api.validators import validate_image_upload
 
 from .models import Category, Meal, MealFavorite, Review
 

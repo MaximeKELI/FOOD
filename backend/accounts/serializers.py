@@ -53,12 +53,6 @@ class UserSerializer(serializers.ModelSerializer):
         )
         read_only_fields = ("email", "loyalty_points")
 
-
-class UserUpdateSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = User
-        fields = ("display_name", "phone")
-
     def get_followers_count(self, obj):
         return obj.followers.count()
 
@@ -71,6 +65,12 @@ class UserUpdateSerializer(serializers.ModelSerializer):
         if user is None or not user.is_authenticated:
             return False
         return obj.followers.filter(follower=user).exists()
+
+
+class UserUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ("display_name", "phone")
 
 
 class RegisterSerializer(serializers.Serializer):
