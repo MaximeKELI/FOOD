@@ -15,6 +15,7 @@ class FlyToCartController {
     required Rect from,
     required GlobalKey cartIconKey,
     required Color color,
+    VoidCallback? onComplete,
   }) {
     final cartBox =
         cartIconKey.currentContext?.findRenderObject() as RenderBox?;
@@ -34,7 +35,10 @@ class FlyToCartController {
           from: from,
           to: to,
           color: color,
-          onDone: () => entry.remove(),
+          onDone: () {
+            entry.remove();
+            onComplete?.call();
+          },
         );
       },
     );

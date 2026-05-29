@@ -9,7 +9,19 @@ class ThemeController extends ChangeNotifier {
 
   ThemeMode _mode = ThemeMode.system;
   ThemeMode get mode => _mode;
+
+  /// Legacy getter — prefer [resolveIsDark] with a [BuildContext].
   bool get isDark => _mode == ThemeMode.dark;
+
+  /// Resolves dark mode including system preference.
+  bool resolveIsDark(BuildContext context) {
+    return switch (_mode) {
+      ThemeMode.dark => true,
+      ThemeMode.light => false,
+      ThemeMode.system =>
+        MediaQuery.platformBrightnessOf(context) == Brightness.dark,
+    };
+  }
 
   Future<void> load() async {
     final prefs = await SharedPreferences.getInstance();
@@ -36,6 +48,6 @@ class ThemeController extends ChangeNotifier {
     );
   }
 
-  Future<void> toggleDark(bool dark) =>
-      setMode(dark ? ThemeMode.dark : ThemeMode.light);
+  Future<void> toggleDark(BuildContext context) =>
+      setMode(resolveIsDark(context) ? ThemeMode.light : ThemeMode.dark);
 }
