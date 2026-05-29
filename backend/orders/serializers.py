@@ -1,8 +1,21 @@
+from math import asin, cos, radians, sin, sqrt
+
 from rest_framework import serializers
 
 from catalog.models import Meal
 
-from .models import Order, OrderItem
+from .models import Order, OrderItem, PromoCode
+
+
+def _haversine_km(lat1, lng1, lat2, lng2):
+    r = 6371.0
+    d_lat = radians(lat2 - lat1)
+    d_lng = radians(lng2 - lng1)
+    a = (
+        sin(d_lat / 2) ** 2
+        + cos(radians(lat1)) * cos(radians(lat2)) * sin(d_lng / 2) ** 2
+    )
+    return 2 * r * asin(sqrt(a))
 
 
 class OrderItemSerializer(serializers.ModelSerializer):
@@ -46,6 +59,11 @@ class OrderSerializer(serializers.ModelSerializer):
             "address",
             "phone",
             "note",
+            "subtotal",
+            "delivery_fee",
+            "discount",
+            "promo_code",
+            "points_earned",
             "total",
             "customer_name",
             "items",
@@ -64,6 +82,9 @@ class OrderCreateSerializer(serializers.Serializer):
     address = serializers.CharField(required=False, allow_blank=True)
     phone = serializers.CharField(required=False, allow_blank=True)
     note = serializers.CharField(required=False, allow_blank=True)
+    latitude = serializers.FloatField(required=False, allow_null=True)
+    longitude = serializers.FloatField(required=False, allow_null=True)
+    promo_code = serializers.CharField(required=False, allow_blank=True)
     items = OrderItemInputSerializer(many=True)
 
     def validate_items(self, value):
@@ -71,18 +92,41 @@ class OrderCreateSerializer(serializers.Serializer):
             raise serializers.ValidationError("Le panier est vide.")
         return value
 
+    def _delivery_fee(self, sellers, lat, lng):
+        """Sum of per-seller delivery fees based on distance."""
+        fee = 0
+        for seller in sellers:
+            profile = getattr(seller, "seller_profile", None)
+            if profile is None:
+                continue
+            base = profile.delivery_fee_base
+            if lat is not None and lng is not None and (
+                profile.latitude is not None and profile.longitude is not None
+            ):
+                km = _haversine_km(lat, lng, profile.latitude, profile.longitude)
+                base += int(round(km)) * profile.delivery_fee_per_km
+            fee += base
+        return fee
+
     def create(self, validated_data):
         from notifications.models import Notification, notify
 
         items = validated_data.pop("items")
         customer = self.context["request"].user
+        fulfillment = validated_data.get(
+            "fulfillment", Order.Fulfillment.DELIVERY
+        )
+        lat = validated_data.get("latitude")
+        lng = validated_data.get("longitude")
         order = Order.objects.create(
             customer=customer,
-            fulfillment=validated_data.get("fulfillment", Order.Fulfillment.DELIVERY),
+            fulfillment=fulfillment,
             payment_method=validated_data.get("payment_method", Order.Payment.CASH),
             address=validated_data.get("address", ""),
             phone=validated_data.get("phone", ""),
             note=validated_data.get("note", ""),
+            latitude=lat,
+            longitude=lng,
         )
         sellers = set()
         for item in items:
@@ -93,13 +137,30 @@ class OrderCreateSerializer(serializers.Serializer):
                 order=order,
                 meal=meal,
                 meal_name=meal.name,
-                unit_price=meal.price or 0,
+                unit_price=meal.effective_price,
                 quantity=item["quantity"],
             )
             if meal.seller_id and meal.seller_id != customer.id:
                 sellers.add(meal.seller)
+
+        # Compute subtotal first.
+        order.subtotal = sum(i.line_total for i in order.items.all())
+
+        # Delivery fee only for delivery orders.
+        if fulfillment == Order.Fulfillment.DELIVERY:
+            order.delivery_fee = self._delivery_fee(sellers, lat, lng)
+
+        # Promo code.
+        code = (validated_data.get("promo_code") or "").strip()
+        if code:
+            promo = PromoCode.objects.filter(code__iexact=code).first()
+            if promo:
+                order.discount = promo.discount_for(order.subtotal)
+                if order.discount > 0:
+                    order.promo_code = promo.code
+
         order.recompute_total()
-        order.save(update_fields=["total"])
+        order.save()
         for seller in sellers:
             notify(
                 seller,

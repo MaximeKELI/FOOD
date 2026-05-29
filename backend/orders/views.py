@@ -1,10 +1,16 @@
+from datetime import timedelta
+
 from django.db.models import ExpressionWrapper, F, IntegerField, Sum
+from django.db.models.functions import TruncDate
+from django.utils import timezone
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from catalog.models import Meal
+
 from .models import Order, OrderItem
-from .serializers import OrderCreateSerializer, OrderSerializer
+from .serializers import OrderCreateSerializer, OrderSerializer, _haversine_km
 
 def _line_total():
     """Fresh expression each call (reusing one instance corrupts queries)."""
@@ -91,6 +97,23 @@ class SellerStatsView(APIView):
             .order_by("-qty")[:5]
         )
 
+        # Revenue per day for the last 7 days.
+        since = timezone.now() - timedelta(days=6)
+        per_day = {
+            row["d"]: row["v"]
+            for row in items.filter(order__created_at__gte=since)
+            .annotate(d=TruncDate("order__created_at"))
+            .values("d")
+            .annotate(v=Sum(_line_total()))
+        }
+        today = timezone.now().date()
+        sales_by_day = []
+        for i in range(6, -1, -1):
+            day = today - timedelta(days=i)
+            sales_by_day.append(
+                {"date": day.isoformat(), "revenue": per_day.get(day, 0) or 0}
+            )
+
         return Response(
             {
                 "orders_count": orders.count(),
@@ -99,6 +122,7 @@ class SellerStatsView(APIView):
                 "delivered_revenue": delivered_revenue,
                 "by_status": by_status,
                 "top_meals": top_meals,
+                "sales_by_day": sales_by_day,
                 "followers": user.followers.count(),
                 "meals_count": user.meals.count(),
             }
@@ -127,7 +151,63 @@ class OrderStatusUpdateView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
         order.status = new_status
-        order.save(update_fields=["status"])
+        update_fields = ["status"]
+
+        # Award loyalty points once, when the order is delivered.
+        if (
+            new_status == Order.Status.DELIVERED
+            and not order.points_awarded
+        ):
+            points = order.total // 100
+            order.points_earned = points
+            order.points_awarded = True
+            update_fields += ["points_earned", "points_awarded"]
+            if points:
+                customer = order.customer
+                customer.loyalty_points = (customer.loyalty_points or 0) + points
+                customer.save(update_fields=["loyalty_points"])
+
+        order.save(update_fields=update_fields)
         return Response(
             OrderSerializer(order, context={"request": request}).data
         )
+
+
+class DeliveryQuoteView(APIView):
+    """Previews the delivery fee for a set of meals + a customer location."""
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        meal_ids = request.data.get("meals", [])
+        lat = request.data.get("latitude")
+        lng = request.data.get("longitude")
+        try:
+            lat = float(lat) if lat is not None else None
+            lng = float(lng) if lng is not None else None
+        except (TypeError, ValueError):
+            lat = lng = None
+
+        sellers = {}
+        for meal in Meal.objects.filter(pk__in=meal_ids).select_related(
+            "seller__seller_profile"
+        ):
+            if meal.seller_id != request.user.id:
+                sellers[meal.seller_id] = meal.seller
+
+        fee = 0
+        for seller in sellers.values():
+            profile = getattr(seller, "seller_profile", None)
+            if profile is None:
+                continue
+            base = profile.delivery_fee_base
+            if (
+                lat is not None
+                and lng is not None
+                and profile.latitude is not None
+                and profile.longitude is not None
+            ):
+                km = _haversine_km(lat, lng, profile.latitude, profile.longitude)
+                base += int(round(km)) * profile.delivery_fee_per_km
+            fee += base
+        return Response({"delivery_fee": fee})
