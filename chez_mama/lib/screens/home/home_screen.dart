@@ -600,64 +600,6 @@ class _SortMenu extends StatelessWidget {
   }
 }
 
-class _HomeMessage extends StatelessWidget {
-  const _HomeMessage({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.onRetry,
-  });
-
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final VoidCallback onRetry;
-
-  @override
-  Widget build(BuildContext context) {
-    final t = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.symmetric(
-        vertical: 48,
-        horizontal: ChezMamaTheme.spaceMd,
-      ),
-      child: Column(
-        children: [
-          Container(
-            width: 80,
-            height: 80,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: ChezMamaTheme.brandBrown.withValues(alpha: 0.1),
-            ),
-            child: Icon(icon, size: 40, color: ChezMamaTheme.brandBrown),
-          ),
-          const SizedBox(height: ChezMamaTheme.spaceLg),
-          Text(
-            title,
-            style: t.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 6),
-          Text(
-            subtitle,
-            textAlign: TextAlign.center,
-            style: t.textTheme.bodyMedium?.copyWith(
-              color: ChezMamaTheme.mutedInk(context),
-            ),
-          ),
-          const SizedBox(height: ChezMamaTheme.spaceLg),
-          FilledButton.icon(
-            onPressed: onRetry,
-            icon: const Icon(Icons.refresh_rounded),
-            label: Text(tr('action.retry')),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _HomeSkeleton extends StatelessWidget {
   const _HomeSkeleton();
 

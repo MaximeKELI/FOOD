@@ -230,7 +230,12 @@ class _TrackingScreenState extends State<TrackingScreen> {
 
     return Scaffold(
       body: Padding(
-        padding: const EdgeInsets.fromLTRB(14, 14, 14, 110),
+        padding: const EdgeInsets.fromLTRB(
+          ChezMamaTheme.spaceMd,
+          ChezMamaTheme.spaceMd,
+          ChezMamaTheme.spaceMd,
+          ChezMamaTheme.navClearance,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -670,64 +675,6 @@ class _StepDot extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-class _TrackingMessage extends StatelessWidget {
-  const _TrackingMessage({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    this.onRetry,
-    this.actionLabel,
-    this.onAction,
-  });
-
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final VoidCallback? onRetry;
-  final String? actionLabel;
-  final VoidCallback? onAction;
-
-  @override
-  Widget build(BuildContext context) {
-    final t = Theme.of(context);
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: ChezMamaTheme.subtleSurface(context),
-        borderRadius: BorderRadius.circular(ChezMamaTheme.rCard),
-      ),
-      child: Column(
-        children: [
-          Icon(icon, size: 42, color: ChezMamaTheme.brandBrown),
-          const SizedBox(height: 10),
-          Text(
-            title,
-            style: t.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 6),
-          Text(subtitle, textAlign: TextAlign.center),
-          if (onRetry != null || onAction != null) ...[
-            const SizedBox(height: 12),
-            if (onRetry != null)
-              FilledButton.icon(
-                onPressed: onRetry,
-                icon: const Icon(Icons.refresh_rounded),
-                label: Text(tr('action.retry')),
-              ),
-            if (onAction != null)
-              OutlinedButton(
-                onPressed: onAction,
-                child: Text(actionLabel ?? tr('action.continueGuest')),
-              ),
-          ],
-        ],
-      ),
     );
   }
 }
