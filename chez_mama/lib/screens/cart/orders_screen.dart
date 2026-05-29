@@ -146,6 +146,21 @@ class _OrderCard extends StatelessWidget {
               ),
             ),
           const Divider(height: 18),
+          if (order.deliveryFee > 0 ||
+              order.discount > 0 ||
+              order.subtotal > 0) ...[
+            _miniLine(t, 'Sous-total', '${order.subtotal} FCFA'),
+            if (order.deliveryFee > 0)
+              _miniLine(t, 'Livraison', '${order.deliveryFee} FCFA'),
+            if (order.discount > 0)
+              _miniLine(
+                t,
+                'Promo${order.promoCode.isEmpty ? '' : ' (${order.promoCode})'}',
+                '−${order.discount} FCFA',
+                accent: const Color(0xFFD7263D),
+              ),
+            const SizedBox(height: 6),
+          ],
           Row(
             children: [
               Icon(
@@ -170,7 +185,38 @@ class _OrderCard extends StatelessWidget {
               ),
             ],
           ),
+          if (order.pointsEarned > 0) ...[
+            const SizedBox(height: 6),
+            Row(
+              children: [
+                const Icon(Icons.workspace_premium_rounded,
+                    size: 16, color: ChezMamaTheme.brandAmber),
+                const SizedBox(width: 4),
+                Text(
+                  '+${order.pointsEarned} points de fidélité',
+                  style: t.textTheme.bodySmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: ChezMamaTheme.brandBrown,
+                  ),
+                ),
+              ],
+            ),
+          ],
         ],
+      ),
+    );
+  }
+
+  Widget _miniLine(ThemeData t, String label, String value, {Color? accent}) {
+    final style = t.textTheme.bodySmall?.copyWith(
+      color: accent ?? ChezMamaTheme.mutedInk(context),
+      fontWeight: FontWeight.w600,
+    );
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 2),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [Text(label, style: style), Text(value, style: style)],
       ),
     );
   }
