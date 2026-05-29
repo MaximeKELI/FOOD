@@ -39,6 +39,7 @@ class _PublishMealSheetState extends State<PublishMealSheet> {
     _name.dispose();
     _subtitle.dispose();
     _price.dispose();
+    _promoPrice.dispose();
     super.dispose();
   }
 
@@ -95,12 +96,25 @@ class _PublishMealSheetState extends State<PublishMealSheet> {
 
     setState(() => _submitting = true);
     try {
+      final price = int.tryParse(_price.text.trim());
+      final promo = int.tryParse(_promoPrice.text.trim());
+      if (promo != null && price != null && promo >= price) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Le prix promo doit être inférieur au prix.'),
+          ),
+        );
+        setState(() => _submitting = false);
+        return;
+      }
       await CatalogApi.instance.createMeal(
         name: _name.text.trim(),
         categoryId: _selected!.id,
         imagePath: _imagePath!,
         subtitle: _subtitle.text.trim(),
-        price: int.tryParse(_price.text.trim()),
+        price: price,
+        promoPrice: promo,
+        isSpecial: _isSpecial,
       );
       if (!mounted) return;
       Navigator.of(context).pop(true);
@@ -187,6 +201,24 @@ class _PublishMealSheetState extends State<PublishMealSheet> {
               ),
             ),
             const SizedBox(height: 12),
+            TextField(
+              controller: _promoPrice,
+              keyboardType: TextInputType.number,
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              decoration: const InputDecoration(
+                labelText: 'Prix promo en FCFA (optionnel)',
+                prefixIcon: Icon(Icons.sell_rounded),
+              ),
+            ),
+            const SizedBox(height: 4),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              value: _isSpecial,
+              onChanged: (v) => setState(() => _isSpecial = v),
+              title: const Text('Marquer comme plat du jour'),
+              secondary: const Icon(Icons.local_fire_department_rounded),
+            ),
+            const SizedBox(height: 8),
             if (_imagePath != null)
               ClipRRect(
                 borderRadius: BorderRadius.circular(16),
