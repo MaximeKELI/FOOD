@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../auth/auth_scope.dart';
 import '../../cart/cart_service.dart';
 import '../../cart/received_orders_notifier.dart';
+import '../../chat/chat_unread_notifier.dart';
 import '../../notifications/notifications_notifier.dart';
 import '../../ui/chezmama_theme.dart';
 import '../../ui/theme_controller.dart';
@@ -10,8 +11,10 @@ import '../home/home_screen.dart';
 import '../social/shorts_screen.dart';
 import '../social/videos_screen.dart';
 import '../cart/cart_screen.dart';
+import '../chat/conversations_screen.dart';
 import '../notifications/notifications_screen.dart';
 import '../profile/favorite_meals_screen.dart';
+import '../profile/loyalty_screen.dart';
 import '../profile/seller_dashboard_screen.dart';
 import '../profile/my_publications_screen.dart';
 import '../profile/my_shop_screen.dart';
@@ -46,11 +49,13 @@ class _AppShellState extends State<AppShell> {
     super.initState();
     ReceivedOrdersNotifier.instance.refresh();
     NotificationsNotifier.instance.refresh();
+    ChatUnreadNotifier.instance.refresh();
     _badgeTimer = Timer.periodic(
       const Duration(seconds: 30),
       (_) {
         ReceivedOrdersNotifier.instance.refresh();
         NotificationsNotifier.instance.refresh();
+        ChatUnreadNotifier.instance.refresh();
       },
     );
   }
@@ -60,6 +65,7 @@ class _AppShellState extends State<AppShell> {
       (_) {
         ReceivedOrdersNotifier.instance.refresh();
         NotificationsNotifier.instance.refresh();
+        ChatUnreadNotifier.instance.refresh();
       },
     );
   }
@@ -69,6 +75,7 @@ class _AppShellState extends State<AppShell> {
     if (!mounted) return;
     ReceivedOrdersNotifier.instance.clear();
     NotificationsNotifier.instance.clear();
+    ChatUnreadNotifier.instance.clear();
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(builder: (_) => const LoginScreen()),
       (_) => false,
@@ -121,6 +128,22 @@ class _AppShellState extends State<AppShell> {
                         child: const Icon(Icons.notifications_rounded),
                       )
                     : const Icon(Icons.notifications_none_rounded),
+              );
+            },
+          ),
+          AnimatedBuilder(
+            animation: ChatUnreadNotifier.instance,
+            builder: (context, _) {
+              final count = ChatUnreadNotifier.instance.unread;
+              return IconButton(
+                tooltip: 'Messages',
+                onPressed: () => _go(const ConversationsScreen()),
+                icon: count > 0
+                    ? Badge.count(
+                        count: count,
+                        child: const Icon(Icons.chat_bubble_rounded),
+                      )
+                    : const Icon(Icons.chat_bubble_outline_rounded),
               );
             },
           ),
