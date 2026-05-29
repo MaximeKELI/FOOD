@@ -94,7 +94,19 @@ class ChezMamaTheme {
 
     final muted = inkC.withValues(alpha: 0.62);
 
+    const transitions = PageTransitionsTheme(
+      builders: {
+        TargetPlatform.android: _FadeUpTransitionsBuilder(),
+        TargetPlatform.iOS: _FadeUpTransitionsBuilder(),
+        TargetPlatform.linux: _FadeUpTransitionsBuilder(),
+        TargetPlatform.macOS: _FadeUpTransitionsBuilder(),
+        TargetPlatform.windows: _FadeUpTransitionsBuilder(),
+        TargetPlatform.fuchsia: _FadeUpTransitionsBuilder(),
+      },
+    );
+
     return base.copyWith(
+      pageTransitionsTheme: transitions,
       appBarTheme: AppBarTheme(
         backgroundColor: bg,
         foregroundColor: inkC,
