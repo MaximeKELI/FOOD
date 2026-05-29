@@ -12,6 +12,7 @@ from .serializers import (
     SellerLocationSerializer,
     SellerProfileSerializer,
     UserSerializer,
+    UserUpdateSerializer,
 )
 
 User = get_user_model()
@@ -61,11 +62,23 @@ class SellerLocationListView(generics.ListAPIView):
 
 
 class MeView(generics.RetrieveUpdateAPIView):
-    serializer_class = UserSerializer
     permission_classes = [IsAuthenticated]
 
     def get_object(self):
         return self.request.user
+
+    def get_serializer_class(self):
+        if self.request.method in ("PUT", "PATCH"):
+            return UserUpdateSerializer
+        return UserSerializer
+
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop("partial", False)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+        return Response(UserSerializer(instance, context={"request": request}).data)
 
 
 class MyProfileView(generics.RetrieveUpdateAPIView):
@@ -100,5 +113,7 @@ class FollowToggleView(APIView):
             Notification.Kind.FOLLOW,
             "Nouvel abonné",
             f"{request.user.name} s'est abonné à votre boutique.",
+            related_id=request.user.id,
+            link="follower",
         )
         return Response({"following": True})

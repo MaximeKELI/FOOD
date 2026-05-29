@@ -51,7 +51,13 @@ class UserSerializer(serializers.ModelSerializer):
             "meals_count",
             "followed_by_me",
         )
-        read_only_fields = ("loyalty_points",)
+        read_only_fields = ("email", "loyalty_points")
+
+
+class UserUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ("display_name", "phone")
 
     def get_followers_count(self, obj):
         return obj.followers.count()
