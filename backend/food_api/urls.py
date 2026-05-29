@@ -30,6 +30,7 @@ urlpatterns = [
     path("api/social/", include("social.urls")),
     path("api/", include("orders.urls")),
     path("api/", include("notifications.urls")),
+    path("api/", include("chat.urls")),
 ]
 
 if settings.DEBUG:
