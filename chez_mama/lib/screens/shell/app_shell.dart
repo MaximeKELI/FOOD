@@ -11,6 +11,7 @@ import '../social/videos_screen.dart';
 import '../cart/cart_screen.dart';
 import '../notifications/notifications_screen.dart';
 import '../profile/favorite_meals_screen.dart';
+import '../profile/seller_dashboard_screen.dart';
 import '../profile/my_publications_screen.dart';
 import '../profile/my_shop_screen.dart';
 import '../profile/received_orders_screen.dart';
@@ -120,6 +121,8 @@ class _AppShellState extends State<AppShell> {
             icon: const Icon(Icons.menu_rounded),
             onSelected: (value) {
               switch (value) {
+                case 'dashboard':
+                  _go(const SellerDashboardScreen());
                 case 'shop':
                   _go(const MyShopScreen());
                 case 'publications':
@@ -131,6 +134,13 @@ class _AppShellState extends State<AppShell> {
               }
             },
             itemBuilder: (context) => const [
+              PopupMenuItem(
+                value: 'dashboard',
+                child: ListTile(
+                  leading: Icon(Icons.insights_rounded),
+                  title: Text('Tableau de bord'),
+                ),
+              ),
               PopupMenuItem(
                 value: 'shop',
                 child: ListTile(
