@@ -107,6 +107,7 @@ class _AppShellState extends State<AppShell> {
   void _go(Widget screen) {
     Navigator.of(context).push(MaterialPageRoute(builder: (_) => screen)).then(
       (_) {
+        if (!AuthScope.of(context).isAuthed) return;
         ReceivedOrdersNotifier.instance.refresh();
         NotificationsNotifier.instance.refresh();
         ChatUnreadNotifier.instance.refresh();
@@ -114,7 +115,25 @@ class _AppShellState extends State<AppShell> {
     );
   }
 
+  void _requireAuth(VoidCallback action) {
+    if (!AuthScope.of(context).isAuthed) {
+      _go(const LoginScreen());
+      return;
+    }
+    action();
+  }
+
   void _handleMenu(String value) {
+    if (value == 'login') {
+      _go(const LoginScreen());
+      return;
+    }
+    if (!AuthScope.of(context).isAuthed &&
+        value != 'theme' &&
+        value != 'language') {
+      _go(const LoginScreen());
+      return;
+    }
     switch (value) {
       case 'dashboard':
         _go(const SellerDashboardScreen());
@@ -141,10 +160,7 @@ class _AppShellState extends State<AppShell> {
     ReceivedOrdersNotifier.instance.clear();
     NotificationsNotifier.instance.clear();
     ChatUnreadNotifier.instance.clear();
-    Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (_) => const LoginScreen()),
-      (_) => false,
-    );
+    setState(() => index = 0);
   }
 
   @override
@@ -158,11 +174,13 @@ class _AppShellState extends State<AppShell> {
       case 0:
         return HomeScreen(
           isSeller: isSeller,
-          onNotifications: () => _go(const NotificationsScreen()),
-          onMessages: () => _go(const ConversationsScreen()),
+          isAuthed: auth.isAuthed,
+          onNotifications: () => _requireAuth(() => _go(const NotificationsScreen())),
+          onMessages: () => _requireAuth(() => _go(const ConversationsScreen())),
           onReceivedOrders: () => _go(const ReceivedOrdersScreen()),
           onMenuSelected: _handleMenu,
           onPickLanguage: _pickLanguage,
+          onLogin: () => _go(const LoginScreen()),
         );
       case 1:
         return const ShortsScreen();
@@ -172,7 +190,9 @@ class _AppShellState extends State<AppShell> {
         return const TrackingScreen();
       case 4:
         return CartScreen(
-          onSeeOrders: () => _go(const OrdersScreen()),
+          onSeeOrders: isAuthed
+              ? () => _go(const OrdersScreen())
+              : () => _go(const LoginScreen()),
         );
       default:
         return const SizedBox.shrink();
@@ -184,6 +204,7 @@ class _AppShellState extends State<AppShell> {
     final cardColor = ChezMamaTheme.cardColor(context);
     final auth = AuthScope.of(context);
     final isSeller = auth.isSeller;
+    final isAuthed = auth.isAuthed;
     final showShellAppBar = index != 0;
 
     return Scaffold(
@@ -211,19 +232,21 @@ class _AppShellState extends State<AppShell> {
                 ],
               ),
               actions: [
-                if (index == 4)
+                if (index == 4 && isAuthed)
                   IconButton(
-                    tooltip: 'Mes commandes',
+                    tooltip: tr('cart.orders'),
                     onPressed: () => _go(const OrdersScreen()),
                     icon: const Icon(Icons.receipt_long_rounded),
                   ),
                 ShellToolbarActions(
                   isSeller: isSeller,
-                  onNotifications: () => _go(const NotificationsScreen()),
-                  onMessages: () => _go(const ConversationsScreen()),
+                  isAuthed: isAuthed,
+                  onNotifications: () => _requireAuth(() => _go(const NotificationsScreen())),
+                  onMessages: () => _requireAuth(() => _go(const ConversationsScreen())),
                   onReceivedOrders: () => _go(const ReceivedOrdersScreen()),
                   onMenuSelected: _handleMenu,
                   onPickLanguage: _pickLanguage,
+                  onLogin: () => _go(const LoginScreen()),
                 ),
               ],
             )
