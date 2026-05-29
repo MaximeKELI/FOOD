@@ -60,6 +60,49 @@ class ReceivedOrderListView(generics.ListAPIView):
         )
 
 
+class SellerStatsView(APIView):
+    """Aggregated sales statistics for the current seller."""
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        items = OrderItem.objects.filter(meal__seller=user)
+        orders = Order.objects.filter(items__meal__seller=user).distinct()
+
+        revenue = items.aggregate(v=Sum(_LINE_TOTAL))["v"] or 0
+        delivered_revenue = (
+            items.filter(order__status=Order.Status.DELIVERED)
+            .aggregate(v=Sum(_LINE_TOTAL))["v"]
+            or 0
+        )
+        items_sold = items.aggregate(v=Sum("quantity"))["v"] or 0
+
+        by_status = {
+            value: orders.filter(status=value).count()
+            for value, _ in Order.Status.choices
+        }
+
+        top_meals = list(
+            items.values("meal_name")
+            .annotate(quantity=Sum("quantity"), revenue=Sum(_LINE_TOTAL))
+            .order_by("-quantity")[:5]
+        )
+
+        return Response(
+            {
+                "orders_count": orders.count(),
+                "items_sold": items_sold,
+                "revenue": revenue,
+                "delivered_revenue": delivered_revenue,
+                "by_status": by_status,
+                "top_meals": top_meals,
+                "followers": user.followers.count(),
+                "meals_count": user.meals.count(),
+            }
+        )
+
+
 class OrderStatusUpdateView(APIView):
     """Lets a seller (owner of a meal in the order) update the order status."""
 
