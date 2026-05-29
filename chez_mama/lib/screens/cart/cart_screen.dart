@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../cart/cart_service.dart';
 import '../../ui/chezmama_theme.dart';
+import '../../widgets/entrance.dart';
 import 'checkout_sheet.dart';
 import 'orders_screen.dart';
 
@@ -220,7 +221,7 @@ class _QtyButton extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(4),
         decoration: BoxDecoration(
-          color: ChezMamaTheme.surface2,
+          color: ChezMamaTheme.subtleSurface(context),
           borderRadius: BorderRadius.circular(10),
         ),
         child: Icon(icon, size: 20, color: ChezMamaTheme.brandBrown),
