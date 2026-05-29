@@ -18,9 +18,22 @@ class ConversationListView(generics.ListAPIView):
 
     def get_queryset(self):
         user = self.request.user
-        return Conversation.objects.filter(
-            Q(user_low=user) | Q(user_high=user)
-        ).prefetch_related("messages")
+        return (
+            Conversation.objects.filter(Q(user_low=user) | Q(user_high=user))
+            .select_related("user_low", "user_high")
+            .prefetch_related(
+                Prefetch(
+                    "messages",
+                    queryset=Message.objects.order_by("-created_at"),
+                )
+            )
+            .annotate(
+                unread_count_annotated=Count(
+                    "messages",
+                    filter=Q(messages__is_read=False) & ~Q(messages__sender=user),
+                )
+            )
+        )
 
 
 class ConversationStartView(APIView):

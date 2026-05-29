@@ -46,9 +46,14 @@ class ConversationSerializer(serializers.ModelSerializer):
         return self._other(obj).name
 
     def get_last_message(self, obj):
-        msg = obj.messages.last()
+        messages = getattr(obj, "_prefetched_objects_cache", {}).get("messages")
+        if messages is not None:
+            return messages[0].text if messages else ""
+        msg = obj.messages.order_by("-created_at").first()
         return msg.text if msg else ""
 
     def get_unread(self, obj):
+        if hasattr(obj, "unread_count_annotated"):
+            return obj.unread_count_annotated
         user = self.context["request"].user
         return obj.messages.filter(is_read=False).exclude(sender=user).count()

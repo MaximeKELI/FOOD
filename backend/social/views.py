@@ -25,6 +25,20 @@ class PostListCreateView(generics.ListCreateAPIView):
 
     def get_queryset(self):
         qs = Post.objects.select_related("author").all()
+        user = self.request.user
+        qs = qs.annotate(
+            likes_count_annotated=Count("likes", distinct=True),
+            comments_count_annotated=Count("comments", distinct=True),
+        )
+        if user.is_authenticated:
+            qs = qs.annotate(
+                liked_by_me_annotated=Exists(
+                    Like.objects.filter(post_id=OuterRef("pk"), user_id=user.id)
+                ),
+                favorited_by_me_annotated=Exists(
+                    Favorite.objects.filter(post_id=OuterRef("pk"), user_id=user.id)
+                ),
+            )
         kind = self.request.query_params.get("kind")
         if kind in (Post.Kind.SHORT, Post.Kind.VIDEO):
             qs = qs.filter(kind=kind)
@@ -40,9 +54,26 @@ class PostListCreateView(generics.ListCreateAPIView):
 
 
 class PostDetailView(generics.RetrieveDestroyAPIView):
-    queryset = Post.objects.select_related("author").all()
     serializer_class = PostSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly, IsAuthorOrReadOnly]
+
+    def get_queryset(self):
+        qs = Post.objects.select_related("author").all()
+        user = self.request.user
+        qs = qs.annotate(
+            likes_count_annotated=Count("likes", distinct=True),
+            comments_count_annotated=Count("comments", distinct=True),
+        )
+        if user.is_authenticated:
+            qs = qs.annotate(
+                liked_by_me_annotated=Exists(
+                    Like.objects.filter(post_id=OuterRef("pk"), user_id=user.id)
+                ),
+                favorited_by_me_annotated=Exists(
+                    Favorite.objects.filter(post_id=OuterRef("pk"), user_id=user.id)
+                ),
+            )
+        return qs
 
 
 class LikeToggleView(APIView):

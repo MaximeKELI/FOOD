@@ -71,11 +71,25 @@ class PostSerializer(serializers.ModelSerializer):
             return request.user
         return None
 
+    def get_like_count(self, obj):
+        if hasattr(obj, "likes_count_annotated"):
+            return obj.likes_count_annotated
+        return obj.like_count
+
+    def get_comment_count(self, obj):
+        if hasattr(obj, "comments_count_annotated"):
+            return obj.comments_count_annotated
+        return obj.comment_count
+
     def get_liked_by_me(self, obj):
+        if hasattr(obj, "liked_by_me_annotated"):
+            return obj.liked_by_me_annotated
         user = self._user()
         return bool(user and obj.likes.filter(user=user).exists())
 
     def get_favorited_by_me(self, obj):
+        if hasattr(obj, "favorited_by_me_annotated"):
+            return obj.favorited_by_me_annotated
         user = self._user()
         return bool(user and obj.favorites.filter(user=user).exists())
 
