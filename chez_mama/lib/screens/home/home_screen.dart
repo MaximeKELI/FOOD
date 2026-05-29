@@ -162,11 +162,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         });
         if (result.finalResult) {
           _speech.stop();
-          _listening = false;
+          setState(() => _listening = false);
           _loadMeals();
         }
       },
-      localeId: 'fr_FR',
+      listenOptions: SpeechListenOptions(localeId: 'fr_FR'),
     );
   }
 

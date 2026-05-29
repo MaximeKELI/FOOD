@@ -92,3 +92,16 @@ Authorization: Bearer <access_token>
 - **Émulateur Android** : `http://10.0.2.2:8000`
 - **iOS / Linux desktop** : `http://127.0.0.1:8000`
 - **Téléphone réel** : `http://<IP_DU_PC>:8000` (même réseau Wi-Fi)
+
+## Production
+
+```bash
+cd backend
+cp .env.example .env   # DEBUG=False, SECRET_KEY, ALLOWED_HOSTS, DB_*
+./run_prod.sh          # migrate + collectstatic + Gunicorn :8000
+```
+
+- Health check : `GET /health/`
+- Médias S3 : renseigne `AWS_*` dans `.env` (sinon stockage local + `SERVE_MEDIA=True`)
+- Paiements Wave/Orange : `WAVE_API_KEY`, `ORANGE_MONEY_MERCHANT_KEY`, webhooks → `/api/payments/webhook/wave/` et `/orange/`
+- Push FCM : `FIREBASE_CREDENTIALS_PATH` vers le JSON service account Firebase
