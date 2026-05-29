@@ -3,7 +3,6 @@ import '../../cart/received_orders_notifier.dart';
 import '../../chat/chat_unread_notifier.dart';
 import '../../l10n/app_strings.dart';
 import '../../notifications/notifications_notifier.dart';
-import '../../ui/chezmama_theme.dart';
 import '../../ui/theme_controller.dart';
 
 /// Shared toolbar actions used by [AppShell] and the home hero header.

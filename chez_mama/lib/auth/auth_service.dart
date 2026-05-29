@@ -104,8 +104,8 @@ class AuthService extends ChangeNotifier {
     _userName = (user['name'] ?? user['display_name']) as String?;
     _email = user['email'] as String?;
     _mealsCount = user['meals_count'] as int? ?? 0;
-    final profile = user['seller_profile'] as Map<String, dynamic>?;
-    final shopName = profile?['shop_name'] as String? ?? '';
+    final sellerProfile = user['seller_profile'] as Map<String, dynamic>?;
+    final shopName = sellerProfile?['shop_name'] as String? ?? '';
     _isSeller = _mealsCount > 0 || shopName.trim().isNotEmpty;
     _isAuthed = true;
     notifyListeners();
