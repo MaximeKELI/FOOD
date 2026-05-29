@@ -60,6 +60,17 @@ class _AppShellState extends State<AppShell> {
     );
   }
 
+  Future<void> _logout() async {
+    await AuthScope.of(context).signOut();
+    if (!mounted) return;
+    ReceivedOrdersNotifier.instance.clear();
+    NotificationsNotifier.instance.clear();
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const LoginScreen()),
+      (_) => false,
+    );
+  }
+
   @override
   void dispose() {
     _badgeTimer?.cancel();
@@ -149,18 +160,6 @@ class _AppShellState extends State<AppShell> {
                 ),
               ),
             ],
-          ),
-          IconButton(
-            tooltip: 'Déconnexion (raccourci)',
-            onPressed: () async {
-              await AuthScope.of(context).signOut();
-              if (!context.mounted) return;
-              Navigator.of(context).pushAndRemoveUntil(
-                MaterialPageRoute(builder: (_) => const LoginScreen()),
-                (_) => false,
-              );
-            },
-            icon: const Icon(Icons.logout_rounded),
           ),
         ],
       ),
