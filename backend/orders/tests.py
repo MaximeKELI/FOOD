@@ -1,4 +1,5 @@
 from django.contrib.auth import get_user_model
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 from rest_framework.test import APIClient
 
@@ -54,12 +55,16 @@ class OrderRulesTests(TestCase):
             free_delivery_over=10000,
         )
         self.category = Category.objects.create(name="Plats")
+        image = SimpleUploadedFile(
+            "meal.jpg", b"fake-image-bytes", content_type="image/jpeg"
+        )
         self.meal = Meal.objects.create(
             seller=self.seller,
             category=self.category,
             name="Thieb",
             price=5000,
             is_available=True,
+            image=image,
         )
         PromoCode.objects.create(code="BIENVENUE", percent=10, min_total=0)
         PromoCode.objects.create(
