@@ -68,7 +68,44 @@ class _MealCardState extends State<MealCard> {
                   tag: 'meal_${m.id}',
                   child: AspectRatio(
                     aspectRatio: 16 / 10,
-                    child: _buildMealImage(m.image),
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        _buildMealImage(m.image),
+                        if (!m.isAvailable)
+                          Container(
+                            color: Colors.black.withValues(alpha: 0.45),
+                            alignment: Alignment.center,
+                            child: const _Pill(
+                              label: 'Épuisé',
+                              color: Color(0xFF8A8A8A),
+                            ),
+                          ),
+                        Positioned(
+                          top: 8,
+                          left: 8,
+                          child: Row(
+                            children: [
+                              if (m.isSpecial)
+                                const _Pill(
+                                  label: 'Plat du jour',
+                                  color: ChezMamaTheme.brandBrown,
+                                  icon: Icons.local_fire_department_rounded,
+                                ),
+                              if (m.isSpecial && m.hasPromo)
+                                const SizedBox(width: 6),
+                              if (m.hasPromo)
+                                _Pill(
+                                  label:
+                                      '-${(100 - (m.promoPrice / m.price * 100)).round()}%',
+                                  color: const Color(0xFFD7263D),
+                                  icon: Icons.sell_rounded,
+                                ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
                 Padding(
@@ -92,6 +129,41 @@ class _MealCardState extends State<MealCard> {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _Pill extends StatelessWidget {
+  const _Pill({required this.label, required this.color, this.icon});
+  final String label;
+  final Color color;
+  final IconData? icon;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (icon != null) ...[
+            Icon(icon, size: 12, color: Colors.white),
+            const SizedBox(width: 4),
+          ],
+          Text(
+            label,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 11,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ],
       ),
     );
   }

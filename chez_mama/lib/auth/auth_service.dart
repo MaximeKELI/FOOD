@@ -10,12 +10,14 @@ class AuthService extends ChangeNotifier {
   int? _userId;
   String? _userName;
   String? _email;
+  int _loyaltyPoints = 0;
 
   bool get ready => _ready;
   bool get isAuthed => _isAuthed;
   int? get userId => _userId;
   String? get userName => _userName;
   String? get email => _email;
+  int get loyaltyPoints => _loyaltyPoints;
 
   final _client = ApiClient.instance;
 
@@ -39,6 +41,17 @@ class AuthService extends ChangeNotifier {
     _userId = data['id'] as int?;
     _userName = (data['name'] ?? data['display_name']) as String?;
     _email = data['email'] as String?;
+    _loyaltyPoints = data['loyalty_points'] as int? ?? 0;
+  }
+
+  /// Re-fetches the current user (e.g. to refresh loyalty points).
+  Future<void> refreshMe() async {
+    try {
+      await _loadMe();
+      notifyListeners();
+    } catch (_) {
+      // ignore transient errors
+    }
   }
 
   Future<void> signIn({
@@ -92,6 +105,7 @@ class AuthService extends ChangeNotifier {
     _userId = null;
     _userName = null;
     _email = null;
+    _loyaltyPoints = 0;
     notifyListeners();
   }
 }

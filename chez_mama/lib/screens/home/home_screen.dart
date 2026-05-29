@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:latlong2/latlong.dart';
 import '../../api/api_client.dart';
 import '../../api/catalog_api.dart';
 import '../../data/demo_data.dart';
 import '../../models/meal.dart';
+import '../../services/app_location_service.dart';
 import '../../ui/african_pattern_painter.dart';
 import '../../ui/chezmama_theme.dart';
 import '../../widgets/shimmer_skeleton.dart';
@@ -10,6 +12,16 @@ import '../meal/meal_details_screen.dart';
 import 'hero_carousel.dart';
 import 'meal_card.dart';
 import 'publish_meal_sheet.dart';
+
+enum MealSort { recent, priceAsc, priceDesc, rating, distance }
+
+const Map<MealSort, String> _sortLabels = {
+  MealSort.recent: 'Récents',
+  MealSort.priceAsc: 'Prix ↑',
+  MealSort.priceDesc: 'Prix ↓',
+  MealSort.rating: 'Mieux notés',
+  MealSort.distance: 'Plus proches',
+};
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -27,6 +39,14 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   String _query = '';
   final _searchCtrl = TextEditingController();
   List<Meal> _allMeals = [];
+
+  // Filters & sort
+  MealSort _sort = MealSort.recent;
+  bool _availableOnly = false;
+  bool _promoOnly = false;
+  bool _specialOnly = false;
+  LatLng? _userLoc;
+  bool _locating = false;
 
   late final AnimationController _stagger;
 
@@ -70,8 +90,19 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     super.dispose();
   }
 
+  double? _distanceKm(Meal m) {
+    if (_userLoc == null || m.sellerLat == null || m.sellerLng == null) {
+      return null;
+    }
+    return const Distance().as(
+      LengthUnit.Kilometer,
+      _userLoc!,
+      LatLng(m.sellerLat!, m.sellerLng!),
+    );
+  }
+
   List<Meal> get _visibleMeals {
-    var meals = _allMeals;
+    var meals = List<Meal>.from(_allMeals);
     if (activeCategory != 'Popular') {
       meals = meals.where((m) => m.category == activeCategory).toList();
     }
@@ -83,7 +114,47 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             m.sellerName.toLowerCase().contains(q);
       }).toList();
     }
+    if (_availableOnly) meals = meals.where((m) => m.isAvailable).toList();
+    if (_promoOnly) meals = meals.where((m) => m.hasPromo).toList();
+    if (_specialOnly) meals = meals.where((m) => m.isSpecial).toList();
+
+    switch (_sort) {
+      case MealSort.recent:
+        break;
+      case MealSort.priceAsc:
+        meals.sort((a, b) => a.effectivePrice.compareTo(b.effectivePrice));
+        break;
+      case MealSort.priceDesc:
+        meals.sort((a, b) => b.effectivePrice.compareTo(a.effectivePrice));
+        break;
+      case MealSort.rating:
+        meals.sort((a, b) => b.rating.compareTo(a.rating));
+        break;
+      case MealSort.distance:
+        meals.sort((a, b) {
+          final da = _distanceKm(a) ?? double.infinity;
+          final db = _distanceKm(b) ?? double.infinity;
+          return da.compareTo(db);
+        });
+        break;
+    }
     return meals;
+  }
+
+  Future<void> _ensureLocation() async {
+    if (_userLoc != null || _locating) return;
+    setState(() => _locating = true);
+    final res = await AppLocationService.instance.acquireLocation();
+    if (!mounted) return;
+    setState(() {
+      _userLoc = res.location;
+      _locating = false;
+    });
+    if (res.location == null && res.error != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(res.error!)),
+      );
+    }
   }
 
   Future<void> _publishMeal() async {
