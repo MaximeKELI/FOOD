@@ -103,9 +103,15 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 
   List<Meal> get _visibleMeals {
-    var meals = List<Meal>.from(_allMeals);
-    if (activeCategory != 'Popular') {
-      meals = meals.where((m) => m.category == activeCategory).toList();
+    // Plats réels en premier ; sur « Popular », garder aussi les visuels d'accueil.
+    List<Meal> meals;
+    if (activeCategory == 'Popular') {
+      meals = [..._allMeals, ...DemoData.meals];
+    } else if (_allMeals.isNotEmpty) {
+      meals = _allMeals.where((m) => m.category == activeCategory).toList();
+    } else {
+      meals =
+          DemoData.meals.where((m) => m.category == activeCategory).toList();
     }
     final q = _query.trim().toLowerCase();
     if (q.isNotEmpty) {
@@ -189,7 +195,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         slivers: [
           SliverAppBar(
             pinned: true,
-            expandedHeight: 176,
+            expandedHeight: 220,
             automaticallyImplyLeading: false,
             backgroundColor: Theme.of(context).scaffoldBackgroundColor,
             flexibleSpace: FlexibleSpaceBar(
@@ -213,8 +219,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   Positioned(
                     left: 16,
                     right: 16,
-                    bottom: 64,
-                    child: const HeroCarousel(height: 86),
+                    bottom: 58,
+                    child: const HeroCarousel(height: 130),
                   ),
                 ],
               ),
