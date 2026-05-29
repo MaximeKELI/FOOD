@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'auth/auth_scope.dart';
 import 'auth/auth_service.dart';
 import 'analytics/event_tracker.dart';
@@ -31,6 +32,11 @@ class ChezMamaApp extends StatelessWidget {
             title: 'Food',
             locale: LocaleController.instance.locale,
             supportedLocales: AppLang.values.map((l) => Locale(l.code)),
+            localizationsDelegates: const [
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
             theme: ChezMamaTheme.light(),
             darkTheme: ChezMamaTheme.dark(),
             themeMode: ThemeController.instance.mode,
