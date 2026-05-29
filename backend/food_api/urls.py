@@ -15,6 +15,7 @@ def api_root(_request):
                 "catalog": "/api/catalog/",
                 "social": "/api/social/",
                 "orders": "/api/orders/",
+                "notifications": "/api/notifications/",
                 "admin": "/admin/",
             },
         }
@@ -28,6 +29,7 @@ urlpatterns = [
     path("api/catalog/", include("catalog.urls")),
     path("api/social/", include("social.urls")),
     path("api/", include("orders.urls")),
+    path("api/", include("notifications.urls")),
 ]
 
 if settings.DEBUG:

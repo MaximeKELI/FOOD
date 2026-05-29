@@ -64,14 +64,18 @@ class OrderCreateSerializer(serializers.Serializer):
         return value
 
     def create(self, validated_data):
+        from notifications.models import Notification, notify
+
         items = validated_data.pop("items")
+        customer = self.context["request"].user
         order = Order.objects.create(
-            customer=self.context["request"].user,
+            customer=customer,
             fulfillment=validated_data.get("fulfillment", Order.Fulfillment.DELIVERY),
             address=validated_data.get("address", ""),
             phone=validated_data.get("phone", ""),
             note=validated_data.get("note", ""),
         )
+        sellers = set()
         for item in items:
             meal = Meal.objects.filter(pk=item["meal"]).first()
             if meal is None:
@@ -83,6 +87,15 @@ class OrderCreateSerializer(serializers.Serializer):
                 unit_price=meal.price or 0,
                 quantity=item["quantity"],
             )
+            if meal.seller_id and meal.seller_id != customer.id:
+                sellers.add(meal.seller)
         order.recompute_total()
         order.save(update_fields=["total"])
+        for seller in sellers:
+            notify(
+                seller,
+                Notification.Kind.ORDER,
+                "Nouvelle commande",
+                f"{customer.name} a passé une commande (#{order.id}).",
+            )
         return order

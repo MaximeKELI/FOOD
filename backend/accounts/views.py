@@ -93,4 +93,12 @@ class FollowToggleView(APIView):
         if not created:
             follow.delete()
             return Response({"following": False})
+        from notifications.models import Notification, notify
+
+        notify(
+            seller,
+            Notification.Kind.FOLLOW,
+            "Nouvel abonné",
+            f"{request.user.name} s'est abonné à votre boutique.",
+        )
         return Response({"following": True})
