@@ -1,0 +1,46 @@
+from rest_framework import serializers
+
+from .models import Conversation, Message
+
+
+class MessageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Message
+        fields = ("id", "sender", "text", "is_read", "created_at")
+        read_only_fields = ("sender", "is_read", "created_at")
+
+
+class ConversationSerializer(serializers.ModelSerializer):
+    other_id = serializers.SerializerMethodField()
+    other_name = serializers.SerializerMethodField()
+    last_message = serializers.SerializerMethodField()
+    unread = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Conversation
+        fields = (
+            "id",
+            "other_id",
+            "other_name",
+            "last_message",
+            "unread",
+            "updated_at",
+        )
+
+    def _other(self, obj):
+        user = self.context["request"].user
+        return obj.other(user)
+
+    def get_other_id(self, obj):
+        return self._other(obj).id
+
+    def get_other_name(self, obj):
+        return self._other(obj).name
+
+    def get_last_message(self, obj):
+        msg = obj.messages.last()
+        return msg.text if msg else ""
+
+    def get_unread(self, obj):
+        user = self.context["request"].user
+        return obj.messages.filter(is_read=False).exclude(sender=user).count()
