@@ -11,6 +11,8 @@ class AuthService extends ChangeNotifier {
   String? _userName;
   String? _email;
   int _loyaltyPoints = 0;
+  int _mealsCount = 0;
+  bool _isSeller = false;
 
   bool get ready => _ready;
   bool get isAuthed => _isAuthed;
@@ -18,6 +20,8 @@ class AuthService extends ChangeNotifier {
   String? get userName => _userName;
   String? get email => _email;
   int get loyaltyPoints => _loyaltyPoints;
+  int get mealsCount => _mealsCount;
+  bool get isSeller => _isSeller;
 
   final _client = ApiClient.instance;
 
@@ -42,6 +46,10 @@ class AuthService extends ChangeNotifier {
     _userName = (data['name'] ?? data['display_name']) as String?;
     _email = data['email'] as String?;
     _loyaltyPoints = data['loyalty_points'] as int? ?? 0;
+    _mealsCount = data['meals_count'] as int? ?? 0;
+    final profile = data['seller_profile'] as Map<String, dynamic>?;
+    final shopName = profile?['shop_name'] as String? ?? '';
+    _isSeller = _mealsCount > 0 || shopName.trim().isNotEmpty;
   }
 
   /// Re-fetches the current user (e.g. to refresh loyalty points).

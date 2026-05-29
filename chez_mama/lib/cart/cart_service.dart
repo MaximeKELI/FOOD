@@ -35,8 +35,10 @@ class CartService extends ChangeNotifier {
 
   bool get isEmpty => _items.isEmpty;
 
-  void addMeal(Meal meal) {
-    final id = int.tryParse(meal.id) ?? meal.id.hashCode;
+  /// Returns false when the meal cannot be added (invalid id or unavailable).
+  bool addMeal(Meal meal) {
+    final id = int.tryParse(meal.id);
+    if (id == null || !meal.isAvailable) return false;
     final existing = _items.where((i) => i.mealId == id).toList();
     if (existing.isNotEmpty) {
       existing.first.quantity += 1;
