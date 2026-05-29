@@ -4,6 +4,7 @@ import 'auth/auth_service.dart';
 import 'analytics/event_tracker.dart';
 import 'analytics/tracked_widgets.dart';
 import 'ui/chezmama_theme.dart';
+import 'ui/theme_controller.dart';
 import 'screens/auth/auth_gate.dart';
 
 void main() {
