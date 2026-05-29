@@ -130,47 +130,62 @@ class _AppShellState extends State<AppShell> {
                   _go(const MyPublicationsScreen());
                 case 'favorites':
                   _go(const FavoriteMealsScreen());
+                case 'theme':
+                  ThemeController.instance
+                      .toggleDark(!ThemeController.instance.isDark);
                 case 'logout':
                   _logout();
               }
             },
-            itemBuilder: (context) => const [
-              PopupMenuItem(
-                value: 'dashboard',
-                child: ListTile(
-                  leading: Icon(Icons.insights_rounded),
-                  title: Text('Tableau de bord'),
+            itemBuilder: (context) {
+              final dark = ThemeController.instance.isDark;
+              return [
+                const PopupMenuItem(
+                  value: 'dashboard',
+                  child: ListTile(
+                    leading: Icon(Icons.insights_rounded),
+                    title: Text('Tableau de bord'),
+                  ),
                 ),
-              ),
-              PopupMenuItem(
-                value: 'shop',
-                child: ListTile(
-                  leading: Icon(Icons.storefront_rounded),
-                  title: Text('Ma boutique'),
+                const PopupMenuItem(
+                  value: 'shop',
+                  child: ListTile(
+                    leading: Icon(Icons.storefront_rounded),
+                    title: Text('Ma boutique'),
+                  ),
                 ),
-              ),
-              PopupMenuItem(
-                value: 'publications',
-                child: ListTile(
-                  leading: Icon(Icons.video_library_rounded),
-                  title: Text('Mes publications'),
+                const PopupMenuItem(
+                  value: 'publications',
+                  child: ListTile(
+                    leading: Icon(Icons.video_library_rounded),
+                    title: Text('Mes publications'),
+                  ),
                 ),
-              ),
-              PopupMenuItem(
-                value: 'favorites',
-                child: ListTile(
-                  leading: Icon(Icons.favorite_rounded),
-                  title: Text('Mes favoris'),
+                const PopupMenuItem(
+                  value: 'favorites',
+                  child: ListTile(
+                    leading: Icon(Icons.favorite_rounded),
+                    title: Text('Mes favoris'),
+                  ),
                 ),
-              ),
-              PopupMenuItem(
-                value: 'logout',
-                child: ListTile(
-                  leading: Icon(Icons.logout_rounded),
-                  title: Text('Déconnexion'),
+                PopupMenuItem(
+                  value: 'theme',
+                  child: ListTile(
+                    leading: Icon(
+                      dark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
+                    ),
+                    title: Text(dark ? 'Mode clair' : 'Mode sombre'),
+                  ),
                 ),
-              ),
-            ],
+                const PopupMenuItem(
+                  value: 'logout',
+                  child: ListTile(
+                    leading: Icon(Icons.logout_rounded),
+                    title: Text('Déconnexion'),
+                  ),
+                ),
+              ];
+            },
           ),
         ],
       ),
