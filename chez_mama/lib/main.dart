@@ -51,6 +51,7 @@ class _AuthBootstrapState extends State<_AuthBootstrap> {
   void initState() {
     super.initState();
     EventTracker.instance.init();
+    ThemeController.instance.load();
     service.init();
   }
 
