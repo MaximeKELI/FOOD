@@ -189,7 +189,12 @@ class _TrackingScreenState extends State<TrackingScreen> {
     if (!AuthScope.of(context).isAuthed) {
       return Scaffold(
         body: Padding(
-          padding: const EdgeInsets.fromLTRB(14, 14, 14, 110),
+          padding: const EdgeInsets.fromLTRB(
+            ChezMamaTheme.spaceMd,
+            ChezMamaTheme.spaceMd,
+            ChezMamaTheme.spaceMd,
+            ChezMamaTheme.navClearance,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -200,12 +205,14 @@ class _TrackingScreenState extends State<TrackingScreen> {
                     ),
               ),
               const SizedBox(height: 12),
-              _TrackingMessage(
+              EmptyStateView(
+                compact: true,
+                wrapInCard: false,
                 icon: Icons.login_rounded,
                 title: tr('tracking.loginRequired'),
                 subtitle: tr('auth.loginSubtitle'),
-                actionLabel: tr('auth.login'),
-                onAction: () {
+                secondaryActionLabel: tr('auth.login'),
+                onSecondaryAction: () {
                   Navigator.of(context).push(
                     MaterialPageRoute(builder: (_) => const LoginScreen()),
                   );

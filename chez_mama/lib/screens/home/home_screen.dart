@@ -9,6 +9,7 @@ import '../../models/meal.dart';
 import '../../services/app_location_service.dart';
 import '../../ui/african_pattern_painter.dart';
 import '../../ui/chezmama_theme.dart';
+import '../../widgets/empty_state_view.dart';
 import '../../widgets/shimmer_skeleton.dart';
 import '../../widgets/shell_toolbar_actions.dart';
 import '../meal/meal_details_screen.dart';
@@ -506,19 +507,23 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 ? const _HomeSkeleton()
                 : error != null && meals.isEmpty
                     ? SliverToBoxAdapter(
-                        child: _HomeMessage(
+                        child: EmptyStateView(
+                          wrapInCard: false,
                           icon: Icons.cloud_off_rounded,
                           title: tr('home.connectionFailed'),
                           subtitle: error!,
-                          onRetry: _loadMeals,
+                          actionLabel: tr('action.retry'),
+                          onAction: _loadMeals,
                         ),
                       )
                     : meals.isEmpty
                         ? SliverToBoxAdapter(
-                            child: _HomeMessage(
+                            child: EmptyStateView(
+                              wrapInCard: false,
                               icon: _query.isNotEmpty
                                   ? Icons.search_off_rounded
                                   : Icons.restaurant_menu_rounded,
+                              lottieAsset: _query.isEmpty ? LottieAssets.empty : null,
                               title: _query.isNotEmpty
                                   ? tr('home.noResults')
                                   : tr('home.noMeals'),
@@ -526,7 +531,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                   ? trf('home.noResultsQuery',
                                       {'query': _query})
                                   : tr('home.noMealsHint'),
-                              onRetry: _loadMeals,
+                              actionLabel: tr('action.retry'),
+                              onAction: _loadMeals,
                             ),
                           )
                         : SliverList.separated(

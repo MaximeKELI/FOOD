@@ -291,10 +291,13 @@ class _MealDetailsScreenState extends State<MealDetailsScreen> {
                                     final added =
                                         CartService.instance.addMeal(meal);
                                     if (added) {
-                                      CartFlyService.instance.flyFromContext(
-                                        _addButtonKey.currentContext!,
-                                        color: meal.accent,
-                                      );
+                                      final btnCtx = _addButtonKey.currentContext;
+                                      if (btnCtx != null) {
+                                        CartFlyService.instance.flyFromContext(
+                                          btnCtx,
+                                          color: meal.accent,
+                                        );
+                                      }
                                     }
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(
