@@ -272,11 +272,19 @@ class _AppShellState extends State<AppShell> {
       bottomNavigationBar: SafeArea(
         top: false,
         child: Container(
-          margin: const EdgeInsets.fromLTRB(14, 0, 14, 12),
-          decoration: BoxDecoration(
-            color: cardColor,
-            borderRadius: BorderRadius.circular(22),
-            boxShadow: ChezMamaTheme.softShadow(opacity: 0.10),
+          margin: const EdgeInsets.fromLTRB(
+            ChezMamaTheme.spaceMd,
+            0,
+            ChezMamaTheme.spaceMd,
+            12,
+          ),
+          decoration: ChezMamaTheme.cardDecoration(
+            context,
+            radius: 22,
+            shadowOpacity: 0.12,
+            border: Border.all(
+              color: ChezMamaTheme.brandOrange.withValues(alpha: 0.08),
+            ),
           ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(22),
@@ -284,29 +292,41 @@ class _AppShellState extends State<AppShell> {
               animation: CartService.instance,
               builder: (context, _) {
                 final count = CartService.instance.count;
-                return BottomNavigationBar(
-                  currentIndex: index,
-                  onTap: (v) => setState(() => index = v),
+                return NavigationBar(
+                  selectedIndex: index,
+                  onDestinationSelected: (v) => setState(() => index = v),
                   backgroundColor: cardColor,
-                  items: [
-                    BottomNavigationBarItem(
-                      icon: const Icon(Icons.home_rounded),
+                  indicatorColor: ChezMamaTheme.brandOrange.withValues(alpha: 0.14),
+                  labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+                  destinations: [
+                    NavigationDestination(
+                      icon: const Icon(Icons.home_outlined),
+                      selectedIcon: const Icon(Icons.home_rounded),
                       label: tr('nav.home'),
                     ),
-                    BottomNavigationBarItem(
-                      icon: const Icon(Icons.bolt_rounded),
+                    NavigationDestination(
+                      icon: const Icon(Icons.bolt_outlined),
+                      selectedIcon: const Icon(Icons.bolt_rounded),
                       label: tr('nav.shorts'),
                     ),
-                    BottomNavigationBarItem(
-                      icon: const Icon(Icons.videocam_rounded),
+                    NavigationDestination(
+                      icon: const Icon(Icons.videocam_outlined),
+                      selectedIcon: const Icon(Icons.videocam_rounded),
                       label: tr('nav.videos'),
                     ),
-                    BottomNavigationBarItem(
-                      icon: const Icon(Icons.delivery_dining_rounded),
+                    NavigationDestination(
+                      icon: const Icon(Icons.delivery_dining_outlined),
+                      selectedIcon: const Icon(Icons.delivery_dining_rounded),
                       label: tr('nav.tracking'),
                     ),
-                    BottomNavigationBarItem(
+                    NavigationDestination(
                       icon: count > 0
+                          ? Badge.count(
+                              count: count,
+                              child: const Icon(Icons.shopping_bag_outlined),
+                            )
+                          : const Icon(Icons.shopping_bag_outlined),
+                      selectedIcon: count > 0
                           ? Badge.count(
                               count: count,
                               child: const Icon(Icons.shopping_bag_rounded),

@@ -13,6 +13,7 @@ import '../../services/app_location_service.dart';
 import '../../ui/chezmama_theme.dart';
 import '../../utils/currency_format.dart';
 import '../../widgets/accessible_icon_button.dart';
+import '../../widgets/section_header.dart';
 import '../auth/login_screen.dart';
 
 class CheckoutSheet extends StatefulWidget {
@@ -276,9 +277,12 @@ class _CheckoutSheetState extends State<CheckoutSheet> {
           children: [
             Text(
               tr('checkout.title'),
-              style: t.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900),
+              style: t.textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.w900,
+                letterSpacing: -0.3,
+              ),
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 4),
             Text(
               trf('cart.summary', {
                 'total': formatFcfa(_cart.total),
@@ -289,7 +293,11 @@ class _CheckoutSheetState extends State<CheckoutSheet> {
                 color: ChezMamaTheme.brandBrown,
               ),
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: ChezMamaTheme.spaceLg),
+            SectionHeader(
+              title: tr('checkout.fulfillmentSection'),
+              icon: Icons.local_shipping_rounded,
+            ),
             SegmentedButton<String>(
               segments: [
                 ButtonSegment(
@@ -370,14 +378,12 @@ class _CheckoutSheetState extends State<CheckoutSheet> {
                 prefixIcon: const Icon(Icons.notes_rounded),
               ),
             ),
-            const SizedBox(height: 16),
-            Text(
-              tr('checkout.paymentMode'),
-              style: t.textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w800,
-              ),
+            const SizedBox(height: ChezMamaTheme.spaceLg),
+            SectionHeader(
+              title: tr('checkout.paymentMode'),
+              icon: Icons.payments_rounded,
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 4),
             Wrap(
               spacing: 8,
               runSpacing: 8,
@@ -397,12 +403,17 @@ class _CheckoutSheetState extends State<CheckoutSheet> {
                 );
               }).toList(),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: ChezMamaTheme.spaceLg),
+            SectionHeader(
+              title: tr('checkout.promo'),
+              icon: Icons.local_offer_rounded,
+            ),
+            const SizedBox(height: 4),
             TextField(
               controller: _promo,
               textCapitalization: TextCapitalization.characters,
               decoration: InputDecoration(
-                labelText: tr('checkout.promo'),
+                hintText: tr('checkout.promoHint'),
                 prefixIcon: const Icon(Icons.local_offer_rounded),
                 suffixIcon: _validatingPromo
                     ? const Padding(
@@ -420,13 +431,15 @@ class _CheckoutSheetState extends State<CheckoutSheet> {
                       ),
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: ChezMamaTheme.spaceLg),
+            SectionHeader(
+              title: tr('checkout.summarySection'),
+              icon: Icons.receipt_long_rounded,
+            ),
+            const SizedBox(height: 4),
             Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: ChezMamaTheme.subtleSurface(context),
-                borderRadius: BorderRadius.circular(ChezMamaTheme.rCard),
-              ),
+              padding: const EdgeInsets.all(ChezMamaTheme.spaceMd),
+              decoration: ChezMamaTheme.subtleDecoration(context),
               child: Column(
                 children: [
                   _line(t, tr('checkout.subtotal'), formatFcfa(_cart.total)),
