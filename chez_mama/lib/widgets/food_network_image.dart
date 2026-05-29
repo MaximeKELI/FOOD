@@ -1,4 +1,3 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 import '../ui/chezmama_theme.dart';
@@ -12,6 +11,7 @@ class FoodNetworkImage extends StatelessWidget {
     this.filterQuality = FilterQuality.low,
     this.placeholder,
     this.borderRadius,
+    this.accent,
   });
 
   final String url;
@@ -19,18 +19,26 @@ class FoodNetworkImage extends StatelessWidget {
   final FilterQuality filterQuality;
   final Widget? placeholder;
   final BorderRadius? borderRadius;
+  final Color? accent;
 
   @override
   Widget build(BuildContext context) {
+    if (url.startsWith('assets/')) {
+      final image = Image.asset(url, fit: fit, filterQuality: filterQuality);
+      if (borderRadius != null) {
+        return ClipRRect(borderRadius: borderRadius!, child: image);
+      }
+      return image;
+    }
     if (!url.startsWith('http')) {
-      return placeholder ?? _defaultPlaceholder(context);
+      return placeholder ?? _gradientPlaceholder(context);
     }
     final image = CachedNetworkImage(
       imageUrl: url,
       fit: fit,
       filterQuality: filterQuality,
-      placeholder: (_, __) => placeholder ?? _defaultPlaceholder(context),
-      errorWidget: (_, __, ___) => placeholder ?? _defaultPlaceholder(context),
+      placeholder: (_, __) => placeholder ?? _gradientPlaceholder(context),
+      errorWidget: (_, __, ___) => placeholder ?? _gradientPlaceholder(context),
     );
     if (borderRadius != null) {
       return ClipRRect(borderRadius: borderRadius!, child: image);
@@ -38,11 +46,29 @@ class FoodNetworkImage extends StatelessWidget {
     return image;
   }
 
-  Widget _defaultPlaceholder(BuildContext context) {
-    return Container(
-      color: ChezMamaTheme.brandOrange.withValues(alpha: 0.12),
-      alignment: Alignment.center,
-      child: const Icon(Icons.restaurant_rounded, color: ChezMamaTheme.brandOrange),
+  Widget _gradientPlaceholder(BuildContext context) {
+    final base = accent ?? ChezMamaTheme.brandOrange;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            base.withValues(alpha: 0.28),
+            ChezMamaTheme.subtleSurface(context),
+          ],
+        ),
+      ),
+      child: Center(
+        child: Icon(
+          Icons.restaurant_rounded,
+          size: 36,
+          color: ChezMamaTheme.brandBrown.withValues(alpha: 0.7),
+        ),
+      ),
     );
   }
 }
+
+// ignore: depend_on_referenced_packages
+import 'package:cached_network_image/cached_network_image.dart';

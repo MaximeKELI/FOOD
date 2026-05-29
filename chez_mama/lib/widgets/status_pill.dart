@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../ui/chezmama_theme.dart';
+
 /// Compact badge for promos, sold-out, special dishes, etc.
 class StatusPill extends StatelessWidget {
   const StatusPill({
@@ -49,6 +51,3 @@ class StatusPill extends StatelessWidget {
     );
   }
 }
-
-// Re-export theme for convenience in this file's consumers.
-import '../ui/chezmama_theme.dart';
