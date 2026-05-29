@@ -282,7 +282,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         slivers: [
           SliverAppBar(
             pinned: true,
-            expandedHeight: 220,
+            expandedHeight: 232,
             automaticallyImplyLeading: false,
             backgroundColor: Theme.of(context).scaffoldBackgroundColor,
             actions: [
@@ -318,8 +318,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   Positioned(
                     left: 16,
                     right: 16,
-                    bottom: 58,
-                    child: const HeroCarousel(height: 130),
+                    bottom: 52,
+                    child: const HeroCarousel(height: 118),
                   ),
                 ],
               ),
@@ -363,7 +363,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           ),
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(14, 14, 14, 0),
+              padding: const EdgeInsets.fromLTRB(
+              ChezMamaTheme.spaceMd,
+              ChezMamaTheme.spaceMd,
+              ChezMamaTheme.spaceMd,
+              0,
+            ),
               child: Column(
                 children: [
                   if (_fromCache)
@@ -491,7 +496,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             ),
           ),
           SliverPadding(
-            padding: const EdgeInsets.fromLTRB(14, 14, 14, 110),
+            padding: const EdgeInsets.fromLTRB(
+              ChezMamaTheme.spaceMd,
+              ChezMamaTheme.spaceMd,
+              ChezMamaTheme.spaceMd,
+              ChezMamaTheme.navClearance,
+            ),
             sliver: loading
                 ? const _HomeSkeleton()
                 : error != null && meals.isEmpty
@@ -601,27 +611,40 @@ class _HomeMessage extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = Theme.of(context);
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 12),
+      padding: const EdgeInsets.symmetric(
+        vertical: 48,
+        horizontal: ChezMamaTheme.spaceMd,
+      ),
       child: Column(
         children: [
-          Icon(icon, size: 48, color: ChezMamaTheme.brandBrown),
-          const SizedBox(height: 12),
+          Container(
+            width: 80,
+            height: 80,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: ChezMamaTheme.brandBrown.withValues(alpha: 0.1),
+            ),
+            child: Icon(icon, size: 40, color: ChezMamaTheme.brandBrown),
+          ),
+          const SizedBox(height: ChezMamaTheme.spaceLg),
           Text(
             title,
             style: t.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 6),
-          Text(subtitle, textAlign: TextAlign.center),
-          const SizedBox(height: 14),
+          Text(
+            subtitle,
+            textAlign: TextAlign.center,
+            style: t.textTheme.bodyMedium?.copyWith(
+              color: ChezMamaTheme.mutedInk(context),
+            ),
+          ),
+          const SizedBox(height: ChezMamaTheme.spaceLg),
           FilledButton.icon(
             onPressed: onRetry,
             icon: const Icon(Icons.refresh_rounded),
             label: Text(tr('action.retry')),
-            style: FilledButton.styleFrom(
-              backgroundColor: ChezMamaTheme.brandOrange,
-              foregroundColor: Colors.white,
-            ),
           ),
         ],
       ),
