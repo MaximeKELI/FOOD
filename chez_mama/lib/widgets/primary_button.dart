@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../ui/chezmama_theme.dart';
 
 class PrimaryButton extends StatefulWidget {
   const PrimaryButton({
@@ -44,7 +43,6 @@ class _PrimaryButtonState extends State<PrimaryButton>
 
   @override
   Widget build(BuildContext context) {
-    final t = Theme.of(context);
     return Semantics(
       button: true,
       label: widget.label,
@@ -62,19 +60,8 @@ class _PrimaryButtonState extends State<PrimaryButton>
                   _bounce();
                   widget.onPressed!();
                 },
-          style: FilledButton.styleFrom(
-            backgroundColor: ChezMamaTheme.brandOrange,
-            foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-          ),
           icon: Icon(widget.icon ?? Icons.add_shopping_cart_rounded, size: 20),
-          label: Text(
-            widget.label,
-            style: t.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700),
-          ),
+          label: Text(widget.label),
         ),
       ),
     );

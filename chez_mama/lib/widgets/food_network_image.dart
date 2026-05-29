@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 import '../ui/chezmama_theme.dart';
@@ -69,6 +70,3 @@ class FoodNetworkImage extends StatelessWidget {
     );
   }
 }
-
-// ignore: depend_on_referenced_packages
-import 'package:cached_network_image/cached_network_image.dart';

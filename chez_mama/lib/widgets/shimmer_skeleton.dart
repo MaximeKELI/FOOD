@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
 
+import '../ui/chezmama_theme.dart';
+
 class ShimmerSkeleton extends StatelessWidget {
   const ShimmerSkeleton({
     super.key,
@@ -11,10 +13,14 @@ class ShimmerSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final c = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Shimmer.fromColors(
-      baseColor: c.onSurface.withValues(alpha: 0.06),
-      highlightColor: c.onSurface.withValues(alpha: 0.12),
+      baseColor: isDark
+          ? ChezMamaTheme.darkSurface2
+          : ChezMamaTheme.ink.withValues(alpha: 0.06),
+      highlightColor: isDark
+          ? ChezMamaTheme.darkCard
+          : ChezMamaTheme.ink.withValues(alpha: 0.12),
       child: child,
     );
   }
@@ -38,10 +44,9 @@ class SkeletonBox extends StatelessWidget {
       width: width,
       height: height,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: ChezMamaTheme.cardColor(context),
         borderRadius: BorderRadius.circular(radius),
       ),
     );
   }
 }
-
