@@ -1,5 +1,5 @@
 import 'package:dio/dio.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import 'api_config.dart';
 
@@ -17,8 +17,7 @@ class ApiClient {
     _dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) async {
-          final prefs = await _prefs;
-          final token = prefs.getString(_kAccess);
+          final token = await _readAccess();
           if (token != null && token.isNotEmpty) {
             options.headers['Authorization'] = 'Bearer $token';
           }
@@ -50,37 +49,36 @@ class ApiClient {
 
   static const _kAccess = 'auth.access';
   static const _kRefresh = 'auth.refresh';
+  static const _storage = FlutterSecureStorage(
+    aOptions: AndroidOptions(encryptedSharedPreferences: true),
+  );
 
   late final Dio _dio;
 
   Dio get dio => _dio;
 
-  Future<SharedPreferences> get _prefs => SharedPreferences.getInstance();
+  Future<String?> _readAccess() => _storage.read(key: _kAccess);
 
   Future<void> saveTokens({
     required String access,
     required String refresh,
   }) async {
-    final prefs = await _prefs;
-    await prefs.setString(_kAccess, access);
-    await prefs.setString(_kRefresh, refresh);
+    await _storage.write(key: _kAccess, value: access);
+    await _storage.write(key: _kRefresh, value: refresh);
   }
 
   Future<void> clearTokens() async {
-    final prefs = await _prefs;
-    await prefs.remove(_kAccess);
-    await prefs.remove(_kRefresh);
+    await _storage.delete(key: _kAccess);
+    await _storage.delete(key: _kRefresh);
   }
 
   Future<bool> hasToken() async {
-    final prefs = await _prefs;
-    final token = prefs.getString(_kAccess);
+    final token = await _readAccess();
     return token != null && token.isNotEmpty;
   }
 
   Future<bool> _tryRefresh() async {
-    final prefs = await _prefs;
-    final refresh = prefs.getString(_kRefresh);
+    final refresh = await _storage.read(key: _kRefresh);
     if (refresh == null || refresh.isEmpty) return false;
     try {
       final res = await Dio(BaseOptions(baseUrl: ApiConfig.apiUrl)).post(
@@ -89,7 +87,7 @@ class ApiClient {
       );
       final access = res.data['access'] as String?;
       if (access == null) return false;
-      await prefs.setString(_kAccess, access);
+      await _storage.write(key: _kAccess, value: access);
       return true;
     } catch (_) {
       return false;
@@ -97,8 +95,7 @@ class ApiClient {
   }
 
   Future<Response<dynamic>> _retry(RequestOptions requestOptions) async {
-    final prefs = await _prefs;
-    final token = prefs.getString(_kAccess);
+    final token = await _readAccess();
     final options = Options(
       method: requestOptions.method,
       headers: {
@@ -121,7 +118,10 @@ String apiErrorMessage(Object error) {
     final data = error.response?.data;
     if (data is Map) {
       if (data['detail'] != null) return data['detail'].toString();
-      // First field error
+      for (final value in data.values) {
+        if (value is List && value.isNotEmpty) return value.first.toString();
+        if (value is String && value.isNotEmpty) return value;
+      }
       final first = data.values.first;
       if (first is List && first.isNotEmpty) return first.first.toString();
       return first.toString();

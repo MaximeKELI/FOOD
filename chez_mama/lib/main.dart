@@ -27,6 +27,8 @@ class ChezMamaApp extends StatelessWidget {
           return MaterialApp(
             debugShowCheckedModeBanner: false,
             title: 'Food',
+            locale: LocaleController.instance.locale,
+            supportedLocales: AppLang.values.map((l) => Locale(l.code)),
             theme: ChezMamaTheme.light(),
             darkTheme: ChezMamaTheme.dark(),
             themeMode: ThemeController.instance.mode,

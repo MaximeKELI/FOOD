@@ -167,4 +167,74 @@ const Map<String, Map<AppLang, String>> _strings = {
     AppLang.en: 'Choose language',
     AppLang.wo: 'Tann làkk'
   },
+  // Cart & checkout
+  'cart.title': {AppLang.fr: 'Panier', AppLang.en: 'Cart', AppLang.wo: 'Pañe'},
+  'cart.empty': {
+    AppLang.fr: 'Ton panier est vide',
+    AppLang.en: 'Your cart is empty',
+    AppLang.wo: 'Sa pañe amul dara'
+  },
+  'cart.emptyHint': {
+    AppLang.fr: 'Ajoute des plats depuis l’accueil pour passer commande.',
+    AppLang.en: 'Add dishes from home to place an order.',
+    AppLang.wo: 'Yokk ñam ci kër ngir commande.'
+  },
+  'cart.total': {AppLang.fr: 'Total', AppLang.en: 'Total', AppLang.wo: 'Total'},
+  'cart.checkout': {
+    AppLang.fr: 'Commander',
+    AppLang.en: 'Checkout',
+    AppLang.wo: 'Commande'
+  },
+  'cart.orders': {
+    AppLang.fr: 'Mes commandes',
+    AppLang.en: 'My orders',
+    AppLang.wo: 'Sama commande'
+  },
+  'checkout.title': {
+    AppLang.fr: 'Finaliser la commande',
+    AppLang.en: 'Complete order',
+    AppLang.wo: 'Jeexal commande bi'
+  },
+  'checkout.delivery': {
+    AppLang.fr: 'Livraison',
+    AppLang.en: 'Delivery',
+    AppLang.wo: 'Yónnee'
+  },
+  'checkout.pickup': {
+    AppLang.fr: 'Retrait',
+    AppLang.en: 'Pickup',
+    AppLang.wo: 'Jël'
+  },
+  'checkout.confirm': {
+    AppLang.fr: 'Confirmer la commande',
+    AppLang.en: 'Confirm order',
+    AppLang.wo: 'Dëggël commande bi'
+  },
+  'checkout.submitting': {
+    AppLang.fr: 'Envoi…',
+    AppLang.en: 'Submitting…',
+    AppLang.wo: 'Yónnee…'
+  },
+  // Tracking
+  'tracking.title': {
+    AppLang.fr: 'Suivi de commande',
+    AppLang.en: 'Order tracking',
+    AppLang.wo: 'Topp commande'
+  },
+  'tracking.none': {
+    AppLang.fr: 'Aucune commande en cours',
+    AppLang.en: 'No active order',
+    AppLang.wo: 'Amul commande ci yoon'
+  },
+  // Notifications
+  'notif.title': {
+    AppLang.fr: 'Notifications',
+    AppLang.en: 'Notifications',
+    AppLang.wo: 'Xibaar yi'
+  },
+  'notif.empty': {
+    AppLang.fr: 'Aucune notification.',
+    AppLang.en: 'No notifications.',
+    AppLang.wo: 'Amul xibaar.'
+  },
 };
