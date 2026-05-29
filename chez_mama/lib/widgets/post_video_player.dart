@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 import '../services/platform_utils.dart';
+import '../services/remote_video_cache.dart';
 import '../ui/chezmama_theme.dart';
 
 Future<void> openVideoExternally(String path) async {
@@ -37,22 +38,46 @@ class PostVideoPlayer extends StatefulWidget {
 class _PostVideoPlayerState extends State<PostVideoPlayer> {
   VideoPlayerController? _controller;
   String? _error;
+  String? _localPath;
+  bool _preparing = false;
 
   @override
   void initState() {
     super.initState();
-    if (isDesktopPlatform) {
-      _checkFile();
-    } else {
+    if (supportsInlineVideo) {
       _initInlinePlayer();
+    } else if (widget.isRemote) {
+      _prepareRemoteForDesktop();
+    } else {
+      _verifyLocalFile();
     }
   }
 
-  Future<void> _checkFile() async {
-    if (widget.isRemote) return;
+  Future<void> _verifyLocalFile() async {
     if (!await File(widget.path).exists()) {
       if (!mounted) return;
       setState(() => _error = 'Fichier vidéo introuvable');
+    }
+  }
+
+  Future<void> _prepareRemoteForDesktop() async {
+    setState(() => _preparing = true);
+    try {
+      final local = await RemoteVideoCache.instance.ensureLocal(widget.path);
+      if (!mounted) return;
+      setState(() {
+        _localPath = local;
+        _preparing = false;
+      });
+      if (widget.autoPlay) {
+        await openVideoExternally(local);
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = e.toString().replaceFirst('StateError: ', '');
+        _preparing = false;
+      });
     }
   }
 
@@ -87,6 +112,24 @@ class _PostVideoPlayerState extends State<PostVideoPlayer> {
     }
   }
 
+  Future<void> _playOnDesktop() async {
+    try {
+      final path = _localPath ??
+          (widget.isRemote
+              ? await RemoteVideoCache.instance.ensureLocal(widget.path)
+              : widget.path);
+      if (widget.isRemote && _localPath == null && mounted) {
+        setState(() => _localPath = path);
+      }
+      await openVideoExternally(path);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = e.toString().replaceFirst('StateError: ', '');
+      });
+    }
+  }
+
   @override
   void dispose() {
     _controller?.dispose();
@@ -99,8 +142,14 @@ class _PostVideoPlayerState extends State<PostVideoPlayer> {
       return _VideoError(message: _error!);
     }
 
-    if (isDesktopPlatform) {
-      return _DesktopVideoPreview(path: widget.path, isRemote: widget.isRemote);
+    if (!supportsInlineVideo) {
+      return _DesktopVideoPreview(
+        path: widget.path,
+        isRemote: widget.isRemote,
+        localPath: _localPath,
+        preparing: _preparing,
+        onPlay: _playOnDesktop,
+      );
     }
 
     final c = _controller;
@@ -140,26 +189,48 @@ class _PostVideoPlayerState extends State<PostVideoPlayer> {
 }
 
 class _DesktopVideoPreview extends StatelessWidget {
-  const _DesktopVideoPreview({required this.path, this.isRemote = false});
+  const _DesktopVideoPreview({
+    required this.path,
+    required this.isRemote,
+    required this.onPlay,
+    this.localPath,
+    this.preparing = false,
+  });
+
   final String path;
   final bool isRemote;
+  final String? localPath;
+  final bool preparing;
+  final VoidCallback onPlay;
 
   @override
   Widget build(BuildContext context) {
     final name = isRemote
         ? Uri.parse(path).pathSegments.last
         : path.split(Platform.pathSeparator).last;
+    final ready = !isRemote || localPath != null;
+
     return Material(
       color: const Color(0xFF1B1B1F),
       child: InkWell(
-        onTap: () => openVideoExternally(path),
+        onTap: preparing ? null : onPlay,
         child: Center(
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const _PlayBadge(size: 64),
+                if (preparing)
+                  const SizedBox(
+                    width: 36,
+                    height: 36,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2.5,
+                      color: Colors.white70,
+                    ),
+                  )
+                else
+                  const _PlayBadge(size: 64),
                 const SizedBox(height: 12),
                 Text(
                   name,
@@ -171,7 +242,11 @@ class _DesktopVideoPreview extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Appuie pour lire avec le lecteur système',
+                  preparing
+                      ? 'Téléchargement de la vidéo…'
+                      : ready
+                          ? 'Appuie pour lire avec le lecteur système'
+                          : 'Appuie pour télécharger et lire',
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: Colors.white70,

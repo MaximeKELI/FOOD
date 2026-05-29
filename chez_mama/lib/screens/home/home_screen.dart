@@ -334,7 +334,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             padding: const EdgeInsets.fromLTRB(14, 14, 14, 110),
             sliver: loading
                 ? const _HomeSkeleton()
-                : error != null
+                : error != null && meals.isEmpty
                     ? SliverToBoxAdapter(
                         child: _HomeMessage(
                           icon: Icons.cloud_off_rounded,
