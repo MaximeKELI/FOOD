@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../l10n/app_strings.dart';
+import '../navigation/root_navigator.dart';
 import '../screens/auth/login_screen.dart';
 
 /// Shows session-expired UX when JWT refresh fails.
@@ -8,15 +9,10 @@ class SessionHandler {
   SessionHandler._();
   static final SessionHandler instance = SessionHandler._();
 
-  GlobalKey<NavigatorState>? _navigatorKey;
   bool _dialogVisible = false;
 
-  void bind(GlobalKey<NavigatorState> key) {
-    _navigatorKey = key;
-  }
-
   void onSessionExpired() {
-    final ctx = _navigatorKey?.currentContext;
+    final ctx = rootNavigatorKey.currentContext;
     if (ctx == null || _dialogVisible) return;
     _dialogVisible = true;
     showDialog<void>(

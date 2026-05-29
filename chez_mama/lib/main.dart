@@ -10,13 +10,12 @@ import 'l10n/app_strings.dart';
 import 'ui/chezmama_theme.dart';
 import 'ui/theme_controller.dart';
 import 'notifications/push_service.dart';
+import 'navigation/root_navigator.dart';
+import 'payments/payment_pending_service.dart';
 import 'screens/auth/auth_gate.dart';
-
-final navigatorKey = GlobalKey<NavigatorState>();
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  SessionHandler.instance.bind(navigatorKey);
   runApp(const ChezMamaApp());
 }
 
@@ -32,7 +31,7 @@ class ChezMamaApp extends StatelessWidget {
         ),
         builder: (context, _) {
           return MaterialApp(
-            navigatorKey: navigatorKey,
+            navigatorKey: rootNavigatorKey,
             debugShowCheckedModeBanner: false,
             title: tr('app.name'),
             locale: LocaleController.instance.locale,
@@ -64,6 +63,7 @@ class _AuthBootstrap extends StatefulWidget {
 
 class _AuthBootstrapState extends State<_AuthBootstrap> {
   final service = AuthService();
+  AppLifecycleListener? _lifecycle;
 
   @override
   void initState() {
@@ -74,10 +74,14 @@ class _AuthBootstrapState extends State<_AuthBootstrap> {
     PushService.instance.init();
     CartService.instance.init();
     service.init();
+    _lifecycle = AppLifecycleListener(
+      onResume: () => PaymentPendingService.instance.onAppResume(),
+    );
   }
 
   @override
   void dispose() {
+    _lifecycle?.dispose();
     service.dispose();
     super.dispose();
   }

@@ -8,6 +8,7 @@ import '../../auth/auth_scope.dart';
 import '../../cart/cart_service.dart';
 import '../../cart/received_orders_notifier.dart';
 import '../../l10n/app_strings.dart';
+import '../../payments/payment_pending_service.dart';
 import '../../services/app_location_service.dart';
 import '../../ui/chezmama_theme.dart';
 import '../../utils/currency_format.dart';
@@ -205,6 +206,10 @@ class _CheckoutSheetState extends State<CheckoutSheet> {
       var paid = !_isDigitalPayment(_payment);
       if (_isDigitalPayment(_payment)) {
         final intent = await PaymentsApi.instance.initiate(order.id);
+        PaymentPendingService.instance.track(
+          intentId: intent.id,
+          orderId: order.id,
+        );
         if (intent.checkoutUrl.isNotEmpty) {
           final uri = Uri.parse(intent.checkoutUrl);
           if (await canLaunchUrl(uri)) {

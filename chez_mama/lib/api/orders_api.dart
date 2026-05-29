@@ -1,5 +1,4 @@
 import 'api_client.dart';
-import '../l10n/app_strings.dart';
 
 class OrderItemView {
   OrderItemView({

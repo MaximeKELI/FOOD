@@ -382,6 +382,16 @@ const Map<String, Map<AppLang, String>> _strings = {
   'checkout.orderConfirmed': {AppLang.fr: 'Commande #{id} confirmée · {total}{extra}', AppLang.en: 'Order #{id} confirmed · {total}{extra}', AppLang.wo: 'Commande #{id} dëgg na · {total}{extra}'},
   'checkout.orderPendingPay': {AppLang.fr: 'Commande #{id} — paiement en cours ({total}{extra})', AppLang.en: 'Order #{id} — payment pending ({total}{extra})', AppLang.wo: 'Commande #{id} — fey bi ci yoon ({total}{extra})'},
   'checkout.failed': {AppLang.fr: 'Échec: {error}', AppLang.en: 'Failed: {error}', AppLang.wo: 'Xanaa: {error}'},
+  'checkout.paymentConfirmedResume': {
+    AppLang.fr: 'Paiement confirmé pour la commande #{id}',
+    AppLang.en: 'Payment confirmed for order #{id}',
+    AppLang.wo: 'Fey dëgg na ci commande #{id}',
+  },
+  'checkout.paymentFailedResume': {
+    AppLang.fr: 'Paiement échoué ou annulé.',
+    AppLang.en: 'Payment failed or was cancelled.',
+    AppLang.wo: 'Fey bi xanaa walla neen na.',
+  },
 
   // Payment methods
   'payment.cash': {AppLang.fr: 'À la livraison', AppLang.en: 'Cash on delivery', AppLang.wo: 'Fey bu ñu yónnee'},
