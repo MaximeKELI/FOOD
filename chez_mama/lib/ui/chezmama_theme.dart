@@ -377,6 +377,24 @@ class ChezMamaTheme {
           fontWeight: FontWeight.w600,
         ),
       ),
+      navigationBarTheme: NavigationBarThemeData(
+        backgroundColor: cardC,
+        indicatorColor: brandOrange.withValues(alpha: 0.14),
+        labelTextStyle: WidgetStateProperty.resolveWith((states) {
+          final selected = states.contains(WidgetState.selected);
+          return base.textTheme.labelSmall?.copyWith(
+            fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
+            color: selected ? brandOrange : inkC.withValues(alpha: 0.55),
+          );
+        }),
+        iconTheme: WidgetStateProperty.resolveWith((states) {
+          final selected = states.contains(WidgetState.selected);
+          return IconThemeData(
+            color: selected ? brandOrange : inkC.withValues(alpha: 0.55),
+            size: 24,
+          );
+        }),
+      ),
       progressIndicatorTheme: const ProgressIndicatorThemeData(
         color: brandOrange,
       ),
