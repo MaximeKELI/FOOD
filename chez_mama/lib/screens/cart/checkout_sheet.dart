@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:latlong2/latlong.dart';
 import '../../api/api_client.dart';
 import '../../api/orders_api.dart';
+import '../../auth/auth_scope.dart';
 import '../../cart/cart_service.dart';
 import '../../cart/received_orders_notifier.dart';
+import '../../services/app_location_service.dart';
 import '../../ui/chezmama_theme.dart';
 
 class CheckoutSheet extends StatefulWidget {
@@ -17,17 +20,64 @@ class _CheckoutSheetState extends State<CheckoutSheet> {
   final _address = TextEditingController();
   final _phone = TextEditingController();
   final _note = TextEditingController();
+  final _promo = TextEditingController();
   String _fulfillment = 'delivery';
   String _payment = 'cash';
   bool _submitting = false;
+
+  LatLng? _loc;
+  bool _locating = false;
+  int _deliveryFee = 0;
+  bool _quoting = false;
 
   @override
   void dispose() {
     _address.dispose();
     _phone.dispose();
     _note.dispose();
+    _promo.dispose();
     super.dispose();
   }
+
+  Future<void> _useMyLocation() async {
+    setState(() => _locating = true);
+    final res = await AppLocationService.instance.acquireLocation();
+    if (!mounted) return;
+    setState(() {
+      _loc = res.location;
+      _locating = false;
+    });
+    if (res.location == null && res.error != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(res.error!)),
+      );
+    } else {
+      _refreshQuote();
+    }
+  }
+
+  Future<void> _refreshQuote() async {
+    if (_fulfillment != 'delivery') {
+      setState(() => _deliveryFee = 0);
+      return;
+    }
+    setState(() => _quoting = true);
+    try {
+      final fee = await OrdersApi.instance.deliveryQuote(
+        mealIds: _cart.mealIds,
+        latitude: _loc?.latitude,
+        longitude: _loc?.longitude,
+      );
+      if (!mounted) return;
+      setState(() => _deliveryFee = fee);
+    } catch (_) {
+      // Keep previous estimate on failure.
+    } finally {
+      if (mounted) setState(() => _quoting = false);
+    }
+  }
+
+  int get _grandTotal => _cart.total + _deliveryFee;
 
   Future<void> _submit() async {
     if (_fulfillment == 'delivery' && _address.text.trim().isEmpty) {
@@ -38,20 +88,29 @@ class _CheckoutSheetState extends State<CheckoutSheet> {
     }
     setState(() => _submitting = true);
     try {
-      await OrdersApi.instance.createOrder(
+      final order = await OrdersApi.instance.createOrder(
         fulfillment: _fulfillment,
         paymentMethod: _payment,
         address: _address.text.trim(),
         phone: _phone.text.trim(),
         note: _note.text.trim(),
         items: _cart.toOrderItems(),
+        latitude: _fulfillment == 'delivery' ? _loc?.latitude : null,
+        longitude: _fulfillment == 'delivery' ? _loc?.longitude : null,
+        promoCode: _promo.text.trim(),
       );
       _cart.clear();
       ReceivedOrdersNotifier.instance.refresh();
       if (!mounted) return;
+      AuthScope.of(context).refreshMe();
       Navigator.of(context).pop();
+      final extra = order.discount > 0
+          ? ' (−${order.discount} FCFA promo)'
+          : '';
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Commande passée avec succès !')),
+        SnackBar(
+          content: Text('Commande #${order.id} confirmée · ${order.total} FCFA$extra'),
+        ),
       );
     } catch (e) {
       if (!mounted) return;
