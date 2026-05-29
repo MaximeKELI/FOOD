@@ -164,10 +164,13 @@ class _CheckoutSheetState extends State<CheckoutSheet> {
                 ),
               ],
               selected: {_fulfillment},
-              onSelectionChanged: (s) => setState(() => _fulfillment = s.first),
+              onSelectionChanged: (s) {
+                setState(() => _fulfillment = s.first);
+                _refreshQuote();
+              },
             ),
             const SizedBox(height: 12),
-            if (_fulfillment == 'delivery')
+            if (_fulfillment == 'delivery') ...[
               TextField(
                 controller: _address,
                 decoration: const InputDecoration(
@@ -175,7 +178,31 @@ class _CheckoutSheetState extends State<CheckoutSheet> {
                   prefixIcon: Icon(Icons.place_rounded),
                 ),
               ),
-            const SizedBox(height: 12),
+              const SizedBox(height: 8),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: _locating ? null : _useMyLocation,
+                  icon: _locating
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : Icon(
+                          _loc != null
+                              ? Icons.check_circle_rounded
+                              : Icons.my_location_rounded,
+                        ),
+                  label: Text(
+                    _loc != null
+                        ? 'Position détectée (frais calculés)'
+                        : 'Utiliser ma position',
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+            ],
             TextField(
               controller: _phone,
               keyboardType: TextInputType.phone,
