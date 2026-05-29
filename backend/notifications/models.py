@@ -57,7 +57,7 @@ def notify(recipient, kind, title, body="", *, related_id=None, link=""):
     """Helper to create a notification (no-op if recipient is None)."""
     if recipient is None:
         return None
-    return Notification.objects.create(
+    notification = Notification.objects.create(
         recipient=recipient,
         kind=kind,
         title=title,
@@ -65,3 +65,12 @@ def notify(recipient, kind, title, body="", *, related_id=None, link=""):
         related_id=related_id,
         link=link,
     )
+    from .push import send_push_to_user
+
+    send_push_to_user(
+        recipient,
+        title,
+        body,
+        data={"kind": kind, "related_id": related_id or "", "link": link},
+    )
+    return notification

@@ -59,6 +59,11 @@ class Meal(models.Model):
 
     class Meta:
         ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["seller", "-created_at"]),
+            models.Index(fields=["category", "is_available"]),
+            models.Index(fields=["is_special", "is_available"]),
+        ]
 
     def __str__(self):
         return self.name
