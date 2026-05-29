@@ -23,6 +23,8 @@ class _MyShopScreenState extends State<MyShopScreen> {
   final _opensAt = TextEditingController();
   final _closesAt = TextEditingController();
   final _radius = TextEditingController();
+  final _feeBase = TextEditingController();
+  final _feePerKm = TextEditingController();
 
   bool _acceptsDelivery = true;
   bool _acceptsPickup = true;
@@ -53,6 +55,8 @@ class _MyShopScreenState extends State<MyShopScreen> {
       _opensAt,
       _closesAt,
       _radius,
+      _feeBase,
+      _feePerKm,
     ]) {
       c.dispose();
     }
