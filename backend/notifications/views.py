@@ -1,4 +1,4 @@
-from rest_framework import generics, permissions
+from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -36,7 +36,32 @@ class NotificationMarkReadView(APIView):
         return Response({"ok": True})
 
 
-class NotificationMarkOneReadView(APIView):
+class PushDeviceRegisterView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        token = (request.data.get("token") or "").strip()
+        if not token:
+            return Response(
+                {"detail": "Token FCM requis."}, status=status.HTTP_400_BAD_REQUEST
+            )
+        platform = (request.data.get("platform") or "").strip()
+        from .models import PushDevice
+
+        device, _ = PushDevice.objects.update_or_create(
+            token=token,
+            defaults={"user": request.user, "platform": platform},
+        )
+        return Response({"ok": True, "id": device.id})
+
+    def delete(self, request):
+        token = (request.data.get("token") or "").strip()
+        if token:
+            from .models import PushDevice
+
+            PushDevice.objects.filter(user=request.user, token=token).delete()
+        return Response({"ok": True})
+
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request, pk):

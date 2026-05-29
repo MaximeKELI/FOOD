@@ -1,3 +1,4 @@
+from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from rest_framework import generics, permissions
 from rest_framework.parsers import FormParser, MultiPartParser
@@ -35,8 +36,16 @@ class MealListCreateView(generics.ListCreateAPIView):
     def get_queryset(self):
         qs = Meal.objects.select_related(
             "seller", "seller__seller_profile", "category"
-        ).all()
+        ).prefetch_related("gallery")
         params = self.request.query_params
+        q = (params.get("q") or "").strip()
+        if q:
+            qs = qs.filter(
+                Q(name__icontains=q)
+                | Q(subtitle__icontains=q)
+                | Q(seller__display_name__icontains=q)
+                | Q(category__name__icontains=q)
+            )
         category = params.get("category")
         if category:
             qs = qs.filter(category__name=category)

@@ -1,9 +1,9 @@
-from django.db.models import Avg
+from django.db.models import Avg, Q
 from rest_framework import serializers
 
 from food_api.validators import validate_image_upload
 
-from .models import Category, Meal, MealFavorite, Review
+from .models import Category, Meal, MealFavorite, MealImage, Review
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -23,6 +23,7 @@ class MealSerializer(serializers.ModelSerializer):
     has_promo = serializers.BooleanField(read_only=True)
     seller_lat = serializers.SerializerMethodField()
     seller_lng = serializers.SerializerMethodField()
+    gallery = serializers.SerializerMethodField()
 
     class Meta:
         model = Meal
@@ -30,6 +31,7 @@ class MealSerializer(serializers.ModelSerializer):
             "id",
             "name",
             "image",
+            "gallery",
             "subtitle",
             "price",
             "promo_price",
@@ -74,6 +76,16 @@ class MealSerializer(serializers.ModelSerializer):
     def get_seller_lng(self, obj):
         p = self._profile(obj)
         return p.longitude if p else None
+
+    def get_gallery(self, obj):
+        request = self.context.get("request")
+        urls = []
+        for img in obj.gallery.all():
+            url = img.image.url
+            if request is not None and url.startswith("/"):
+                url = request.build_absolute_uri(url)
+            urls.append(url)
+        return urls
 
 
 class ReviewSerializer(serializers.ModelSerializer):
@@ -120,4 +132,9 @@ class MealCreateSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         validated_data["seller"] = self.context["request"].user
-        return super().create(validated_data)
+        meal = super().create(validated_data)
+        gallery_files = self.context["request"].FILES.getlist("gallery")
+        for i, file in enumerate(gallery_files[:5]):
+            validate_image_upload(file)
+            MealImage.objects.create(meal=meal, image=file, order=i)
+        return meal

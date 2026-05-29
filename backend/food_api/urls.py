@@ -15,20 +15,28 @@ def api_root(_request):
                 "catalog": "/api/catalog/",
                 "social": "/api/social/",
                 "orders": "/api/orders/",
+                "payments": "/api/payments/",
                 "notifications": "/api/notifications/",
+                "health": "/health/",
                 "admin": "/admin/",
             },
         }
     )
 
 
+def health(_request):
+    return JsonResponse({"status": "ok"})
+
+
 urlpatterns = [
     path("", api_root),
+    path("health/", health, name="health"),
     path("admin/", admin.site.urls),
     path("api/auth/", include("accounts.urls")),
     path("api/catalog/", include("catalog.urls")),
     path("api/social/", include("social.urls")),
     path("api/", include("orders.urls")),
+    path("api/", include("payments.urls")),
     path("api/", include("notifications.urls")),
     path("api/", include("chat.urls")),
 ]
