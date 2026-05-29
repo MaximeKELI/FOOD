@@ -1,9 +1,14 @@
+from django.db.models import ExpressionWrapper, F, IntegerField, Sum
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import Order
+from .models import Order, OrderItem
 from .serializers import OrderCreateSerializer, OrderSerializer
+
+_LINE_TOTAL = ExpressionWrapper(
+    F("unit_price") * F("quantity"), output_field=IntegerField()
+)
 
 
 class OrderListCreateView(generics.ListCreateAPIView):
