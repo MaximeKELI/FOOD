@@ -18,12 +18,19 @@ class ChezMamaApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _AuthBootstrap(
-      child: MaterialApp(
-        debugShowCheckedModeBanner: false,
-        title: 'Food',
-        theme: ChezMamaTheme.light(),
-        navigatorObservers: [TrackedNavigatorObserver()],
-        home: const AuthGate(),
+      child: AnimatedBuilder(
+        animation: ThemeController.instance,
+        builder: (context, _) {
+          return MaterialApp(
+            debugShowCheckedModeBanner: false,
+            title: 'Food',
+            theme: ChezMamaTheme.light(),
+            darkTheme: ChezMamaTheme.dark(),
+            themeMode: ThemeController.instance.mode,
+            navigatorObservers: [TrackedNavigatorObserver()],
+            home: const AuthGate(),
+          );
+        },
       ),
     );
   }
