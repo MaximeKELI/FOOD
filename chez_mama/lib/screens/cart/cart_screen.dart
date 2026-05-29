@@ -130,8 +130,8 @@ class _CartRow extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
+        color: ChezMamaTheme.cardColor(context),
+        borderRadius: BorderRadius.circular(ChezMamaTheme.rCard),
         boxShadow: ChezMamaTheme.softShadow(opacity: 0.10),
       ),
       child: Row(
@@ -167,7 +167,7 @@ class _CartRow extends StatelessWidget {
                 Text(
                   '${item.unitPrice} FCFA',
                   style: t.textTheme.bodySmall?.copyWith(
-                    color: ChezMamaTheme.ink.withValues(alpha: 0.65),
+                    color: ChezMamaTheme.mutedInk(context),
                     fontWeight: FontWeight.w600,
                   ),
                 ),
