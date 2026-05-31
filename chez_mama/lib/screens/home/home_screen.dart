@@ -278,7 +278,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               label: Text(tr('home.publishMeal')),
             )
           : null,
-      body: CustomScrollView(
+      body: RefreshIndicator(
+        onRefresh: _loadMeals,
+        edgeOffset: 220,
+        child: CustomScrollView(
         controller: scroll,
         slivers: [
           SliverAppBar(
@@ -574,6 +577,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           ),
           ),
         ],
+        ),
       ),
     );
   }

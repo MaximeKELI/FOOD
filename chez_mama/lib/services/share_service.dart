@@ -8,16 +8,20 @@ class ShareService {
 
   Future<void> shareMeal(Meal meal) {
     final price = meal.effectivePrice.round();
-    return Share.share(
-      '${meal.name} — $price FCFA\n${meal.subtitle}',
-      subject: meal.name,
+    return SharePlus.instance.share(
+      ShareParams(
+        text: '${meal.name} — $price FCFA\n${meal.subtitle}',
+        subject: meal.name,
+      ),
     );
   }
 
   Future<void> shareSeller({required String name, required int sellerId}) {
-    return Share.share(
-      '$name sur Food\nfood://seller/$sellerId',
-      subject: name,
+    return SharePlus.instance.share(
+      ShareParams(
+        text: '$name sur Food\nfood://seller/$sellerId',
+        subject: name,
+      ),
     );
   }
 }

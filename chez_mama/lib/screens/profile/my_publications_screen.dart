@@ -6,7 +6,9 @@ import '../../auth/auth_scope.dart';
 import '../../l10n/app_strings.dart';
 import '../../models/meal.dart';
 import '../../ui/chezmama_theme.dart';
+import '../../widgets/empty_state_view.dart';
 import '../../widgets/food_network_image.dart';
+import '../../widgets/list_loading_skeleton.dart';
 
 class MyPublicationsScreen extends StatefulWidget {
   const MyPublicationsScreen({super.key});
@@ -154,9 +156,15 @@ class _MyPublicationsScreenState extends State<MyPublicationsScreen>
         ),
       ),
       body: _loading
-          ? const Center(child: CircularProgressIndicator())
+          ? const ListLoadingSkeleton(itemCount: 4)
           : _error != null
-              ? _ErrorView(message: _error!, onRetry: _load)
+              ? EmptyStateView(
+                  icon: Icons.cloud_off_rounded,
+                  title: tr('home.connectionFailed'),
+                  subtitle: _error!,
+                  actionLabel: tr('action.retry'),
+                  onAction: _load,
+                )
               : TabBarView(
                   controller: _tab,
                   children: [
@@ -194,7 +202,13 @@ class _MealsTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (meals.isEmpty) {
-      return Center(child: Text(tr('publications.noMeals')));
+      return EmptyStateView(
+        icon: Icons.restaurant_menu_outlined,
+        lottieAsset: LottieAssets.empty,
+        title: tr('publications.noMeals'),
+        subtitle: tr('publications.noMealsHint'),
+        wrapInCard: false,
+      );
     }
     return ListView.separated(
       padding: const EdgeInsets.all(14),
@@ -270,7 +284,13 @@ class _PostsTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (posts.isEmpty) {
-      return Center(child: Text(emptyText));
+      return EmptyStateView(
+        icon: Icons.video_library_outlined,
+        lottieAsset: LottieAssets.empty,
+        title: emptyText,
+        subtitle: tr('publications.publishHint'),
+        wrapInCard: false,
+      );
     }
     return ListView.separated(
       padding: const EdgeInsets.all(14),
@@ -387,35 +407,6 @@ class _Row extends StatelessWidget {
       child: Icon(
         icon ?? Icons.restaurant_rounded,
         color: ChezMamaTheme.brandOrange,
-      ),
-    );
-  }
-}
-
-class _ErrorView extends StatelessWidget {
-  const _ErrorView({required this.message, required this.onRetry});
-  final String message;
-  final VoidCallback onRetry;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.cloud_off_rounded, size: 46),
-            const SizedBox(height: 10),
-            Text(message, textAlign: TextAlign.center),
-            const SizedBox(height: 12),
-            FilledButton.icon(
-              onPressed: onRetry,
-              icon: const Icon(Icons.refresh_rounded),
-              label: Text(tr('action.retry')),
-            ),
-          ],
-        ),
       ),
     );
   }

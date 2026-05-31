@@ -5,6 +5,8 @@ import '../../api/chat_api.dart';
 import '../../l10n/app_strings.dart';
 import '../../ui/chezmama_theme.dart';
 import '../../widgets/entrance.dart';
+import '../../widgets/empty_state_view.dart';
+import '../../widgets/list_loading_skeleton.dart';
 import 'conversation_screen.dart';
 
 class ConversationsScreen extends StatefulWidget {
@@ -48,42 +50,31 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text(tr('chat.title'))),
+      body: _buildBody(),
+    );
+  }
+
+  Widget _buildBody() {
     if (_loading) {
-      return const Center(child: CircularProgressIndicator());
+      return const ListLoadingSkeleton(itemCount: 6, imageHeight: 64);
     }
     if (_error != null) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.cloud_off_rounded, size: 44),
-            const SizedBox(height: 10),
-            Text(_error!),
-            const SizedBox(height: 10),
-            FilledButton.icon(
-              onPressed: _load,
-              icon: const Icon(Icons.refresh_rounded),
-              label: Text(tr('action.retry')),
-            ),
-          ],
-        ),
+      return EmptyStateView(
+        icon: Icons.cloud_off_rounded,
+        title: tr('home.connectionFailed'),
+        subtitle: _error!,
+        actionLabel: tr('action.retry'),
+        onAction: _load,
       );
     }
     if (_items.isEmpty) {
-      return RefreshIndicator(
-        onRefresh: _load,
-        child: ListView(
-          children: [
-            const SizedBox(height: 120),
-            Icon(
-              Icons.forum_outlined,
-              size: 56,
-              color: ChezMamaTheme.brandBrown,
-            ),
-            const SizedBox(height: 12),
-            Center(child: Text(tr('chat.noDiscussions'))),
-          ],
-        ),
+      return EmptyStateView(
+        icon: Icons.forum_outlined,
+        lottieAsset: LottieAssets.empty,
+        title: tr('chat.empty'),
+        subtitle: tr('chat.emptyHint'),
       );
     }
     return RefreshIndicator(

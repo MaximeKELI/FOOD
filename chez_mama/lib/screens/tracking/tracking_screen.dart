@@ -13,6 +13,7 @@ import '../../services/platform_utils.dart';
 import '../../ui/chezmama_theme.dart';
 import '../../utils/currency_format.dart';
 import '../../widgets/empty_state_view.dart';
+import '../../widgets/list_loading_skeleton.dart';
 import '../auth/login_screen.dart';
 import '../cart/orders_screen.dart';
 import '../profile/seller_profile_screen.dart';
@@ -245,10 +246,7 @@ class _TrackingScreenState extends State<TrackingScreen> {
             ),
             const SizedBox(height: 12),
             if (_ordersLoading)
-              const Center(child: Padding(
-                padding: EdgeInsets.symmetric(vertical: 24),
-                child: CircularProgressIndicator(),
-              ))
+              const ListLoadingSkeleton(itemCount: 2, imageHeight: 80)
             else if (_ordersError != null && _orders.isEmpty)
               EmptyStateView(
                 compact: true,
@@ -391,7 +389,7 @@ class _TrackingScreenState extends State<TrackingScreen> {
 
   Widget _buildMapContent() {
     if (_locating) {
-      return const Center(child: CircularProgressIndicator());
+      return const ListLoadingSkeleton(itemCount: 1, imageHeight: 220);
     }
 
     if (_userLocation == null) {

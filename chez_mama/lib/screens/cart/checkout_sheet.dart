@@ -263,229 +263,258 @@ class _CheckoutSheetState extends State<CheckoutSheet> {
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context);
+    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
     return Padding(
-      padding: EdgeInsets.only(
-        left: 16,
-        right: 16,
-        top: 8,
-        bottom: MediaQuery.of(context).viewInsets.bottom + 16,
-      ),
-      child: SingleChildScrollView(
+      padding: EdgeInsets.only(bottom: bottomInset),
+      child: SizedBox(
+        height: MediaQuery.sizeOf(context).height * 0.88,
         child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(
-              tr('checkout.title'),
-              style: t.textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.w900,
-                letterSpacing: -0.3,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              trf('cart.summary', {
-                'total': formatFcfa(_cart.total),
-                'count': _cart.count,
-              }),
-              style: t.textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w700,
-                color: ChezMamaTheme.brandBrown,
-              ),
-            ),
-            const SizedBox(height: ChezMamaTheme.spaceLg),
-            SectionHeader(
-              title: tr('checkout.fulfillmentSection'),
-              icon: Icons.local_shipping_rounded,
-            ),
-            SegmentedButton<String>(
-              segments: [
-                ButtonSegment(
-                  value: 'delivery',
-                  label: Text(tr('checkout.delivery')),
-                  icon: const Icon(Icons.delivery_dining_rounded),
-                ),
-                ButtonSegment(
-                  value: 'pickup',
-                  label: Text(tr('checkout.pickup')),
-                  icon: const Icon(Icons.storefront_rounded),
-                ),
-              ],
-              selected: {_fulfillment},
-              onSelectionChanged: (s) {
-                setState(() => _fulfillment = s.first);
-                _refreshQuote();
-              },
-            ),
-            const SizedBox(height: 12),
-            if (_fulfillment == 'delivery') ...[
-              TextField(
-                controller: _address,
-                decoration: InputDecoration(
-                  labelText: tr('checkout.address'),
-                  prefixIcon: const Icon(Icons.place_rounded),
-                ),
-              ),
-              const SizedBox(height: 8),
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton.icon(
-                  onPressed: _locating ? null : _useMyLocation,
-                  icon: _locating
-                      ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : Icon(
-                          _loc != null
-                              ? Icons.check_circle_rounded
-                              : Icons.my_location_rounded,
-                        ),
-                  label: Text(
-                    _loc != null
-                        ? tr('checkout.locationOkQuoted')
-                        : tr('checkout.useLocation'),
-                  ),
-                ),
-              ),
-              if (_quoteError != null) ...[
-                const SizedBox(height: 8),
-                Text(
-                  _quoteError!,
-                  style: t.textTheme.bodySmall?.copyWith(
-                    color: ChezMamaTheme.brandBrown,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-              const SizedBox(height: 12),
-            ],
-            TextField(
-              controller: _phone,
-              keyboardType: TextInputType.phone,
-              decoration: InputDecoration(
-                labelText: tr('checkout.phone'),
-                prefixIcon: const Icon(Icons.phone_rounded),
-              ),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _note,
-              maxLines: 2,
-              decoration: InputDecoration(
-                labelText: tr('checkout.note'),
-                prefixIcon: const Icon(Icons.notes_rounded),
-              ),
-            ),
-            const SizedBox(height: ChezMamaTheme.spaceLg),
-            SectionHeader(
-              title: tr('checkout.paymentMode'),
-              icon: Icons.payments_rounded,
-            ),
-            const SizedBox(height: 4),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: kPaymentMethodKeys.map((key) {
-                final selected = _payment == key;
-                return ChoiceChip(
-                  label: Text(paymentMethodLabel(key)),
-                  selected: selected,
-                  labelStyle: TextStyle(
-                    fontWeight:
-                        selected ? FontWeight.w700 : FontWeight.w600,
-                    color: selected
-                        ? ChezMamaTheme.brandBrown
-                        : ChezMamaTheme.mutedInk(context),
-                  ),
-                  onSelected: (_) => setState(() => _payment = key),
-                );
-              }).toList(),
-            ),
-            const SizedBox(height: ChezMamaTheme.spaceLg),
-            SectionHeader(
-              title: tr('checkout.promo'),
-              icon: Icons.local_offer_rounded,
-            ),
-            const SizedBox(height: 4),
-            TextField(
-              controller: _promo,
-              textCapitalization: TextCapitalization.characters,
-              decoration: InputDecoration(
-                hintText: tr('checkout.promoHint'),
-                prefixIcon: const Icon(Icons.local_offer_rounded),
-                suffixIcon: _validatingPromo
-                    ? const Padding(
-                        padding: EdgeInsets.all(12),
-                        child: SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        ),
-                      )
-                    : AccessibleIconButton(
-                        icon: Icons.check_rounded,
-                        label: tr('checkout.verifyPromo'),
-                        onPressed: _validatePromo,
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      tr('checkout.title'),
+                      style: t.textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: -0.3,
                       ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      trf('cart.summary', {
+                        'total': formatFcfa(_cart.total),
+                        'count': _cart.count,
+                      }),
+                      style: t.textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: ChezMamaTheme.brandBrown,
+                      ),
+                    ),
+                    const SizedBox(height: ChezMamaTheme.spaceLg),
+                    SectionHeader(
+                      title: tr('checkout.fulfillmentSection'),
+                      icon: Icons.local_shipping_rounded,
+                    ),
+                    SegmentedButton<String>(
+                      segments: [
+                        ButtonSegment(
+                          value: 'delivery',
+                          label: Text(tr('checkout.delivery')),
+                          icon: const Icon(Icons.delivery_dining_rounded),
+                        ),
+                        ButtonSegment(
+                          value: 'pickup',
+                          label: Text(tr('checkout.pickup')),
+                          icon: const Icon(Icons.storefront_rounded),
+                        ),
+                      ],
+                      selected: {_fulfillment},
+                      onSelectionChanged: (s) {
+                        setState(() => _fulfillment = s.first);
+                        _refreshQuote();
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    if (_fulfillment == 'delivery') ...[
+                      TextField(
+                        controller: _address,
+                        decoration: InputDecoration(
+                          labelText: tr('checkout.address'),
+                          prefixIcon: const Icon(Icons.place_rounded),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          onPressed: _locating ? null : _useMyLocation,
+                          icon: _locating
+                              ? const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                )
+                              : Icon(
+                                  _loc != null
+                                      ? Icons.check_circle_rounded
+                                      : Icons.my_location_rounded,
+                                ),
+                          label: Text(
+                            _loc != null
+                                ? tr('checkout.locationOkQuoted')
+                                : tr('checkout.useLocation'),
+                          ),
+                        ),
+                      ),
+                      if (_quoteError != null) ...[
+                        const SizedBox(height: 8),
+                        Text(
+                          _quoteError!,
+                          style: t.textTheme.bodySmall?.copyWith(
+                            color: ChezMamaTheme.brandBrown,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 12),
+                    ],
+                    TextField(
+                      controller: _phone,
+                      keyboardType: TextInputType.phone,
+                      decoration: InputDecoration(
+                        labelText: tr('checkout.phone'),
+                        prefixIcon: const Icon(Icons.phone_rounded),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: _note,
+                      maxLines: 2,
+                      decoration: InputDecoration(
+                        labelText: tr('checkout.note'),
+                        prefixIcon: const Icon(Icons.notes_rounded),
+                      ),
+                    ),
+                    const SizedBox(height: ChezMamaTheme.spaceLg),
+                    SectionHeader(
+                      title: tr('checkout.paymentMode'),
+                      icon: Icons.payments_rounded,
+                    ),
+                    const SizedBox(height: 4),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: kPaymentMethodKeys.map((key) {
+                        final selected = _payment == key;
+                        return ChoiceChip(
+                          label: Text(paymentMethodLabel(key)),
+                          selected: selected,
+                          labelStyle: TextStyle(
+                            fontWeight:
+                                selected ? FontWeight.w700 : FontWeight.w600,
+                            color: selected
+                                ? ChezMamaTheme.brandBrown
+                                : ChezMamaTheme.mutedInk(context),
+                          ),
+                          onSelected: (_) => setState(() => _payment = key),
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: ChezMamaTheme.spaceLg),
+                    SectionHeader(
+                      title: tr('checkout.promo'),
+                      icon: Icons.local_offer_rounded,
+                    ),
+                    const SizedBox(height: 4),
+                    TextField(
+                      controller: _promo,
+                      textCapitalization: TextCapitalization.characters,
+                      decoration: InputDecoration(
+                        hintText: tr('checkout.promoHint'),
+                        prefixIcon: const Icon(Icons.local_offer_rounded),
+                        suffixIcon: _validatingPromo
+                            ? const Padding(
+                                padding: EdgeInsets.all(12),
+                                child: SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                ),
+                              )
+                            : AccessibleIconButton(
+                                icon: Icons.check_rounded,
+                                label: tr('checkout.verifyPromo'),
+                                onPressed: _validatePromo,
+                              ),
+                      ),
+                    ),
+                    const SizedBox(height: ChezMamaTheme.spaceLg),
+                    SectionHeader(
+                      title: tr('checkout.summarySection'),
+                      icon: Icons.receipt_long_rounded,
+                    ),
+                    const SizedBox(height: 4),
+                    Container(
+                      padding: const EdgeInsets.all(ChezMamaTheme.spaceMd),
+                      decoration: ChezMamaTheme.subtleDecoration(context),
+                      child: Column(
+                        children: [
+                          _line(t, tr('checkout.subtotal'), formatFcfa(_cart.total)),
+                          if (_fulfillment == 'delivery') ...[
+                            const SizedBox(height: 6),
+                            _line(
+                              t,
+                              tr('checkout.deliveryFee'),
+                              _quoting
+                                  ? '…'
+                                  : (_deliveryFee == 0
+                                      ? tr('checkout.toEstimate')
+                                      : formatFcfa(_deliveryFee)),
+                            ),
+                          ],
+                          if (_promoDiscount > 0) ...[
+                            const SizedBox(height: 6),
+                            _line(
+                              t,
+                              tr('checkout.promoLine'),
+                              '−${formatFcfa(_promoDiscount)}',
+                            ),
+                          ],
+                          const Divider(height: 18),
+                          _line(
+                            t,
+                            tr('cart.total'),
+                            formatFcfa(_grandTotal),
+                            bold: true,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+                ),
               ),
             ),
-            const SizedBox(height: ChezMamaTheme.spaceLg),
-            SectionHeader(
-              title: tr('checkout.summarySection'),
-              icon: Icons.receipt_long_rounded,
-            ),
-            const SizedBox(height: 4),
             Container(
-              padding: const EdgeInsets.all(ChezMamaTheme.spaceMd),
-              decoration: ChezMamaTheme.subtleDecoration(context),
-              child: Column(
-                children: [
-                  _line(t, tr('checkout.subtotal'), formatFcfa(_cart.total)),
-                  if (_fulfillment == 'delivery') ...[
-                    const SizedBox(height: 6),
-                    _line(
-                      t,
-                      tr('checkout.deliveryFee'),
-                      _quoting
-                          ? '…'
-                          : (_deliveryFee == 0
-                              ? tr('checkout.toEstimate')
-                              : formatFcfa(_deliveryFee)),
-                    ),
-                  ],
-                  if (_promoDiscount > 0) ...[
-                    const SizedBox(height: 6),
-                    _line(
-                      t,
-                      tr('checkout.promoLine'),
-                      '−${formatFcfa(_promoDiscount)}',
-                    ),
-                  ],
-                  const Divider(height: 18),
-                  _line(t, tr('cart.total'), formatFcfa(_grandTotal), bold: true),
+              padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
+              decoration: BoxDecoration(
+                color: ChezMamaTheme.cardColor(context),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.08),
+                    blurRadius: 12,
+                    offset: const Offset(0, -4),
+                  ),
                 ],
               ),
-            ),
-            const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: FilledButton.icon(
-                onPressed: _submitting ? null : _submit,
-                icon: _submitting
-                    ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
-                      )
-                    : const Icon(Icons.check_circle_rounded),
-                label: Text(
-                  _submitting ? tr('checkout.submitting') : tr('checkout.confirm'),
+              child: SafeArea(
+                top: false,
+                child: SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: FilledButton.icon(
+                    onPressed: _submitting ? null : _submit,
+                    icon: _submitting
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Icon(Icons.check_circle_rounded),
+                    label: Text(
+                      _submitting
+                          ? tr('checkout.submitting')
+                          : tr('checkout.confirm'),
+                    ),
+                  ),
                 ),
               ),
             ),

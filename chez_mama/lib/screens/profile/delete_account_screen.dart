@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
 
-import '../api/api_client.dart';
-import '../api/api_config.dart';
-import '../auth/auth_scope.dart';
-import '../l10n/app_strings.dart';
-import '../ui/chezmama_theme.dart';
-import '../widgets/food_card.dart';
+import '../../api/api_client.dart';
+import '../../auth/auth_scope.dart';
+import '../../l10n/app_strings.dart';
+import '../../ui/chezmama_theme.dart';
+import '../../widgets/food_card.dart';
 
 /// GDPR-style account deletion flow (UI; backend endpoint may be stubbed).
 class DeleteAccountScreen extends StatefulWidget {
@@ -69,7 +68,7 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(Icons.warning_amber_rounded,
+                  const Icon(Icons.warning_amber_rounded,
                       size: 40, color: ChezMamaTheme.promoRed),
                   const SizedBox(height: ChezMamaTheme.spaceMd),
                   Text(

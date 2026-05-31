@@ -8,6 +8,8 @@ import '../../l10n/app_strings.dart';
 import '../../models/meal.dart';
 import '../../ui/chezmama_theme.dart';
 import '../../utils/currency_format.dart';
+import '../../utils/haptic_utils.dart';
+import '../../services/share_service.dart';
 import '../../widgets/food_network_image.dart';
 import '../../widgets/primary_button.dart';
 import '../../widgets/status_pill.dart';
@@ -131,6 +133,11 @@ class _MealDetailsScreenState extends State<MealDetailsScreen> {
             backgroundColor: Theme.of(context).scaffoldBackgroundColor,
             foregroundColor: ChezMamaTheme.inkColor(context),
             actions: [
+              IconButton(
+                tooltip: tr('action.share'),
+                onPressed: () => ShareService.instance.shareMeal(meal),
+                icon: const Icon(Icons.share_rounded),
+              ),
               IconButton(
                 tooltip: _favorited
                     ? tr('meal.removeFavorite')
@@ -291,6 +298,7 @@ class _MealDetailsScreenState extends State<MealDetailsScreen> {
                                     final added =
                                         CartService.instance.addMeal(meal);
                                     if (added) {
+                                      hapticLight();
                                       final btnCtx = _addButtonKey.currentContext;
                                       if (btnCtx != null) {
                                         CartFlyService.instance.flyFromContext(

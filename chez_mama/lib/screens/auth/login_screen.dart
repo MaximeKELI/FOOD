@@ -4,6 +4,7 @@ import '../../auth/auth_scope.dart';
 import '../../l10n/app_strings.dart';
 import '../../ui/african_pattern_painter.dart';
 import '../../ui/chezmama_theme.dart';
+import '../../widgets/brand_logo.dart';
 import '../../widgets/primary_button.dart';
 import '../legal/privacy_screen.dart';
 import '../legal/terms_screen.dart';
@@ -130,19 +131,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         children: [
                           Row(
                             children: [
-                              Container(
-                                width: 44,
-                                height: 44,
-                                decoration: BoxDecoration(
-                                  color: ChezMamaTheme.brandOrange
-                                      .withValues(alpha: 0.12),
-                                  borderRadius: BorderRadius.circular(14),
-                                ),
-                                child: const Icon(
-                                  Icons.restaurant_rounded,
-                                  color: ChezMamaTheme.brandOrange,
-                                ),
-                              ),
+                              const BrandLogo(size: 44, radius: 14),
                               const SizedBox(width: 12),
                               Expanded(
                                 child: Text(
@@ -166,7 +155,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           Text(
                             tr('auth.loginSubtitle'),
                             style: t.textTheme.bodyMedium?.copyWith(
-                              color: ChezMamaTheme.ink.withValues(alpha: 0.7),
+                              color: ChezMamaTheme.mutedInk(context),
                               fontWeight: FontWeight.w600,
                             ),
                           ),

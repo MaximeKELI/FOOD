@@ -6,6 +6,8 @@ import '../../l10n/app_strings.dart';
 import '../../notifications/notifications_notifier.dart';
 import '../../ui/chezmama_theme.dart';
 import '../../widgets/entrance.dart';
+import '../../widgets/empty_state_view.dart';
+import '../../widgets/list_loading_skeleton.dart';
 import '../cart/orders_screen.dart';
 import '../chat/conversation_screen.dart';
 import '../profile/received_orders_screen.dart';
@@ -128,31 +130,24 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
   Widget _buildBody() {
     if (_loading) {
-      return const Center(child: CircularProgressIndicator());
+      return const ListLoadingSkeleton(itemCount: 5, imageHeight: 72);
     }
     if (_error != null) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.cloud_off_rounded, size: 46),
-              const SizedBox(height: 10),
-              Text(_error!, textAlign: TextAlign.center),
-              const SizedBox(height: 12),
-              FilledButton.icon(
-                onPressed: _load,
-                icon: const Icon(Icons.refresh_rounded),
-                label: Text(tr('action.retry')),
-              ),
-            ],
-          ),
-        ),
+      return EmptyStateView(
+        icon: Icons.cloud_off_rounded,
+        title: tr('home.connectionFailed'),
+        subtitle: _error!,
+        actionLabel: tr('action.retry'),
+        onAction: _load,
       );
     }
     if (_items.isEmpty) {
-      return Center(child: Text(tr('notif.empty')));
+      return EmptyStateView(
+        icon: Icons.notifications_none_rounded,
+        lottieAsset: LottieAssets.empty,
+        title: tr('notif.empty'),
+        subtitle: tr('notif.emptyHint'),
+      );
     }
     return RefreshIndicator(
       onRefresh: _load,

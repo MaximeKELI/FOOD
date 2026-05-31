@@ -5,6 +5,8 @@ import '../../api/catalog_api.dart';
 import '../../l10n/app_strings.dart';
 import '../../models/meal.dart';
 import '../../ui/chezmama_theme.dart';
+import '../../widgets/empty_state_view.dart';
+import '../../widgets/list_loading_skeleton.dart';
 import '../home/meal_card.dart';
 import '../meal/meal_details_screen.dart';
 
@@ -115,27 +117,15 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> {
 
   Widget _buildBody() {
     if (_loading) {
-      return const Center(child: CircularProgressIndicator());
+      return const ListLoadingSkeleton(itemCount: 3, imageHeight: 100);
     }
     if (_error != null || _seller == null) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.cloud_off_rounded, size: 46),
-              const SizedBox(height: 10),
-              Text(_error ?? tr('seller.notFound'), textAlign: TextAlign.center),
-              const SizedBox(height: 12),
-              FilledButton.icon(
-                onPressed: _load,
-                icon: const Icon(Icons.refresh_rounded),
-                label: Text(tr('action.retry')),
-              ),
-            ],
-          ),
-        ),
+      return EmptyStateView(
+        icon: Icons.cloud_off_rounded,
+        title: tr('home.connectionFailed'),
+        subtitle: _error ?? tr('seller.notFound'),
+        actionLabel: tr('action.retry'),
+        onAction: _load,
       );
     }
     final seller = _seller!;
@@ -158,9 +148,13 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> {
           ),
           const SizedBox(height: 10),
           if (_meals.isEmpty)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 24),
-              child: Center(child: Text(tr('publications.noMeals'))),
+            EmptyStateView(
+              icon: Icons.restaurant_menu_outlined,
+              lottieAsset: LottieAssets.empty,
+              title: tr('publications.noMeals'),
+              subtitle: tr('seller.noMealsHint'),
+              compact: true,
+              wrapInCard: false,
             )
           else
             GridView.builder(

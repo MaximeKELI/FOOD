@@ -3,6 +3,7 @@ import '../../cart/received_orders_notifier.dart';
 import '../../chat/chat_unread_notifier.dart';
 import '../../l10n/app_strings.dart';
 import '../../notifications/notifications_notifier.dart';
+import '../../ui/chezmama_theme.dart';
 import '../../ui/theme_controller.dart';
 
 /// Shared toolbar actions used by [AppShell] and the home hero header.
@@ -73,7 +74,7 @@ class ShellToolbarActions extends StatelessWidget {
             builder: (context, _) {
               final count = ReceivedOrdersNotifier.instance.activeCount;
               return IconButton(
-                tooltip: 'Commandes reçues',
+                tooltip: tr('menu.receivedOrders'),
                 onPressed: onReceivedOrders,
                 icon: count > 0
                     ? Badge.count(
@@ -97,7 +98,7 @@ class ShellToolbarActions extends StatelessWidget {
             }
           },
           itemBuilder: (context) {
-            final dark = ThemeController.instance.isDark;
+            final dark = ThemeController.instance.resolveIsDark(context);
             return [
               if (!isAuthed)
                 PopupMenuItem(
@@ -173,6 +174,15 @@ class ShellToolbarActions extends StatelessWidget {
                   title: Text(dark ? tr('menu.lightMode') : tr('menu.darkMode')),
                 ),
               ),
+              if (isAuthed)
+                PopupMenuItem(
+                  value: 'deleteAccount',
+                  child: ListTile(
+                    leading: Icon(Icons.delete_forever_outlined,
+                        color: ChezMamaTheme.promoRed),
+                    title: Text(tr('menu.deleteAccount')),
+                  ),
+                ),
               if (isAuthed)
                 PopupMenuItem(
                   value: 'logout',

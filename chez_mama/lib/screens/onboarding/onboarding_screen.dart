@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 
-import '../l10n/app_strings.dart';
-import '../onboarding/onboarding_controller.dart';
-import '../ui/chezmama_theme.dart';
-import '../widgets/brand_logo.dart';
-import '../screens/shell/app_shell.dart';
+import '../../l10n/app_strings.dart';
+import '../../onboarding/onboarding_controller.dart';
+import '../../ui/chezmama_theme.dart';
+import '../../widgets/brand_logo.dart';
+import '../shell/app_shell.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});

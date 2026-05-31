@@ -37,7 +37,9 @@ class ConnectivityService extends ChangeNotifier {
     );
   }
 
+  @override
   void dispose() {
     _sub?.cancel();
+    super.dispose();
   }
 }

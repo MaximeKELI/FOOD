@@ -1,9 +1,11 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../l10n/app_strings.dart';
+import '../../onboarding/onboarding_controller.dart';
 import '../../ui/african_pattern_painter.dart';
 import '../../ui/chezmama_theme.dart';
 import '../../widgets/brand_logo.dart';
+import '../onboarding/onboarding_screen.dart';
 import '../shell/app_shell.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -33,28 +35,33 @@ class _SplashScreenState extends State<SplashScreen>
     );
     _c.forward();
 
-    _navTimer = Timer(const Duration(milliseconds: 1350), () {
-      if (!mounted) return;
-      Navigator.of(context).pushReplacement(
-        PageRouteBuilder(
-          transitionDuration: const Duration(milliseconds: 420),
-          pageBuilder: (_, __, ___) => const AppShell(),
-          transitionsBuilder: (_, a, __, child) {
-            final curve = CurvedAnimation(parent: a, curve: Curves.easeOutCubic);
-            return FadeTransition(
-              opacity: curve,
-              child: SlideTransition(
-                position: Tween<Offset>(
-                  begin: const Offset(0, 0.03),
-                  end: Offset.zero,
-                ).animate(curve),
-                child: child,
-              ),
-            );
-          },
-        ),
-      );
-    });
+    _navTimer = Timer(const Duration(milliseconds: 1350), _goNext);
+  }
+
+  Future<void> _goNext() async {
+    if (!mounted) return;
+    final onboardingDone = await OnboardingController.instance.isComplete();
+    if (!mounted) return;
+    final next = onboardingDone ? const AppShell() : const OnboardingScreen();
+    Navigator.of(context).pushReplacement(
+      PageRouteBuilder(
+        transitionDuration: const Duration(milliseconds: 420),
+        pageBuilder: (_, __, ___) => next,
+        transitionsBuilder: (_, a, __, child) {
+          final curve = CurvedAnimation(parent: a, curve: Curves.easeOutCubic);
+          return FadeTransition(
+            opacity: curve,
+            child: SlideTransition(
+              position: Tween<Offset>(
+                begin: const Offset(0, 0.03),
+                end: Offset.zero,
+              ).animate(curve),
+              child: child,
+            ),
+          );
+        },
+      ),
+    );
   }
 
   @override

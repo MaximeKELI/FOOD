@@ -5,7 +5,9 @@ import '../../cart/received_orders_notifier.dart';
 import '../../l10n/app_strings.dart';
 import '../../ui/chezmama_theme.dart';
 import '../../utils/currency_format.dart';
+import '../../widgets/empty_state_view.dart';
 import '../../widgets/entrance.dart';
+import '../../widgets/list_loading_skeleton.dart';
 
 const _activeStatuses = {'pending', 'preparing', 'on_the_way'};
 
@@ -104,27 +106,15 @@ class _ReceivedOrdersScreenState extends State<ReceivedOrdersScreen> {
 
   Widget _buildBody() {
     if (_loading) {
-      return const Center(child: CircularProgressIndicator());
+      return const ListLoadingSkeleton();
     }
     if (_error != null) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.cloud_off_rounded, size: 46),
-              const SizedBox(height: 10),
-              Text(_error!, textAlign: TextAlign.center),
-              const SizedBox(height: 12),
-              FilledButton.icon(
-                onPressed: _load,
-                icon: const Icon(Icons.refresh_rounded),
-                label: Text(tr('action.retry')),
-              ),
-            ],
-          ),
-        ),
+      return EmptyStateView(
+        icon: Icons.cloud_off_rounded,
+        title: tr('home.connectionFailed'),
+        subtitle: _error!,
+        actionLabel: tr('action.retry'),
+        onAction: _load,
       );
     }
     return TabBarView(
@@ -166,8 +156,13 @@ class _OrdersList extends StatelessWidget {
       child: orders.isEmpty
           ? ListView(
               children: [
-                const SizedBox(height: 120),
-                Center(child: Text(emptyText)),
+                EmptyStateView(
+                  icon: Icons.receipt_long_outlined,
+                  lottieAsset: LottieAssets.empty,
+                  title: emptyText,
+                  subtitle: tr('tracking.noneHint'),
+                  wrapInCard: false,
+                ),
               ],
             )
           : ListView.separated(

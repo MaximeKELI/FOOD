@@ -9,6 +9,7 @@ import '../../services/app_media_picker.dart';
 import '../../services/platform_utils.dart';
 import '../../ui/chezmama_theme.dart';
 import '../../widgets/empty_state_view.dart';
+import '../../widgets/list_loading_skeleton.dart';
 import '../../widgets/food_network_image.dart';
 import '../../widgets/post_video_player.dart';
 
@@ -192,7 +193,7 @@ class _SocialFeedScreenState extends State<SocialFeedScreen> {
 
   Widget _buildBody() {
     if (_loading) {
-      return const Center(child: CircularProgressIndicator());
+      return const ListLoadingSkeleton(imageHeight: 180);
     }
     if (_error != null) {
       return EmptyStateView(

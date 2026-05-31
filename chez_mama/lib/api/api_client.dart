@@ -6,6 +6,9 @@ import 'api_config.dart';
 
 /// Thin wrapper around Dio that injects the JWT access token and
 /// transparently refreshes it on a 401 response.
+///
+/// Production HTTPS: pass `--dart-define=API_BASE_URL=https://...` and wire
+/// certificate pinning via a custom [HttpClientAdapter] when pins are available.
 class ApiClient {
   ApiClient._() {
     _dio = Dio(

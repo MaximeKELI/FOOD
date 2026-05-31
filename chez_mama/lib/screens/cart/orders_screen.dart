@@ -4,6 +4,7 @@ import '../../api/orders_api.dart';
 import '../../l10n/app_strings.dart';
 import '../../ui/chezmama_theme.dart';
 import '../../utils/currency_format.dart';
+import '../../widgets/list_loading_skeleton.dart';
 import '../../widgets/empty_state_view.dart';
 import '../../widgets/entrance.dart';
 
@@ -56,7 +57,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
 
   Widget _buildBody() {
     if (_loading) {
-      return const Center(child: CircularProgressIndicator());
+      return const ListLoadingSkeleton();
     }
     if (_error != null) {
       return EmptyStateView(

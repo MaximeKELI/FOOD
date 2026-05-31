@@ -13,6 +13,7 @@ class FoodNetworkImage extends StatelessWidget {
     this.placeholder,
     this.borderRadius,
     this.accent,
+    this.memCacheWidth,
   });
 
   final String url;
@@ -21,6 +22,7 @@ class FoodNetworkImage extends StatelessWidget {
   final Widget? placeholder;
   final BorderRadius? borderRadius;
   final Color? accent;
+  final int? memCacheWidth;
 
   @override
   Widget build(BuildContext context) {
@@ -38,6 +40,7 @@ class FoodNetworkImage extends StatelessWidget {
       imageUrl: url,
       fit: fit,
       filterQuality: filterQuality,
+      memCacheWidth: memCacheWidth,
       placeholder: (_, __) => placeholder ?? _gradientPlaceholder(context),
       errorWidget: (_, __, ___) => placeholder ?? _gradientPlaceholder(context),
     );

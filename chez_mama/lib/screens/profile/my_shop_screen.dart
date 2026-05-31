@@ -5,6 +5,8 @@ import '../../auth/auth_scope.dart';
 import '../../l10n/app_strings.dart';
 import '../../services/app_location_service.dart';
 import '../../ui/chezmama_theme.dart';
+import '../../widgets/empty_state_view.dart';
+import '../../widgets/list_loading_skeleton.dart';
 
 class MyShopScreen extends StatefulWidget {
   const MyShopScreen({super.key});
@@ -174,9 +176,15 @@ class _MyShopScreenState extends State<MyShopScreen> {
     return Scaffold(
       appBar: AppBar(title: Text(tr('shop.title'))),
       body: _loading
-          ? const Center(child: CircularProgressIndicator())
+          ? const ListLoadingSkeleton(itemCount: 6, imageHeight: 56)
           : _error != null
-              ? _ErrorView(message: _error!, onRetry: _load)
+              ? EmptyStateView(
+                  icon: Icons.cloud_off_rounded,
+                  title: tr('home.connectionFailed'),
+                  subtitle: _error!,
+                  actionLabel: tr('action.retry'),
+                  onAction: _load,
+                )
               : _buildForm(),
     );
   }
@@ -333,35 +341,6 @@ class _MyShopScreenState extends State<MyShopScreen> {
         decoration: InputDecoration(
           labelText: label,
           prefixIcon: Icon(icon),
-        ),
-      ),
-    );
-  }
-}
-
-class _ErrorView extends StatelessWidget {
-  const _ErrorView({required this.message, required this.onRetry});
-  final String message;
-  final VoidCallback onRetry;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.cloud_off_rounded, size: 46),
-            const SizedBox(height: 10),
-            Text(message, textAlign: TextAlign.center),
-            const SizedBox(height: 12),
-            FilledButton.icon(
-              onPressed: onRetry,
-              icon: const Icon(Icons.refresh_rounded),
-              label: Text(tr('action.retry')),
-            ),
-          ],
         ),
       ),
     );

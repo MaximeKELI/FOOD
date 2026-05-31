@@ -10,6 +10,7 @@ import '../../notifications/notifications_notifier.dart';
 import '../../ui/chezmama_theme.dart';
 import '../../ui/theme_controller.dart';
 import '../../widgets/brand_logo.dart';
+import '../../widgets/cart_nav_icon.dart';
 import '../../widgets/shell_toolbar_actions.dart';
 import '../home/home_screen.dart';
 import '../social/shorts_screen.dart';
@@ -18,6 +19,7 @@ import '../cart/cart_screen.dart';
 import '../chat/conversations_screen.dart';
 import '../notifications/notifications_screen.dart';
 import '../profile/favorite_meals_screen.dart';
+import '../profile/delete_account_screen.dart';
 import '../profile/loyalty_screen.dart';
 import '../profile/seller_dashboard_screen.dart';
 import '../profile/my_publications_screen.dart';
@@ -149,10 +151,12 @@ class _AppShellState extends State<AppShell> {
         _go(const FavoriteMealsScreen());
       case 'loyalty':
         _go(const LoyaltyScreen());
+      case 'deleteAccount':
+        _go(const DeleteAccountScreen());
       case 'messages':
         _go(const ConversationsScreen());
       case 'theme':
-        ThemeController.instance.toggleDark(!ThemeController.instance.isDark);
+        ThemeController.instance.toggleDark(context);
       case 'logout':
         _logout();
     }
@@ -290,9 +294,13 @@ class _AppShellState extends State<AppShell> {
           child: ClipRRect(
             borderRadius: BorderRadius.circular(22),
             child: AnimatedBuilder(
-              animation: CartService.instance,
+              animation: Listenable.merge([
+                CartService.instance,
+                CartFlyService.instance,
+              ]),
               builder: (context, _) {
                 final count = CartService.instance.count;
+                final bounce = CartFlyService.instance.bounceGeneration;
                 return NavigationBar(
                   selectedIndex: index,
                   onDestinationSelected: (v) => setState(() => index = v),
@@ -321,21 +329,18 @@ class _AppShellState extends State<AppShell> {
                       label: tr('nav.tracking'),
                     ),
                     NavigationDestination(
-                      icon: KeyedSubtree(
-                        key: CartFlyService.instance.cartIconKey,
-                        child: count > 0
-                            ? Badge.count(
-                                count: count,
-                                child: const Icon(Icons.shopping_bag_outlined),
-                              )
-                            : const Icon(Icons.shopping_bag_outlined),
+                      icon: CartNavIcon(
+                        icon: Icons.shopping_bag_outlined,
+                        count: count,
+                        bounceGeneration: bounce,
+                        cartIconKey: CartFlyService.instance.cartIconKey,
                       ),
-                      selectedIcon: count > 0
-                          ? Badge.count(
-                              count: count,
-                              child: const Icon(Icons.shopping_bag_rounded),
-                            )
-                          : const Icon(Icons.shopping_bag_rounded),
+                      selectedIcon: CartNavIcon(
+                        icon: Icons.shopping_bag_rounded,
+                        count: count,
+                        bounceGeneration: bounce,
+                        cartIconKey: CartFlyService.instance.cartIconKey,
+                      ),
                       label: tr('nav.cart'),
                     ),
                   ],

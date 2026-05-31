@@ -3,6 +3,7 @@ import '../../api/api_client.dart';
 import '../../api/catalog_api.dart';
 import '../../l10n/app_strings.dart';
 import '../../models/meal.dart';
+import '../../widgets/list_loading_skeleton.dart';
 import '../../widgets/empty_state_view.dart';
 import '../../widgets/entrance.dart';
 import '../home/meal_card.dart';
@@ -57,7 +58,7 @@ class _FavoriteMealsScreenState extends State<FavoriteMealsScreen> {
 
   Widget _buildBody() {
     if (_loading) {
-      return const Center(child: CircularProgressIndicator());
+      return const ListLoadingSkeleton(imageHeight: 120);
     }
     if (_error != null) {
       return EmptyStateView(

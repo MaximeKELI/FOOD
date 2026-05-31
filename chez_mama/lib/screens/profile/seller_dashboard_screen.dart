@@ -4,6 +4,8 @@ import '../../api/orders_api.dart';
 import '../../l10n/app_strings.dart';
 import '../../ui/chezmama_theme.dart';
 import '../../utils/currency_format.dart';
+import '../../widgets/empty_state_view.dart';
+import '../../widgets/list_loading_skeleton.dart';
 
 class SellerDashboardScreen extends StatefulWidget {
   const SellerDashboardScreen({super.key});
@@ -54,27 +56,15 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
 
   Widget _buildBody() {
     if (_loading) {
-      return const Center(child: CircularProgressIndicator());
+      return const ListLoadingSkeleton(itemCount: 3, imageHeight: 100);
     }
     if (_error != null || _stats == null) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.cloud_off_rounded, size: 46),
-              const SizedBox(height: 10),
-              Text(_error ?? tr('action.unavailable'), textAlign: TextAlign.center),
-              const SizedBox(height: 12),
-              FilledButton.icon(
-                onPressed: _load,
-                icon: const Icon(Icons.refresh_rounded),
-                label: Text(tr('action.retry')),
-              ),
-            ],
-          ),
-        ),
+      return EmptyStateView(
+        icon: Icons.cloud_off_rounded,
+        title: tr('home.connectionFailed'),
+        subtitle: _error ?? tr('action.unavailable'),
+        actionLabel: tr('action.retry'),
+        onAction: _load,
       );
     }
     final s = _stats!;

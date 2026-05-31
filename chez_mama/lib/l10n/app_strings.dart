@@ -80,6 +80,85 @@ const Map<String, Map<AppLang, String>> _strings = {
     AppLang.en: 'Hot. Local. Good.',
     AppLang.wo: 'Tàng. Local. Baax.',
   },
+  'app.offlineBanner': {
+    AppLang.fr: 'Hors ligne — certaines actions sont limitées',
+    AppLang.en: 'Offline — some actions are limited',
+    AppLang.wo: 'Amul connexion — ay yoon am nañu',
+  },
+  'onboarding.skip': {AppLang.fr: 'Passer', AppLang.en: 'Skip', AppLang.wo: 'Jëmale'},
+  'onboarding.next': {AppLang.fr: 'Suivant', AppLang.en: 'Next', AppLang.wo: 'Ci topp'},
+  'onboarding.start': {AppLang.fr: 'Commencer', AppLang.en: 'Get started', AppLang.wo: 'Tambali'},
+  'onboarding.slide1Title': {
+    AppLang.fr: 'Découvre les plats locaux',
+    AppLang.en: 'Discover local dishes',
+    AppLang.wo: 'Gis ñam yu ci réew',
+  },
+  'onboarding.slide1Body': {
+    AppLang.fr: 'Parcours le catalogue sans compte, puis commande quand tu veux.',
+    AppLang.en: 'Browse without an account, order when you are ready.',
+    AppLang.wo: 'Seet ci jëmm ak compte, commande bu la neexee.',
+  },
+  'onboarding.slide2Title': {
+    AppLang.fr: 'Suis ta commande en direct',
+    AppLang.en: 'Track your order live',
+    AppLang.wo: 'Topp sa commande',
+  },
+  'onboarding.slide2Body': {
+    AppLang.fr: 'Carte, statut et livraison ou retrait au même endroit.',
+    AppLang.en: 'Map, status, delivery or pickup in one place.',
+    AppLang.wo: 'Kart, statut, yónnee walla jël ci benn barab.',
+  },
+  'onboarding.slide3Title': {
+    AppLang.fr: 'Vends tes plats',
+    AppLang.en: 'Sell your dishes',
+    AppLang.wo: 'Jaay sa ñam',
+  },
+  'onboarding.slide3Body': {
+    AppLang.fr: 'Crée un compte vendeur, publie et reçois des commandes.',
+    AppLang.en: 'Create a seller account, publish and receive orders.',
+    AppLang.wo: 'Sos compte jaaykat, yéene ak jot commande.',
+  },
+  'account.deleteTitle': {
+    AppLang.fr: 'Supprimer mon compte',
+    AppLang.en: 'Delete my account',
+    AppLang.wo: 'Dindi sama compte',
+  },
+  'account.deleteWarning': {
+    AppLang.fr: 'Action irréversible',
+    AppLang.en: 'This cannot be undone',
+    AppLang.wo: 'Déggul ci gannaaw',
+  },
+  'account.deleteBody': {
+    AppLang.fr: 'Tes données, commandes et favoris seront supprimés.',
+    AppLang.en: 'Your data, orders and favorites will be removed.',
+    AppLang.wo: 'Sa données, commande ak soobé dinañu dindi.',
+  },
+  'account.deleteConfirm': {
+    AppLang.fr: 'Je comprends que cette action est définitive',
+    AppLang.en: 'I understand this is permanent',
+    AppLang.wo: 'Xam naa ne lii déggul',
+  },
+  'account.deleteAction': {
+    AppLang.fr: 'Supprimer définitivement',
+    AppLang.en: 'Delete permanently',
+    AppLang.wo: 'Dindi bu baax',
+  },
+  'account.deleteSuccess': {
+    AppLang.fr: 'Compte supprimé',
+    AppLang.en: 'Account deleted',
+    AppLang.wo: 'Compte bi dindi na',
+  },
+  'account.deletePendingBackend': {
+    AppLang.fr: 'Suppression bientôt disponible côté serveur',
+    AppLang.en: 'Deletion will be available on the server soon',
+    AppLang.wo: 'Dindi bi dina am ci serveur bi',
+  },
+  'menu.deleteAccount': {
+    AppLang.fr: 'Supprimer mon compte',
+    AppLang.en: 'Delete account',
+    AppLang.wo: 'Dindi sama compte',
+  },
+  'action.share': {AppLang.fr: 'Partager', AppLang.en: 'Share', AppLang.wo: 'Séddoo'},
 
   // Navigation
   'nav.home': {AppLang.fr: 'Accueil', AppLang.en: 'Home', AppLang.wo: 'Kër'},
@@ -489,10 +568,20 @@ const Map<String, Map<AppLang, String>> _strings = {
   // Notifications
   'notif.title': {AppLang.fr: 'Notifications', AppLang.en: 'Notifications', AppLang.wo: 'Xibaar yi'},
   'notif.empty': {AppLang.fr: 'Aucune notification.', AppLang.en: 'No notifications.', AppLang.wo: 'Amul xibaar.'},
+  'notif.emptyHint': {
+    AppLang.fr: 'Les mises à jour de commandes apparaîtront ici.',
+    AppLang.en: 'Order updates will appear here.',
+    AppLang.wo: 'Xibaar yi ci commande dinañu feeñ fii.',
+  },
 
   // Chat
   'chat.title': {AppLang.fr: 'Messages', AppLang.en: 'Messages', AppLang.wo: 'Bataaxal'},
   'chat.empty': {AppLang.fr: 'Aucune conversation.', AppLang.en: 'No conversations.', AppLang.wo: 'Amul waxtaan.'},
+  'chat.emptyHint': {
+    AppLang.fr: 'Les messages avec les vendeurs apparaîtront ici.',
+    AppLang.en: 'Messages with sellers will appear here.',
+    AppLang.wo: 'Bataaxal ak jaaykat yi dina feeñ fii.',
+  },
   'chat.hint': {AppLang.fr: 'Écris un message…', AppLang.en: 'Write a message…', AppLang.wo: 'Bindal bataaxal…'},
   'chat.noDiscussions': {
     AppLang.fr: 'Aucune discussion pour le moment.',
@@ -649,14 +738,29 @@ const Map<String, Map<AppLang, String>> _strings = {
     AppLang.wo: 'Amul jaaykat bi',
   },
   'seller.theirMeals': {AppLang.fr: 'Ses plats ({count})', AppLang.en: 'Their dishes ({count})', AppLang.wo: 'Ñam yi ({count})'},
+  'seller.noMealsHint': {
+    AppLang.fr: 'Ce vendeur n’a pas encore publié de plats.',
+    AppLang.en: 'This seller has not published any dishes yet.',
+    AppLang.wo: 'Jaaykat bi amul ñam bu yéene.',
+  },
   'seller.followed': {AppLang.fr: 'Abonné', AppLang.en: 'Following', AppLang.wo: 'Topp na'},
   'publications.title': {AppLang.fr: 'Mes publications', AppLang.en: 'My publications', AppLang.wo: 'Sama yéene'},
   'publications.tabMeals': {AppLang.fr: 'Plats', AppLang.en: 'Dishes', AppLang.wo: 'Ñam'},
   'publications.tabVideos': {AppLang.fr: 'Vidéos', AppLang.en: 'Videos', AppLang.wo: 'Wideo'},
   'publications.tabShorts': {AppLang.fr: 'Shorts', AppLang.en: 'Shorts', AppLang.wo: 'Shorts'},
   'publications.noMeals': {AppLang.fr: 'Aucun plat publié.', AppLang.en: 'No dishes published.', AppLang.wo: 'Amul ñam bu yéene.'},
+  'publications.noMealsHint': {
+    AppLang.fr: 'Publiez votre premier plat depuis l’accueil.',
+    AppLang.en: 'Publish your first dish from the home screen.',
+    AppLang.wo: 'Yéene sa ñam bu njëkk ci kër gi.',
+  },
   'publications.noVideos': {AppLang.fr: 'Aucune vidéo publiée.', AppLang.en: 'No videos published.', AppLang.wo: 'Amul wideo bu yéene.'},
   'publications.noShorts': {AppLang.fr: 'Aucun short publié.', AppLang.en: 'No shorts published.', AppLang.wo: 'Amul short bu yéene.'},
+  'publications.publishHint': {
+    AppLang.fr: 'Partagez vos plats et vidéos pour attirer plus de clients.',
+    AppLang.en: 'Share dishes and videos to reach more customers.',
+    AppLang.wo: 'Séddoo sa ñam ak sa wideo ngir am ay kiliyaan.',
+  },
   'publications.markSoldOut': {AppLang.fr: 'Marquer épuisé', AppLang.en: 'Mark sold out', AppLang.wo: 'Wax ne jeex na'},
   'publications.markAvailable': {AppLang.fr: 'Marquer disponible', AppLang.en: 'Mark available', AppLang.wo: 'Wax ne am na'},
   'publications.removeSpecial': {AppLang.fr: 'Retirer plat du jour', AppLang.en: 'Remove special', AppLang.wo: 'Dindi ñamu bés bi'},

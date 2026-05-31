@@ -3,7 +3,9 @@ import '../../api/api_client.dart';
 import '../../auth/auth_scope.dart';
 import '../../analytics/event_tracker.dart';
 import '../../l10n/app_strings.dart';
+import '../../ui/african_pattern_painter.dart';
 import '../../ui/chezmama_theme.dart';
+import '../../widgets/brand_logo.dart';
 import '../../widgets/primary_button.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -180,37 +182,70 @@ class _RegisterScreenState extends State<RegisterScreen> {
   Widget build(BuildContext context) {
     final t = Theme.of(context);
     return Scaffold(
-      appBar: AppBar(title: Text(tr('auth.createAccount'))),
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 420),
-            child: Container(
-              padding: const EdgeInsets.all(20),
+      extendBodyBehindAppBar: true,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        title: Text(tr('auth.createAccount')),
+      ),
+      body: Stack(
+        children: [
+          Positioned.fill(
+            child: DecoratedBox(
               decoration: BoxDecoration(
-                color: ChezMamaTheme.cardColor(context),
-                borderRadius: BorderRadius.circular(ChezMamaTheme.rCard),
-                boxShadow: ChezMamaTheme.softShadow(opacity: 0.10),
+                gradient: ChezMamaTheme.headerGradient(context),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    tr('register.sellerProfile'),
-                    style: t.textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: -0.3,
+            ),
+          ),
+          Positioned.fill(
+            child: CustomPaint(
+              painter: AfricanPatternPainter(
+                a: ChezMamaTheme.brandOrange,
+                b: ChezMamaTheme.brandAmber,
+                c: ChezMamaTheme.brandBrown,
+              ),
+            ),
+          ),
+          SafeArea(
+            child: Center(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(16),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 420),
+                  child: Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: ChezMamaTheme.cardColor(context)
+                          .withValues(alpha: 0.96),
+                      borderRadius:
+                          BorderRadius.circular(ChezMamaTheme.rCard),
+                      boxShadow: ChezMamaTheme.softShadow(opacity: 0.12),
                     ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    tr('register.subtitle'),
-                    style: t.textTheme.bodyMedium?.copyWith(
-                      color: ChezMamaTheme.mutedInk(context),
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            const BrandLogo(size: 40, radius: 12),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                tr('register.sellerProfile'),
+                                style: t.textTheme.titleLarge?.copyWith(
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          tr('register.subtitle'),
+                          style: t.textTheme.bodyMedium?.copyWith(
+                            color: ChezMamaTheme.mutedInk(context),
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                   const SizedBox(height: 16),
                   Text(
                     tr('register.personalInfo'),
@@ -441,10 +476,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ),
                   ),
                 ],
+                    ),
+                  ),
+                ),
               ),
             ),
           ),
-        ),
+        ],
       ),
     );
   }
