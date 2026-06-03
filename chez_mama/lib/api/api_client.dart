@@ -58,6 +58,11 @@ class ApiClient {
 
   Dio get dio => _dio;
 
+  /// Call after [ApiConfig.init] when the base URL was probed at runtime.
+  void updateBaseUrl() {
+    _dio.options.baseUrl = ApiConfig.apiUrl;
+  }
+
   Future<void> saveTokens({
     required String access,
     required String refresh,

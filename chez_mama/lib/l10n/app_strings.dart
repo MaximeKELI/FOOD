@@ -621,6 +621,31 @@ const Map<String, Map<AppLang, String>> _strings = {
     AppLang.en: 'Order updates will appear here.',
     AppLang.wo: 'Xibaar yi ci commande dinañu feeñ fii.',
   },
+  'notif.deleteAll': {
+    AppLang.fr: 'Tout supprimer',
+    AppLang.en: 'Delete all',
+    AppLang.wo: 'Dindi lépp',
+  },
+  'notif.deleteAllConfirm': {
+    AppLang.fr: 'Supprimer toutes les notifications ?',
+    AppLang.en: 'Delete all notifications?',
+    AppLang.wo: 'Dindi xibaar yi yépp ?',
+  },
+  'notif.deleted': {
+    AppLang.fr: 'Notification supprimée',
+    AppLang.en: 'Notification deleted',
+    AppLang.wo: 'Xibaar bi dindi na',
+  },
+  'notif.cleared': {
+    AppLang.fr: 'Toutes les notifications ont été supprimées',
+    AppLang.en: 'All notifications deleted',
+    AppLang.wo: 'Xibaar yi yépp dindi nañu',
+  },
+  'notif.swipeToDelete': {
+    AppLang.fr: 'Glisser pour supprimer',
+    AppLang.en: 'Swipe to delete',
+    AppLang.wo: 'Suul ngir dindi',
+  },
 
   // Chat
   'chat.title': {AppLang.fr: 'Messages', AppLang.en: 'Messages', AppLang.wo: 'Bataaxal'},
@@ -965,9 +990,9 @@ const Map<String, Map<AppLang, String>> _strings = {
   },
   'error.networkDevHint': {
     AppLang.fr:
-        '1) Backend : cd FOOD && docker compose up -d\n2) Même Wi-Fi : ./scripts/flutter-run-phone.sh\n   (détecte l’IP du PC automatiquement)\n3) Ou USB : adb reverse tcp:8000 tcp:8000',
+        '1) Backend : cd FOOD && docker compose up -d\n2) Téléphone USB : ./scripts/flutter-run-phone.sh\n3) Ou : adb reverse tcp:8000 tcp:8000 puis R (restart)',
     AppLang.en:
-        '1) Backend: cd FOOD && docker compose up -d\n2) Same Wi-Fi: ./scripts/flutter-run-phone.sh\n   (auto-detects PC IP)\n3) Or USB: adb reverse tcp:8000 tcp:8000',
+        '1) Backend: cd FOOD && docker compose up -d\n2) USB phone: ./scripts/flutter-run-phone.sh\n3) Or: adb reverse tcp:8000 tcp:8000 then R (restart)',
     AppLang.wo:
         '1) Backend ci PC\n2) ./scripts/flutter-run-phone.sh\n3) adb reverse tcp:8000 tcp:8000',
   },

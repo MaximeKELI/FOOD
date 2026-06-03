@@ -110,6 +110,29 @@ services:
       redis:
         condition: service_healthy
 
+  # Notifications météo toutes les 5 h (jus de fruit si chaud, foutou si froid, etc.)
+  weather-cron:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file:
+      - ./backend/.env.docker
+    environment:
+      DB_HOST: postgres
+      REDIS_URL: redis://redis:6379/0
+      WEATHER_NUDGE_INTERVAL_SECONDS: "18000"
+    command: >
+      sh -c "while true; do
+        python manage.py send_weather_nudges;
+        sleep $${WEATHER_NUDGE_INTERVAL_SECONDS:-18000};
+      done"
+    depends_on:
+      django:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+
 volumes:
   postgres_data:
   minio_data:

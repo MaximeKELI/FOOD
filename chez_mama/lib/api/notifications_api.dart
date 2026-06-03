@@ -33,6 +33,19 @@ class AppNotification {
       createdAt: json['created_at'] as String? ?? '',
     );
   }
+
+  AppNotification copyWith({bool? isRead}) {
+    return AppNotification(
+      id: id,
+      kind: kind,
+      title: title,
+      body: body,
+      relatedId: relatedId,
+      link: link,
+      isRead: isRead ?? this.isRead,
+      createdAt: createdAt,
+    );
+  }
 }
 
 class NotificationsApi {
@@ -59,5 +72,20 @@ class NotificationsApi {
 
   Future<void> markRead(int id) async {
     await _dio.post('/notifications/$id/read/');
+  }
+
+  /// Uses POST on existing `/read/` routes (works even if delete URLs are missing).
+  Future<void> deleteOne(int id) async {
+    await _dio.post(
+      '/notifications/$id/read/',
+      data: const {'action': 'delete'},
+    );
+  }
+
+  Future<void> deleteAll() async {
+    await _dio.post(
+      '/notifications/read/',
+      data: const {'action': 'clear'},
+    );
   }
 }

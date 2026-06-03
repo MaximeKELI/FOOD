@@ -1,13 +1,14 @@
 import 'dart:io' show Platform;
 
 import 'package:device_info_plus/device_info_plus.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 
 /// Central configuration for the backend API base URL.
 ///
 /// Production: `--dart-define=API_BASE_URL=https://api.example.com`
-/// Physical phone (USB): run `adb reverse tcp:8000 tcp:8000` then use 127.0.0.1
-/// Physical phone (Wi‑Fi): `--dart-define=API_BASE_URL=http://192.168.x.x:8000`
+/// Physical phone (USB): `adb reverse tcp:8000 tcp:8000` → uses `127.0.0.1`
+/// Physical phone (Wi‑Fi): `--dart-define=API_LAN_HOST=192.168.x.x`
 class ApiConfig {
   ApiConfig._();
 
@@ -25,34 +26,92 @@ class ApiConfig {
 
   static Future<void> init() async {
     if (_initialized) return;
+
     if (envBaseUrl.isNotEmpty) {
       _resolvedBaseUrl = envBaseUrl.replaceAll(RegExp(r'/+$'), '');
-    } else if (overrideBaseUrl != null && overrideBaseUrl!.isNotEmpty) {
+      _initialized = true;
+      return;
+    }
+    if (overrideBaseUrl != null && overrideBaseUrl!.isNotEmpty) {
       _resolvedBaseUrl = overrideBaseUrl!.replaceAll(RegExp(r'/+$'), '');
-    } else if (kIsWeb) {
-      _resolvedBaseUrl = 'http://127.0.0.1:$port';
-    } else if (Platform.isAndroid) {
+      _initialized = true;
+      return;
+    }
+
+    final candidates = await _connectionCandidates();
+    for (final url in candidates) {
+      if (await _probeHealth(url)) {
+        _resolvedBaseUrl = url;
+        _initialized = true;
+        if (kDebugMode) {
+          debugPrint('[ApiConfig] API reachable at $url');
+        }
+        return;
+      }
+    }
+
+    _resolvedBaseUrl = candidates.first;
+    _initialized = true;
+    if (kDebugMode) {
+      debugPrint(
+        '[ApiConfig] No /health/ probe succeeded; defaulting to $_resolvedBaseUrl',
+      );
+    }
+  }
+
+  static Future<List<String>> _connectionCandidates() async {
+    final seen = <String>{};
+    final ordered = <String>[];
+
+    void push(String host) {
+      final url = 'http://$host:$port';
+      if (seen.add(url)) ordered.add(url);
+    }
+
+    if (kIsWeb) {
+      push('127.0.0.1');
+      return ordered;
+    }
+
+    if (Platform.isAndroid) {
       try {
         final info = await DeviceInfoPlugin()
             .androidInfo
             .timeout(const Duration(seconds: 3));
         if (info.isPhysicalDevice) {
+          // USB + adb reverse is the most reliable on a plugged-in phone.
+          push('127.0.0.1');
           if (lanHost.isNotEmpty) {
-            _resolvedBaseUrl = 'http://$lanHost:$port';
-          } else {
-            // Works with: adb reverse tcp:8000 tcp:8000
-            _resolvedBaseUrl = 'http://127.0.0.1:$port';
+            push(lanHost);
           }
         } else {
-          _resolvedBaseUrl = 'http://10.0.2.2:$port';
+          push('10.0.2.2');
+          push('127.0.0.1');
         }
       } catch (_) {
-        _resolvedBaseUrl = 'http://127.0.0.1:$port';
+        push('127.0.0.1');
+        if (lanHost.isNotEmpty) push(lanHost);
       }
     } else {
-      _resolvedBaseUrl = 'http://127.0.0.1:$port';
+      push('127.0.0.1');
     }
-    _initialized = true;
+
+    return ordered;
+  }
+
+  static Future<bool> _probeHealth(String baseUrl) async {
+    try {
+      final dio = Dio(
+        BaseOptions(
+          connectTimeout: const Duration(seconds: 4),
+          receiveTimeout: const Duration(seconds: 4),
+        ),
+      );
+      final res = await dio.get('$baseUrl/health/');
+      return res.statusCode == 200;
+    } catch (_) {
+      return false;
+    }
   }
 
   static String get baseUrl {

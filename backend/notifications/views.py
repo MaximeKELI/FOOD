@@ -9,6 +9,7 @@ from .serializers import NotificationSerializer
 class NotificationListView(generics.ListAPIView):
     serializer_class = NotificationSerializer
     permission_classes = [permissions.IsAuthenticated]
+    pagination_class = None
 
     def get_queryset(self):
         return Notification.objects.filter(recipient=self.request.user)
@@ -30,6 +31,11 @@ class NotificationMarkReadView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request):
+        action = (request.data.get("action") or request.query_params.get("action") or "").strip()
+        if action in ("clear", "delete_all"):
+            deleted, _ = Notification.objects.filter(recipient=request.user).delete()
+            return Response({"ok": True, "deleted": deleted})
+
         Notification.objects.filter(
             recipient=request.user, is_read=False
         ).update(is_read=True)
@@ -74,9 +80,45 @@ class NotificationMarkOneReadView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request, pk):
-        updated = Notification.objects.filter(
-            recipient=request.user, pk=pk, is_read=False
-        ).update(is_read=True)
-        if not updated:
+        action = (request.data.get("action") or request.query_params.get("action") or "").strip()
+        qs = Notification.objects.filter(recipient=request.user, pk=pk)
+        if not qs.exists():
             return Response({"detail": "Notification introuvable."}, status=404)
+
+        if action == "delete":
+            deleted, _ = qs.delete()
+            return Response({"ok": True, "deleted": deleted})
+
+        qs.filter(is_read=False).update(is_read=True)
         return Response({"ok": True})
+
+
+class NotificationDeleteOneView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def _remove_one(self, user, pk):
+        deleted, _ = Notification.objects.filter(recipient=user, pk=pk).delete()
+        if not deleted:
+            return Response({"detail": "Notification introuvable."}, status=404)
+        return Response({"ok": True, "deleted": deleted})
+
+    def delete(self, request, pk):
+        return self._remove_one(request.user, pk)
+
+    def post(self, request, pk):
+        """POST fallback for clients that block DELETE."""
+        return self._remove_one(request.user, pk)
+
+
+class NotificationClearView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def _clear_all(self, user):
+        deleted, _ = Notification.objects.filter(recipient=user).delete()
+        return Response({"ok": True, "deleted": deleted})
+
+    def delete(self, request):
+        return self._clear_all(request.user)
+
+    def post(self, request):
+        return self._clear_all(request.user)

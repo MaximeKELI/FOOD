@@ -23,4 +23,12 @@ class NotificationsNotifier extends ChangeNotifier {
     _unread = 0;
     notifyListeners();
   }
+
+  /// Optimistic update when one notification is opened locally.
+  void markOneReadLocally() {
+    if (_unread > 0) {
+      _unread -= 1;
+      notifyListeners();
+    }
+  }
 }

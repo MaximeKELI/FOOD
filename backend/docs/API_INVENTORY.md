@@ -78,9 +78,13 @@ Cartographie des endpoints DRF existants et correspondance avec le cahier des ch
 
 | Method | Path | Description |
 |--------|------|-------------|
-| GET | `notifications/` | In-app notifications |
+| GET | `notifications/` | In-app notifications (no pagination) |
 | POST | `notifications/read/` | Mark all read |
 | POST | `notifications/<id>/read/` | Mark one |
+| POST `action=delete` | `notifications/<id>/read/` | Delete one (preferred) |
+| POST `action=clear` | `notifications/read/` | Delete all (preferred) |
+| DELETE / POST | `notifications/<id>/` | Delete one (legacy) |
+| DELETE / POST | `notifications/clear/` | Delete all (legacy) |
 | POST | `notifications/push/register/` | FCM device token |
 
 ### Deliveries (ready, optional feature flag) — `/api/deliveries/`

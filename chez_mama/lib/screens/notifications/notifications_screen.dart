@@ -64,15 +64,71 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         return Icons.star_rounded;
       case 'chat':
         return Icons.chat_bubble_rounded;
+      case 'weather':
+        return Icons.wb_sunny_rounded;
       default:
         return Icons.notifications_rounded;
     }
   }
 
+  Future<void> _confirmDeleteAll() async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(tr('notif.deleteAll')),
+        content: Text(tr('notif.deleteAllConfirm')),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(tr('action.cancel')),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(ctx).colorScheme.error,
+            ),
+            child: Text(tr('action.delete')),
+          ),
+        ],
+      ),
+    );
+    if (ok != true || !mounted) return;
+
+    try {
+      await NotificationsApi.instance.deleteAll();
+      if (!mounted) return;
+      setState(() => _items = []);
+      await NotificationsNotifier.instance.refresh();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(tr('notif.cleared'))),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(apiErrorMessage(e))),
+      );
+    }
+  }
+
+  void _patchItem(int id, {bool? isRead}) {
+    setState(() {
+      _items = _items
+          .map((item) => item.id == id ? item.copyWith(isRead: isRead) : item)
+          .toList();
+    });
+  }
+
   Future<void> _openNotification(AppNotification n) async {
     if (!n.isRead) {
-      await NotificationsApi.instance.markRead(n.id);
-      await NotificationsNotifier.instance.refresh();
+      _patchItem(n.id, isRead: true);
+      NotificationsNotifier.instance.markOneReadLocally();
+      try {
+        await NotificationsApi.instance.markRead(n.id);
+        await NotificationsNotifier.instance.refresh();
+      } catch (_) {
+        // Garde l'état local lu ; resync au prochain refresh.
+      }
     }
     if (!mounted) return;
 
@@ -105,7 +161,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           );
         }
       case 'meal':
-        // Seller sees review on publications — stay on list for now.
         break;
       default:
         if (n.kind == 'order' || n.kind == 'order_status') {
@@ -120,10 +175,136 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     }
   }
 
+  String _displayText(String raw) {
+    return raw
+        .replaceAll('\u2014', ', ')
+        .replaceAll('\u2013', ', ')
+        .replaceAll('\u2212', ', ');
+  }
+
+  Future<bool> _deleteOne(AppNotification n, {bool showSnack = true}) async {
+    try {
+      await NotificationsApi.instance.deleteOne(n.id);
+      if (!mounted) return true;
+      setState(() => _items.removeWhere((item) => item.id == n.id));
+      await NotificationsNotifier.instance.refresh();
+      if (showSnack && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(tr('notif.deleted'))),
+        );
+      }
+      return true;
+    } catch (e) {
+      if (!mounted) return false;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(apiErrorMessage(e))),
+      );
+      return false;
+    }
+  }
+
+  Widget _notificationTile(AppNotification n, int index) {
+    final card = Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: n.isRead
+            ? ChezMamaTheme.cardColor(context)
+            : ChezMamaTheme.brandOrange.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(ChezMamaTheme.rCard),
+        boxShadow: ChezMamaTheme.softShadow(opacity: 0.06),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          CircleAvatar(
+            backgroundColor: ChezMamaTheme.brandOrange.withValues(alpha: 0.14),
+            child: Icon(
+              _iconFor(n.kind),
+              color: ChezMamaTheme.brandBrown,
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () => _openNotification(n),
+                borderRadius: BorderRadius.circular(8),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 2),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _displayText(n.title),
+                        style: Theme.of(context)
+                            .textTheme
+                            .titleSmall
+                            ?.copyWith(fontWeight: FontWeight.w800),
+                      ),
+                      if (n.body.isNotEmpty) ...[
+                        const SizedBox(height: 2),
+                        Text(_displayText(n.body)),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+          IconButton(
+            tooltip: tr('action.delete'),
+            visualDensity: VisualDensity.compact,
+            onPressed: () => _deleteOne(n),
+            icon: Icon(
+              Icons.close_rounded,
+              size: 20,
+              color: Theme.of(context).colorScheme.error.withValues(
+                    alpha: 0.85,
+                  ),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    return FadeInUp(
+      index: index,
+      child: Dismissible(
+        key: ValueKey('notif-${n.id}'),
+        direction: DismissDirection.endToStart,
+        background: Container(
+          alignment: Alignment.centerRight,
+          padding: const EdgeInsets.only(right: 20),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.error,
+            borderRadius: BorderRadius.circular(ChezMamaTheme.rCard),
+          ),
+          child: const Icon(Icons.delete_outline_rounded, color: Colors.white),
+        ),
+        confirmDismiss: (_) async {
+          return _deleteOne(n, showSnack: true);
+        },
+        child: card,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(tr('notif.title'))),
+      appBar: AppBar(
+        title: Text(tr('notif.title')),
+        actions: [
+          if (_items.isNotEmpty)
+            IconButton(
+              tooltip: tr('notif.deleteAll'),
+              onPressed: _confirmDeleteAll,
+              icon: const Icon(Icons.delete_sweep_rounded),
+            ),
+        ],
+      ),
       body: _buildBody(),
     );
   }
@@ -155,63 +336,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         padding: const EdgeInsets.all(14),
         itemCount: _items.length,
         separatorBuilder: (_, __) => const SizedBox(height: 10),
-        itemBuilder: (context, i) {
-          final n = _items[i];
-          return FadeInUp(
-            index: i,
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: () => _openNotification(n),
-                borderRadius: BorderRadius.circular(ChezMamaTheme.rCard),
-                child: Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: n.isRead
-                        ? ChezMamaTheme.cardColor(context)
-                        : ChezMamaTheme.brandOrange.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(ChezMamaTheme.rCard),
-                    boxShadow: ChezMamaTheme.softShadow(opacity: 0.06),
-                  ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      CircleAvatar(
-                        backgroundColor:
-                            ChezMamaTheme.brandOrange.withValues(alpha: 0.14),
-                        child: Icon(
-                          _iconFor(n.kind),
-                          color: ChezMamaTheme.brandBrown,
-                          size: 20,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              n.title,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .titleSmall
-                                  ?.copyWith(fontWeight: FontWeight.w800),
-                            ),
-                            if (n.body.isNotEmpty) ...[
-                              const SizedBox(height: 2),
-                              Text(n.body),
-                            ],
-                          ],
-                        ),
-                      ),
-                      const Icon(Icons.chevron_right_rounded),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          );
-        },
+        itemBuilder: (context, i) => _notificationTile(_items[i], i),
       ),
     );
   }

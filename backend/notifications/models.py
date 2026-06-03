@@ -9,6 +9,7 @@ class Notification(models.Model):
         FOLLOW = "follow", "Abonnement"
         REVIEW = "review", "Avis"
         CHAT = "chat", "Message"
+        WEATHER = "weather", "Météo"
 
     recipient = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -57,6 +58,10 @@ def notify(recipient, kind, title, body="", *, related_id=None, link=""):
     """Helper to create a notification (no-op if recipient is None)."""
     if recipient is None:
         return None
+    from .text import sanitize_notification_text
+
+    title = sanitize_notification_text(title)
+    body = sanitize_notification_text(body)
     notification = Notification.objects.create(
         recipient=recipient,
         kind=kind,

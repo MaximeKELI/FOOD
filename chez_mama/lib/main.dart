@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
 
 import 'analytics/event_tracker.dart';
+import 'api/api_client.dart';
 import 'api/api_config.dart';
 import 'auth/auth_scope.dart';
 import 'auth/auth_service.dart';
@@ -11,6 +12,7 @@ import 'cart/cart_service.dart';
 import 'l10n/app_strings.dart';
 import 'notifications/push_service.dart';
 import 'payments/payment_pending_service.dart';
+import 'services/weather_nudge_service.dart';
 import 'providers/auth_provider.dart';
 import 'router/app_router.dart';
 import 'services/api_reachability_service.dart';
@@ -26,6 +28,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   Stripe.merchantIdentifier = 'merchant.com.chez_mama';
   await ApiConfig.init();
+  ApiClient.instance.updateBaseUrl();
   _authService = AuthService();
   runApp(
     ProviderScope(
@@ -52,19 +55,26 @@ class _ChezMamaAppState extends ConsumerState<ChezMamaApp> {
     ThemeController.instance.load();
     LocaleController.instance.load();
     PushService.instance.init();
+    WeatherNudgeService.instance.init();
     CartService.instance.init();
     ConnectivityService.instance.init();
     DeepLinkService.instance.init();
     ApiReachabilityService.instance.check();
     _authService.init();
     _lifecycle = AppLifecycleListener(
-      onResume: () => PaymentPendingService.instance.onAppResume(),
+      onResume: () {
+        PaymentPendingService.instance.onAppResume();
+        WeatherNudgeService.instance.maybeNotify(auth: _authService);
+      },
     );
+    WeatherNudgeService.instance.maybeNotify(auth: _authService);
+    WeatherNudgeService.instance.startPeriodicChecks(auth: _authService);
   }
 
   @override
   void dispose() {
     _lifecycle?.dispose();
+    WeatherNudgeService.instance.stopPeriodicChecks();
     ConnectivityService.instance.dispose();
     _authService.dispose();
     super.dispose();
