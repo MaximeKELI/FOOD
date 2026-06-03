@@ -73,4 +73,17 @@ def notify(recipient, kind, title, body="", *, related_id=None, link=""):
         body,
         data={"kind": kind, "related_id": related_id or "", "link": link},
     )
+    from payments.realtime import emit_notification
+
+    emit_notification(
+        recipient.id,
+        {
+            "id": notification.id,
+            "kind": kind,
+            "title": title,
+            "body": body,
+            "related_id": related_id,
+            "link": link,
+        },
+    )
     return notification

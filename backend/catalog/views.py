@@ -1,5 +1,6 @@
 from django.db.models import Avg, Count, Exists, OuterRef, Q
 from django.shortcuts import get_object_or_404
+from drf_spectacular.utils import extend_schema, extend_schema_view
 from rest_framework import generics, permissions
 from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.response import Response
@@ -43,6 +44,7 @@ def _meal_queryset(request):
     return qs
 
 
+@extend_schema_view(get=extend_schema(tags=["catalog"], summary="List food categories"))
 class CategoryListView(generics.ListAPIView):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
@@ -50,6 +52,10 @@ class CategoryListView(generics.ListAPIView):
     pagination_class = None
 
 
+@extend_schema_view(
+    get=extend_schema(tags=["catalog"], summary="List or search meals"),
+    post=extend_schema(tags=["catalog"], summary="Create a meal (seller)"),
+)
 class MealListCreateView(generics.ListCreateAPIView):
     parser_classes = [MultiPartParser, FormParser]
 

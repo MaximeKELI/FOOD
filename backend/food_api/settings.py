@@ -30,6 +30,7 @@ INSTALLED_APPS = [
     "rest_framework",
     "corsheaders",
     "storages",
+    "drf_spectacular",
     # Local apps
     "accounts",
     "catalog",
@@ -38,6 +39,7 @@ INSTALLED_APPS = [
     "notifications",
     "chat",
     "payments",
+    "deliveries",
 ]
 
 MIDDLEWARE = [
@@ -108,16 +110,21 @@ MEDIA_ROOT = BASE_DIR / "media"
 SERVE_MEDIA = config("SERVE_MEDIA", default=DEBUG, cast=bool)
 
 AWS_STORAGE_BUCKET_NAME = config("AWS_STORAGE_BUCKET_NAME", default="")
-USE_S3 = bool(AWS_STORAGE_BUCKET_NAME)
+USE_S3 = config("USE_S3", default=bool(AWS_STORAGE_BUCKET_NAME), cast=bool)
 
 if USE_S3:
     AWS_ACCESS_KEY_ID = config("AWS_ACCESS_KEY_ID", default="")
     AWS_SECRET_ACCESS_KEY = config("AWS_SECRET_ACCESS_KEY", default="")
     AWS_S3_REGION_NAME = config("AWS_S3_REGION_NAME", default="eu-west-3")
+    AWS_S3_ENDPOINT_URL = config("AWS_S3_ENDPOINT_URL", default="")
+    AWS_S3_USE_SSL = config("AWS_S3_USE_SSL", default=True, cast=bool)
     AWS_S3_CUSTOM_DOMAIN = config("AWS_S3_CUSTOM_DOMAIN", default="")
     AWS_DEFAULT_ACL = None
-    AWS_QUERYSTRING_AUTH = False
+    AWS_QUERYSTRING_AUTH = config("AWS_QUERYSTRING_AUTH", default=False, cast=bool)
+    AWS_S3_SIGNATURE_VERSION = config("AWS_S3_SIGNATURE_VERSION", default="s3v4")
     AWS_S3_OBJECT_PARAMETERS = {"CacheControl": "max-age=86400"}
+    if AWS_S3_ENDPOINT_URL:
+        AWS_S3_ADDRESSING_STYLE = "path"
     STORAGES = {
         "default": {
             "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
@@ -127,9 +134,24 @@ if USE_S3:
         },
     }
     if AWS_S3_CUSTOM_DOMAIN:
-        MEDIA_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/"
+        scheme = "https" if AWS_S3_USE_SSL else "http"
+        MEDIA_URL = f"{scheme}://{AWS_S3_CUSTOM_DOMAIN}/"
+    elif AWS_S3_ENDPOINT_URL:
+        MEDIA_URL = f"{AWS_S3_ENDPOINT_URL.rstrip('/')}/{AWS_STORAGE_BUCKET_NAME}/"
     else:
         MEDIA_URL = f"https://{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com/"
+
+REDIS_URL = config("REDIS_URL", default="")
+DELIVERIES_ENABLED = config("DELIVERIES_ENABLED", default=False, cast=bool)
+
+STRIPE_SECRET_KEY = config("STRIPE_SECRET_KEY", default="")
+STRIPE_WEBHOOK_SECRET = config("STRIPE_WEBHOOK_SECRET", default="")
+STRIPE_PUBLISHABLE_KEY = config("STRIPE_PUBLISHABLE_KEY", default="")
+
+GOOGLE_OAUTH_CLIENT_ID = config("GOOGLE_OAUTH_CLIENT_ID", default="")
+
+SOCKET_EMIT_URL = config("SOCKET_EMIT_URL", default="http://socket:3001/internal/emit")
+SOCKET_INTERNAL_SECRET = config("SOCKET_INTERNAL_SECRET", default="socket-internal-dev")
 
 DATA_UPLOAD_MAX_MEMORY_SIZE = 52 * 1024 * 1024
 
@@ -142,6 +164,7 @@ REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": (
         "rest_framework.permissions.IsAuthenticatedOrReadOnly",
     ),
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
     "PAGE_SIZE": 20,
     "DEFAULT_THROTTLE_CLASSES": (
@@ -151,6 +174,24 @@ REST_FRAMEWORK = {
     "DEFAULT_THROTTLE_RATES": {
         "anon": "60/min",
         "user": "300/min",
+    },
+}
+
+SPECTACULAR_SETTINGS = {
+    "TITLE": "Food API",
+    "DESCRIPTION": "REST API for the Food / Chez Mama mobile app.",
+    "VERSION": "1.0.0",
+    "SERVE_INCLUDE_SCHEMA": False,
+    "COMPONENT_SPLIT_REQUEST": True,
+    "SECURITY": [{"BearerAuth": []}],
+    "APPEND_COMPONENTS": {
+        "securitySchemes": {
+            "BearerAuth": {
+                "type": "http",
+                "scheme": "bearer",
+                "bearerFormat": "JWT",
+            }
+        }
     },
 }
 

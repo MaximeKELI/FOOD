@@ -33,7 +33,7 @@ jobs:
           cache: pip
           cache-dependency-path: backend/requirements.txt
       - run: pip install -r requirements.txt
-      - run: python manage.py test --verbosity=1
+      - run: pytest --verbosity=1
         env:
           DB_HOST: localhost
           DB_PORT: 5432

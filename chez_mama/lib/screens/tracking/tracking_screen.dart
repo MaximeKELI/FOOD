@@ -5,6 +5,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import '../../api/accounts_api.dart';
 import '../../api/api_client.dart';
+import '../../api/api_config.dart';
 import '../../api/orders_api.dart';
 import '../../auth/auth_scope.dart';
 import '../../l10n/app_strings.dart';
@@ -62,19 +63,41 @@ class _TrackingScreenState extends State<TrackingScreen> {
   bool _ordersLoading = true;
   String? _ordersError;
   int _selectedOrderIndex = 0;
+  bool _wasAuthed = false;
 
   @override
   void initState() {
     super.initState();
     _startLocation();
     _loadSellers();
-    if (AuthScope.of(context).isAuthed) {
+    WidgetsBinding.instance.addPostFrameCallback((_) => _bindOrdersForAuth());
+  }
+
+  void _bindOrdersForAuth() {
+    if (!mounted) return;
+    final authed = AuthScope.of(context).isAuthed;
+    if (authed == _wasAuthed && (_ordersTimer != null || !authed)) return;
+    _wasAuthed = authed;
+    if (authed) {
       _loadOrders();
+      _ordersTimer?.cancel();
       _ordersTimer =
           Timer.periodic(const Duration(seconds: 20), (_) => _loadOrders());
     } else {
-      _ordersLoading = false;
+      _ordersTimer?.cancel();
+      _ordersTimer = null;
+      setState(() {
+        _orders = [];
+        _ordersLoading = false;
+        _ordersError = null;
+      });
     }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _bindOrdersForAuth();
   }
 
   List<OrderView> get _activeOrders => _orders
@@ -102,8 +125,9 @@ class _TrackingScreenState extends State<TrackingScreen> {
       });
     } catch (e) {
       if (!mounted) return;
+      final msg = apiErrorMessage(e);
       setState(() {
-        _ordersError = apiErrorMessage(e);
+        _ordersError = '$msg\n\n${tr('tracking.connectionHint')}\n(${ApiConfig.baseUrl})';
         _ordersLoading = false;
       });
     }
@@ -230,76 +254,81 @@ class _TrackingScreenState extends State<TrackingScreen> {
     final active = _activeOrders;
 
     return Scaffold(
-      body: Padding(
-        padding: const EdgeInsets.fromLTRB(
-          ChezMamaTheme.spaceMd,
-          ChezMamaTheme.spaceMd,
-          ChezMamaTheme.spaceMd,
-          ChezMamaTheme.navClearance,
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              tr('tracking.title'),
-              style: t.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900),
-            ),
-            const SizedBox(height: 12),
-            if (_ordersLoading)
-              const ListLoadingSkeleton(itemCount: 2, imageHeight: 80)
-            else if (_ordersError != null && _orders.isEmpty)
-              EmptyStateView(
-                compact: true,
-                wrapInCard: false,
-                icon: Icons.cloud_off_rounded,
-                title: tr('tracking.loadError'),
-                subtitle: _ordersError!,
-                actionLabel: tr('action.retry'),
-                onAction: _loadOrders,
-              )
-            else if (tracked == null)
-              EmptyStateView(
-                compact: true,
-                wrapInCard: false,
-                icon: Icons.delivery_dining_outlined,
-                lottieAsset: LottieAssets.empty,
-                title: tr('tracking.none'),
-                subtitle: tr('tracking.noneHint'),
-                secondaryActionLabel: tr('tracking.seeAll'),
-                onSecondaryAction: () => Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const OrdersScreen()),
-                ),
-              )
-            else ...[
-              if (active.length > 1)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
-                  child: SizedBox(
-                    height: 40,
-                    child: ListView.separated(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: active.length,
-                      separatorBuilder: (_, __) => const SizedBox(width: 8),
-                      itemBuilder: (context, i) {
-                        final order = active[i];
-                        final selected = i == _selectedOrderIndex;
-                        return ChoiceChip(
-                          label: Text(trf('tracking.orderLabel', {'id': order.id})),
-                          selected: selected,
-                          onSelected: (_) =>
-                              setState(() => _selectedOrderIndex = i),
-                        );
-                      },
+      body: RefreshIndicator(
+        onRefresh: () async {
+          await Future.wait([_loadOrders(), _loadSellers()]);
+        },
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.fromLTRB(
+            ChezMamaTheme.spaceMd,
+            ChezMamaTheme.spaceMd,
+            ChezMamaTheme.spaceMd,
+            ChezMamaTheme.navClearance,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                tr('tracking.title'),
+                style: t.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900),
+              ),
+              const SizedBox(height: 12),
+              if (_ordersLoading)
+                const ListLoadingSkeleton(itemCount: 2, imageHeight: 80)
+              else if (_ordersError != null && _orders.isEmpty)
+                EmptyStateView(
+                  compact: true,
+                  wrapInCard: false,
+                  icon: Icons.cloud_off_rounded,
+                  title: tr('tracking.loadError'),
+                  subtitle: _ordersError!,
+                  actionLabel: tr('action.retry'),
+                  onAction: _loadOrders,
+                )
+              else if (tracked == null)
+                EmptyStateView(
+                  compact: true,
+                  wrapInCard: false,
+                  icon: Icons.delivery_dining_outlined,
+                  lottieAsset: LottieAssets.empty,
+                  title: tr('tracking.none'),
+                  subtitle: tr('tracking.noneHint'),
+                  secondaryActionLabel: tr('tracking.seeAll'),
+                  onSecondaryAction: () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const OrdersScreen()),
+                  ),
+                )
+              else ...[
+                if (active.length > 1)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: SizedBox(
+                      height: 40,
+                      child: ListView.separated(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: active.length,
+                        separatorBuilder: (_, __) => const SizedBox(width: 8),
+                        itemBuilder: (context, i) {
+                          final order = active[i];
+                          final selected = i == _selectedOrderIndex;
+                          return ChoiceChip(
+                            label: Text(trf('tracking.orderLabel', {'id': order.id})),
+                            selected: selected,
+                            onSelected: (_) =>
+                                setState(() => _selectedOrderIndex = i),
+                          );
+                        },
+                      ),
                     ),
                   ),
-                ),
-              _OrderStatusCard(order: tracked),
-            ],
-            const SizedBox(height: 16),
-            Text(
-              tr('tracking.mapSection'),
-              style: t.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
-            ),
+                _OrderStatusCard(order: tracked),
+              ],
+              const SizedBox(height: 16),
+              Text(
+                tr('tracking.mapSection'),
+                style: t.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+              ),
             if (_manualMode) ...[
               const SizedBox(height: 8),
               Text(
@@ -333,7 +362,8 @@ class _TrackingScreenState extends State<TrackingScreen> {
               ),
             ],
             const SizedBox(height: 12),
-            Expanded(
+            SizedBox(
+              height: 280,
               child: Container(
                 decoration: BoxDecoration(
                   color: ChezMamaTheme.cardColor(context),
@@ -384,15 +414,19 @@ class _TrackingScreenState extends State<TrackingScreen> {
           ],
         ),
       ),
+    ),
     );
   }
 
   Widget _buildMapContent() {
+    final tracked = _trackedOrder;
+
     if (_locating) {
       return const ListLoadingSkeleton(itemCount: 1, imageHeight: 220);
     }
 
-    if (_userLocation == null) {
+    if (_userLocation == null &&
+        (tracked?.latitude == null || tracked?.longitude == null)) {
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(18),
@@ -417,22 +451,22 @@ class _TrackingScreenState extends State<TrackingScreen> {
       );
     }
 
-    final center = _userLocation!;
+    final center = _mapCenter(tracked);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _mapController.move(center, 15.5);
+      _mapController.move(center, 14.5);
     });
 
     return FlutterMap(
       mapController: _mapController,
       options: MapOptions(
         initialCenter: center,
-        initialZoom: 15.5,
+        initialZoom: 14.5,
         onTap: _manualMode ? (_, point) => _setManualLocation(point) : null,
       ),
       children: [
         TileLayer(
           urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-          userAgentPackageName: 'com.example.food',
+          userAgentPackageName: 'com.food.chezmama',
         ),
         MarkerLayer(
           markers: [
@@ -461,26 +495,53 @@ class _TrackingScreenState extends State<TrackingScreen> {
                   ),
                 ),
               ),
-            Marker(
-              point: center,
-              width: 52,
-              height: 52,
-              child: Container(
-                decoration: BoxDecoration(
-                  color: ChezMamaTheme.brandOrange,
-                  shape: BoxShape.circle,
-                  boxShadow: ChezMamaTheme.softShadow(opacity: 0.2),
-                ),
-                child: const Icon(
-                  Icons.my_location_rounded,
-                  color: Colors.white,
+            if (tracked?.latitude != null && tracked?.longitude != null)
+              Marker(
+                point: LatLng(tracked!.latitude!, tracked.longitude!),
+                width: 48,
+                height: 48,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: ChezMamaTheme.brandOrange, width: 2),
+                    boxShadow: ChezMamaTheme.softShadow(opacity: 0.18),
+                  ),
+                  child: const Icon(
+                    Icons.delivery_dining_rounded,
+                    color: ChezMamaTheme.brandOrange,
+                    size: 24,
+                  ),
                 ),
               ),
-            ),
+            if (_userLocation != null)
+              Marker(
+                point: _userLocation!,
+                width: 52,
+                height: 52,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: ChezMamaTheme.brandOrange,
+                    shape: BoxShape.circle,
+                    boxShadow: ChezMamaTheme.softShadow(opacity: 0.2),
+                  ),
+                  child: const Icon(
+                    Icons.my_location_rounded,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
           ],
         ),
       ],
     );
+  }
+
+  LatLng _mapCenter(OrderView? order) {
+    if (order?.latitude != null && order?.longitude != null) {
+      return LatLng(order!.latitude!, order.longitude!);
+    }
+    return _userLocation ?? _defaultCenter;
   }
 
   void _showSeller(SellerLocation seller) {

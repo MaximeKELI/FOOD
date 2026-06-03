@@ -4,6 +4,7 @@ import 'package:latlong2/latlong.dart';
 import '../../cache/meal_cache.dart';
 import '../../api/api_client.dart';
 import '../../api/catalog_api.dart';
+import '../../auth/auth_scope.dart';
 import '../../l10n/app_strings.dart';
 import '../../models/meal.dart';
 import '../../services/app_location_service.dart';
@@ -128,7 +129,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       if (!mounted) return;
       if (_allMeals.isEmpty) {
         setState(() {
-          error = apiErrorMessage(e);
+          error = isNetworkError(e) ? networkErrorDetail() : apiErrorMessage(e);
           loading = false;
         });
       } else {
@@ -258,6 +259,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       builder: (_) => const PublishMealSheet(),
     );
     if (created == true) {
+      await AuthScope.of(context).refreshMe();
       await _loadMeals();
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -271,7 +273,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     final meals = _visibleMeals;
 
     return Scaffold(
-      floatingActionButton: widget.isSeller && widget.isAuthed
+      floatingActionButton: widget.isAuthed
           ? FloatingActionButton.extended(
               onPressed: _publishMeal,
               icon: const Icon(Icons.add_rounded),

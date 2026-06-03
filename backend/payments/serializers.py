@@ -4,8 +4,8 @@ from .models import PaymentIntent
 
 
 class PaymentIntentSerializer(serializers.ModelSerializer):
-    status_label = serializers.CharField(source="get_status_display", read_only=True)
-    provider_label = serializers.CharField(source="get_provider_display", read_only=True)
+    publishable_key = serializers.SerializerMethodField()
+    client_secret = serializers.CharField(read_only=True)
 
     class Meta:
         model = PaymentIntent
@@ -13,12 +13,19 @@ class PaymentIntentSerializer(serializers.ModelSerializer):
             "id",
             "order",
             "provider",
-            "provider_label",
             "status",
-            "status_label",
             "amount",
             "external_id",
             "checkout_url",
+            "client_secret",
+            "publishable_key",
             "created_at",
         )
         read_only_fields = fields
+
+    def get_publishable_key(self, obj):
+        return (obj.metadata or {}).get("publishable_key", "")
+
+
+class StripeCreateSerializer(serializers.Serializer):
+    order_id = serializers.IntegerField()

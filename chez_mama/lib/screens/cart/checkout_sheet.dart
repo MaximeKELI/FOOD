@@ -9,6 +9,7 @@ import '../../cart/cart_service.dart';
 import '../../cart/received_orders_notifier.dart';
 import '../../l10n/app_strings.dart';
 import '../../payments/payment_pending_service.dart';
+import '../../payments/stripe_payment_service.dart';
 import '../../services/app_location_service.dart';
 import '../../ui/chezmama_theme.dart';
 import '../../utils/currency_format.dart';
@@ -149,6 +150,7 @@ class _CheckoutSheetState extends State<CheckoutSheet> {
       (_cart.total + _deliveryFee - _promoDiscount).clamp(0, 1 << 30);
 
   bool _isDigitalPayment(String method) =>
+      method == 'stripe' ||
       method == 'wave' ||
       method == 'orange_money' ||
       method == 'free_money';
@@ -205,7 +207,18 @@ class _CheckoutSheetState extends State<CheckoutSheet> {
         promoCode: _promo.text.trim(),
       );
       var paid = !_isDigitalPayment(_payment);
-      if (_isDigitalPayment(_payment)) {
+      if (_payment == 'stripe') {
+        try {
+          final intentId = await StripePaymentService.instance.payOrder(order.id);
+          paid = await _waitForPayment(intentId);
+        } catch (e) {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(apiErrorMessage(e))),
+          );
+          return;
+        }
+      } else if (_isDigitalPayment(_payment)) {
         final intent = await PaymentsApi.instance.initiate(order.id);
         PaymentPendingService.instance.track(
           intentId: intent.id,

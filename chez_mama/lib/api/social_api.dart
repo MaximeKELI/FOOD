@@ -72,9 +72,7 @@ class ApiPost {
   }
 
   static String _absolute(String url) {
-    if (url.isEmpty) return url;
-    if (url.startsWith('http')) return url;
-    return '${ApiConfig.baseUrl}$url';
+    return ApiConfig.resolveMediaUrl(url);
   }
 }
 

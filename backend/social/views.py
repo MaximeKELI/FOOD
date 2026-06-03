@@ -1,5 +1,6 @@
 from django.db.models import Count, Exists, OuterRef, Q
 from django.shortcuts import get_object_or_404
+from drf_spectacular.utils import extend_schema, extend_schema_view
 from rest_framework import generics, permissions, status
 from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.response import Response
@@ -20,6 +21,10 @@ class IsAuthorOrReadOnly(permissions.BasePermission):
         return obj.author_id == request.user.id
 
 
+@extend_schema_view(
+    get=extend_schema(tags=["social"], summary="List video/short posts"),
+    post=extend_schema(tags=["social"], summary="Publish a post"),
+)
 class PostListCreateView(generics.ListCreateAPIView):
     parser_classes = [MultiPartParser, FormParser]
 

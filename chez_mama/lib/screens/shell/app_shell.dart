@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../auth/auth_scope.dart';
 import '../../cart/cart_fly_service.dart';
 import '../../cart/cart_service.dart';
@@ -7,6 +9,7 @@ import '../../cart/received_orders_notifier.dart';
 import '../../chat/chat_unread_notifier.dart';
 import '../../l10n/app_strings.dart';
 import '../../notifications/notifications_notifier.dart';
+import '../../providers/auth_provider.dart';
 import '../../ui/chezmama_theme.dart';
 import '../../ui/theme_controller.dart';
 import '../../widgets/brand_logo.dart';
@@ -21,7 +24,6 @@ import '../notifications/notifications_screen.dart';
 import '../profile/favorite_meals_screen.dart';
 import '../profile/delete_account_screen.dart';
 import '../profile/loyalty_screen.dart';
-import '../profile/seller_dashboard_screen.dart';
 import '../profile/my_publications_screen.dart';
 import '../profile/my_shop_screen.dart';
 import '../profile/received_orders_screen.dart';
@@ -29,15 +31,16 @@ import '../tracking/tracking_screen.dart';
 import '../cart/orders_screen.dart';
 import '../auth/login_screen.dart';
 
-class AppShell extends StatefulWidget {
+class AppShell extends ConsumerStatefulWidget {
   const AppShell({super.key});
 
   @override
-  State<AppShell> createState() => _AppShellState();
+  ConsumerState<AppShell> createState() => _AppShellState();
 }
 
-class _AppShellState extends State<AppShell> {
-  int index = 0;
+class _AppShellState extends ConsumerState<AppShell> {
+  int get index => ref.watch(shellTabIndexProvider);
+  set index(int value) => ref.read(shellTabIndexProvider.notifier).state = value;
 
   List<String> get _titles => [
         tr('nav.home'),
@@ -142,7 +145,8 @@ class _AppShellState extends State<AppShell> {
     }
     switch (value) {
       case 'dashboard':
-        _go(const SellerDashboardScreen());
+        context.push('/vendor');
+        return;
       case 'shop':
         _go(const MyShopScreen());
       case 'publications':
@@ -168,7 +172,7 @@ class _AppShellState extends State<AppShell> {
     ReceivedOrdersNotifier.instance.clear();
     NotificationsNotifier.instance.clear();
     ChatUnreadNotifier.instance.clear();
-    setState(() => index = 0);
+    ref.read(shellTabIndexProvider.notifier).state = 0;
   }
 
   @override
@@ -268,7 +272,7 @@ class _AppShellState extends State<AppShell> {
               );
             },
             child: KeyedSubtree(
-              key: ValueKey('$index-${auth.isSeller}'),
+              key: ValueKey('$index-${auth.isSeller}-${auth.isAuthed}'),
               child: _buildPage(index, auth.isSeller, auth.isAuthed),
             ),
           );
@@ -303,7 +307,9 @@ class _AppShellState extends State<AppShell> {
                 final bounce = CartFlyService.instance.bounceGeneration;
                 return NavigationBar(
                   selectedIndex: index,
-                  onDestinationSelected: (v) => setState(() => index = v),
+                  onDestinationSelected: (v) {
+                    ref.read(shellTabIndexProvider.notifier).state = v;
+                  },
                   backgroundColor: cardColor,
                   indicatorColor: ChezMamaTheme.brandOrange.withValues(alpha: 0.14),
                   labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,

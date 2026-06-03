@@ -1,4 +1,4 @@
-package com.example.chez_mama
+package com.food.chezmama
 
 import io.flutter.embedding.android.FlutterActivity
 

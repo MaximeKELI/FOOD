@@ -33,6 +33,8 @@ class OrderView {
     required this.address,
     required this.phone,
     required this.customerName,
+    this.latitude,
+    this.longitude,
     required this.subtotal,
     required this.deliveryFee,
     required this.discount,
@@ -51,6 +53,8 @@ class OrderView {
   final String address;
   final String phone;
   final String customerName;
+  final double? latitude;
+  final double? longitude;
   final int subtotal;
   final int deliveryFee;
   final int discount;
@@ -71,6 +75,8 @@ class OrderView {
       address: json['address'] as String? ?? '',
       phone: json['phone'] as String? ?? '',
       customerName: json['customer_name'] as String? ?? '',
+      latitude: (json['latitude'] as num?)?.toDouble(),
+      longitude: (json['longitude'] as num?)?.toDouble(),
       subtotal: json['subtotal'] as int? ?? 0,
       deliveryFee: json['delivery_fee'] as int? ?? 0,
       discount: json['discount'] as int? ?? 0,
@@ -88,6 +94,7 @@ class OrderView {
 /// Payment method keys sent to the API.
 const List<String> kPaymentMethodKeys = [
   'cash',
+  'stripe',
   'wave',
   'orange_money',
   'free_money',

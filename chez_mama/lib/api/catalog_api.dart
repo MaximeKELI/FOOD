@@ -130,8 +130,7 @@ class CatalogApi {
     final image = (json['image'] as String?) ?? '';
     final galleryRaw = (json['gallery'] as List?) ?? const [];
     final gallery = galleryRaw.map((e) {
-      final s = e.toString();
-      return s.startsWith('http') ? s : '${ApiConfig.baseUrl}$s';
+      return ApiConfig.resolveMediaUrl(e.toString());
     }).toList();
     return Meal(
       id: (json['id']).toString(),
@@ -141,7 +140,7 @@ class CatalogApi {
       promoPrice: (json['promo_price'] as num?)?.toDouble() ?? 0,
       hasPromo: json['has_promo'] as bool? ?? false,
       rating: (json['rating'] as num?)?.toDouble() ?? 0,
-      image: image.startsWith('http') ? image : '${ApiConfig.baseUrl}$image',
+      image: ApiConfig.resolveMediaUrl(image),
       accent: ChezMamaTheme.brandOrange,
       category: json['category_name'] as String? ?? '',
       isAvailable: json['is_available'] as bool? ?? true,

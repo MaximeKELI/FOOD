@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../../api/api_client.dart';
 import '../../auth/auth_scope.dart';
 import '../../l10n/app_strings.dart';
+import '../../services/google_sign_in_service.dart';
 import '../../ui/african_pattern_painter.dart';
 import '../../ui/chezmama_theme.dart';
 import '../../widgets/brand_logo.dart';
@@ -11,7 +13,10 @@ import '../legal/terms_screen.dart';
 import 'register_screen.dart';
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+  const LoginScreen({super.key, this.redirectAfterLogin});
+
+  /// Deep link path to open after successful sign-in (GoRouter).
+  final String? redirectAfterLogin;
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -43,6 +48,15 @@ class _LoginScreenState extends State<LoginScreen> {
         email: email.text,
         password: password.text,
       );
+      if (!mounted) return;
+      final redirect = widget.redirectAfterLogin;
+      if (redirect != null && redirect.isNotEmpty) {
+        context.go(redirect);
+      } else if (Navigator.of(context).canPop()) {
+        Navigator.of(context).pop();
+      } else {
+        context.go('/home');
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -54,11 +68,11 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  void _openRegister() {
+  void _openRegister(RegisterMode mode) {
     Navigator.of(context).push(
       PageRouteBuilder(
         transitionDuration: const Duration(milliseconds: 260),
-        pageBuilder: (_, __, ___) => const RegisterScreen(),
+        pageBuilder: (_, __, ___) => RegisterScreen(mode: mode),
         transitionsBuilder: (_, a, __, child) {
           final c = CurvedAnimation(
             parent: a,
@@ -77,6 +91,39 @@ class _LoginScreenState extends State<LoginScreen> {
         },
       ),
     );
+  }
+
+  Future<void> _signInWithGoogle() async {
+    if (busy) return;
+    if (!GoogleSignInService.isConfigured) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(tr('auth.googleNotConfigured'))),
+      );
+      return;
+    }
+    setState(() => busy = true);
+    try {
+      final idToken = await GoogleSignInService.signInAndGetIdToken();
+      if (idToken == null) return;
+      await AuthScope.of(context).signInWithGoogle(idToken: idToken);
+      if (!mounted) return;
+      final redirect = widget.redirectAfterLogin;
+      if (redirect != null && redirect.isNotEmpty) {
+        context.go(redirect);
+      } else if (Navigator.of(context).canPop()) {
+        Navigator.of(context).pop();
+      } else {
+        context.go('/home');
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(apiErrorMessage(e))),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => busy = false);
+    }
   }
 
   @override
@@ -196,6 +243,14 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                           ),
                           const SizedBox(height: 12),
+                          if (GoogleSignInService.isConfigured) ...[
+                            OutlinedButton.icon(
+                              onPressed: busy ? null : _signInWithGoogle,
+                              icon: const Icon(Icons.g_mobiledata_rounded, size: 28),
+                              label: Text(tr('auth.googleSignIn')),
+                            ),
+                            const SizedBox(height: 12),
+                          ],
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
@@ -206,7 +261,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 ),
                               ),
                               TextButton(
-                                onPressed: _openRegister,
+                                onPressed: () => _openRegister(RegisterMode.client),
                                 child: Text(tr('auth.createAccount')),
                               ),
                             ],
@@ -214,7 +269,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           const SizedBox(height: 4),
                           Center(
                             child: TextButton(
-                              onPressed: _openRegister,
+                              onPressed: () => _openRegister(RegisterMode.seller),
                               child: Text(tr('auth.sellerRegister')),
                             ),
                           ),

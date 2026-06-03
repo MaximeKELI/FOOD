@@ -187,7 +187,7 @@ class ChezMamaTheme {
           color: inkC,
         ),
       ),
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         color: cardC,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
@@ -284,7 +284,7 @@ class ChezMamaTheme {
           fontSize: 15,
         ),
       ),
-      tabBarTheme: TabBarTheme(
+      tabBarTheme: TabBarThemeData(
         labelColor: brandOrange,
         unselectedLabelColor: muted,
         indicatorColor: brandOrange,
@@ -329,7 +329,7 @@ class ChezMamaTheme {
           borderRadius: BorderRadius.vertical(top: Radius.circular(rSheet)),
         ),
       ),
-      dialogTheme: DialogTheme(
+      dialogTheme: DialogThemeData(
         backgroundColor: cardC,
         surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(

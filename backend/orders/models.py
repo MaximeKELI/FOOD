@@ -18,6 +18,7 @@ class Order(models.Model):
 
     class Payment(models.TextChoices):
         CASH = "cash", "À la livraison"
+        STRIPE = "stripe", "Carte (Stripe)"
         WAVE = "wave", "Wave"
         ORANGE_MONEY = "orange_money", "Orange Money"
         FREE_MONEY = "free_money", "Free Money"

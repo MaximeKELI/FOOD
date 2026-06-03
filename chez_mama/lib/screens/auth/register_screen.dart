@@ -8,8 +8,14 @@ import '../../ui/chezmama_theme.dart';
 import '../../widgets/brand_logo.dart';
 import '../../widgets/primary_button.dart';
 
+enum RegisterMode { client, seller }
+
 class RegisterScreen extends StatefulWidget {
-  const RegisterScreen({super.key});
+  const RegisterScreen({super.key, required this.mode});
+
+  final RegisterMode mode;
+
+  bool get isSeller => mode == RegisterMode.seller;
 
   @override
   State<RegisterScreen> createState() => _RegisterScreenState();
@@ -160,8 +166,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   Map<String, dynamic> _buildProfile() {
     String s(String v) => v.trim();
-    return <String, dynamic>{
+    final base = <String, dynamic>{
       'phone': s(phone.text),
+      'account_type': widget.isSeller ? 'seller' : 'client',
+    };
+    if (!widget.isSeller) return base;
+    return {
+      ...base,
       'country': s(country.text),
       'city': s(city.text),
       'neighborhood': s(neighborhood.text),
@@ -230,7 +241,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             const SizedBox(width: 12),
                             Expanded(
                               child: Text(
-                                tr('register.sellerProfile'),
+                                widget.isSeller
+                                    ? tr('register.sellerProfile')
+                                    : tr('register.clientProfile'),
                                 style: t.textTheme.titleLarge?.copyWith(
                                   fontWeight: FontWeight.w900,
                                 ),
@@ -240,7 +253,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         ),
                         const SizedBox(height: 6),
                         Text(
-                          tr('register.subtitle'),
+                          widget.isSeller
+                              ? tr('register.subtitle')
+                              : tr('register.clientSubtitle'),
                           style: t.textTheme.bodyMedium?.copyWith(
                             color: ChezMamaTheme.mutedInk(context),
                             fontWeight: FontWeight.w600,
@@ -258,7 +273,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     controller: name,
                     textInputAction: TextInputAction.next,
                     decoration: InputDecoration(
-                      labelText: tr('register.shopSellerName'),
+                      labelText: widget.isSeller
+                          ? tr('register.shopSellerName')
+                          : tr('register.clientName'),
                       prefixIcon: const Icon(Icons.badge_rounded),
                     ),
                   ),
@@ -272,6 +289,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       prefixIcon: const Icon(Icons.phone_rounded),
                     ),
                   ),
+                  if (widget.isSeller) ...[
                   const SizedBox(height: 12),
                   Row(
                     children: [
@@ -336,7 +354,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       ),
                     ],
                   ),
+                  ],
                   const SizedBox(height: 18),
+                  if (widget.isSeller) ...[
                   Text(
                     tr('register.businessInfo'),
                     style: t.textTheme.titleSmall?.copyWith(
@@ -436,6 +456,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     },
                   ),
                   const SizedBox(height: 18),
+                  ],
                   Text(
                     tr('register.accountAccess'),
                     style: t.textTheme.titleSmall?.copyWith(

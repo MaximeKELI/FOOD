@@ -1,24 +1,32 @@
 from django.urls import path
 
 from .views import (
-    MockPaymentCompleteView,
+    OrangeReturnView,
     OrangeWebhookView,
     PaymentInitiateView,
     PaymentStatusView,
+    StripeCreateView,
+    StripeWebhookView,
+    WaveReturnView,
     WaveWebhookView,
 )
 
 urlpatterns = [
     path("payments/initiate/", PaymentInitiateView.as_view(), name="payment_initiate"),
     path(
+        "payments/stripe/create/",
+        StripeCreateView.as_view(),
+        name="payment_stripe_create",
+    ),
+    path(
         "payments/<int:pk>/",
         PaymentStatusView.as_view(),
         name="payment_status",
     ),
     path(
-        "payments/mock/complete/<int:pk>/",
-        MockPaymentCompleteView.as_view(),
-        name="payment_mock_complete",
+        "payments/webhook/stripe/",
+        StripeWebhookView.as_view(),
+        name="payment_webhook_stripe",
     ),
     path(
         "payments/webhook/wave/",
@@ -29,5 +37,15 @@ urlpatterns = [
         "payments/webhook/orange/",
         OrangeWebhookView.as_view(),
         name="payment_webhook_orange",
+    ),
+    path(
+        "payments/wave/return/",
+        WaveReturnView.as_view(),
+        name="payment_wave_return",
+    ),
+    path(
+        "payments/orange/return/",
+        OrangeReturnView.as_view(),
+        name="payment_orange_return",
     ),
 ]

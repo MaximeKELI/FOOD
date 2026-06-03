@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../l10n/app_strings.dart';
 import '../../onboarding/onboarding_controller.dart';
 import '../../ui/chezmama_theme.dart';
 import '../../widgets/brand_logo.dart';
-import '../shell/app_shell.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -38,9 +38,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   Future<void> _finish() async {
     await OnboardingController.instance.markComplete();
     if (!mounted) return;
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (_) => const AppShell()),
-    );
+    context.go('/home');
   }
 
   @override

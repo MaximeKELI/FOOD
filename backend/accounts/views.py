@@ -1,6 +1,10 @@
+from django.conf import settings
 from django.db.models import Count, Exists, OuterRef, Q
 from django.contrib.auth import get_user_model
 from django.shortcuts import get_object_or_404
+from drf_spectacular.utils import extend_schema, extend_schema_view
+from google.auth.transport import requests as google_requests
+from google.oauth2 import id_token as google_id_token
 from rest_framework import generics, status
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
@@ -25,6 +29,7 @@ def tokens_for(user):
     return {"refresh": str(refresh), "access": str(refresh.access_token)}
 
 
+@extend_schema(tags=["auth"])
 class RegisterView(generics.GenericAPIView):
     serializer_class = RegisterSerializer
     permission_classes = [AllowAny]
@@ -39,6 +44,59 @@ class RegisterView(generics.GenericAPIView):
                 "tokens": tokens_for(user),
             },
             status=status.HTTP_201_CREATED,
+        )
+
+
+@extend_schema(tags=["auth"], summary="Sign in or register with Google ID token")
+class GoogleAuthView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        token = request.data.get("id_token")
+        if not token:
+            return Response(
+                {"detail": "id_token requis."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        client_id = settings.GOOGLE_OAUTH_CLIENT_ID
+        if not client_id:
+            return Response(
+                {"detail": "Connexion Google non configurée sur le serveur."},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+        try:
+            idinfo = google_id_token.verify_oauth2_token(
+                token, google_requests.Request(), client_id
+            )
+        except ValueError:
+            return Response(
+                {"detail": "Token Google invalide."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        email = (idinfo.get("email") or "").lower()
+        if not email:
+            return Response(
+                {"detail": "Email Google manquant."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        name = idinfo.get("name") or email.split("@")[0]
+        user, created = User.objects.get_or_create(
+            email=email,
+            defaults={"display_name": name},
+        )
+        if not created and not user.display_name and name:
+            user.display_name = name
+            user.save(update_fields=["display_name"])
+        SellerProfile.objects.get_or_create(user=user)
+
+        return Response(
+            {
+                "user": UserSerializer(user).data,
+                "tokens": tokens_for(user),
+            },
+            status=status.HTTP_200_OK if not created else status.HTTP_201_CREATED,
         )
 
 
@@ -84,6 +142,11 @@ class SellerLocationListView(generics.ListAPIView):
         ).select_related("user")
 
 
+@extend_schema_view(
+    get=extend_schema(tags=["auth"], summary="Current user profile"),
+    put=extend_schema(tags=["auth"], summary="Update current user"),
+    patch=extend_schema(tags=["auth"], summary="Partial update current user"),
+)
 class MeView(generics.RetrieveUpdateAPIView):
     permission_classes = [IsAuthenticated]
 
@@ -104,6 +167,11 @@ class MeView(generics.RetrieveUpdateAPIView):
         return Response(UserSerializer(instance, context={"request": request}).data)
 
 
+@extend_schema_view(
+    get=extend_schema(tags=["auth"], summary="Seller shop profile"),
+    put=extend_schema(tags=["auth"], summary="Update seller profile"),
+    patch=extend_schema(tags=["auth"], summary="Partial update seller profile"),
+)
 class MyProfileView(generics.RetrieveUpdateAPIView):
     serializer_class = SellerProfileSerializer
     permission_classes = [IsAuthenticated]
@@ -113,6 +181,7 @@ class MyProfileView(generics.RetrieveUpdateAPIView):
         return profile
 
 
+@extend_schema(tags=["auth"], summary="Toggle follow on a vendor")
 class FollowToggleView(APIView):
     permission_classes = [IsAuthenticated]
 

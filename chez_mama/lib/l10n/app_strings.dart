@@ -214,6 +214,33 @@ const Map<String, Map<AppLang, String>> _strings = {
     AppLang.en: 'Become a seller',
     AppLang.wo: 'Ne jaaykat',
   },
+  'auth.googleSignIn': {
+    AppLang.fr: 'Continuer avec Google',
+    AppLang.en: 'Continue with Google',
+    AppLang.wo: 'Kontine ak Google',
+  },
+  'auth.googleNotConfigured': {
+    AppLang.fr:
+        'Connexion Google non configurée. Ajoute GOOGLE_WEB_CLIENT_ID au lancement.',
+    AppLang.en:
+        'Google sign-in is not configured. Add GOOGLE_WEB_CLIENT_ID at launch.',
+    AppLang.wo: 'Google amul configuration.',
+  },
+  'register.clientProfile': {
+    AppLang.fr: 'Compte client',
+    AppLang.en: 'Customer account',
+    AppLang.wo: 'Compte jëfandikukat',
+  },
+  'register.clientSubtitle': {
+    AppLang.fr: 'Commande des plats près de chez toi en quelques clics.',
+    AppLang.en: 'Order food near you in just a few taps.',
+    AppLang.wo: 'Commande ñam ci sa gëstu ci ay tapp.',
+  },
+  'register.clientName': {
+    AppLang.fr: 'Ton nom',
+    AppLang.en: 'Your name',
+    AppLang.wo: 'Sa tur',
+  },
   'register.sellerProfile': {
     AppLang.fr: 'Profil vendeur',
     AppLang.en: 'Seller profile',
@@ -388,6 +415,11 @@ const Map<String, Map<AppLang, String>> _strings = {
     AppLang.en: 'Add a photo of the dish.',
     AppLang.wo: 'Yokk foto bu ñam bi.',
   },
+  'publish.priceRequired': {
+    AppLang.fr: 'Indique un prix en FCFA (supérieur à 0).',
+    AppLang.en: 'Enter a price in FCFA (greater than 0).',
+    AppLang.wo: 'Bindal pri ci FCFA (gën a mag ci 0).',
+  },
   'publish.promoMustBeLower': {
     AppLang.fr: 'Le prix promo doit être inférieur au prix.',
     AppLang.en: 'Promo price must be lower than the regular price.',
@@ -411,9 +443,9 @@ const Map<String, Map<AppLang, String>> _strings = {
     AppLang.wo: 'Description (optionnel)',
   },
   'publish.price': {
-    AppLang.fr: 'Prix en FCFA (optionnel)',
-    AppLang.en: 'Price in FCFA (optional)',
-    AppLang.wo: 'Pri ci FCFA (optionnel)',
+    AppLang.fr: 'Prix en FCFA',
+    AppLang.en: 'Price in FCFA',
+    AppLang.wo: 'Pri ci FCFA',
   },
   'publish.promoPrice': {
     AppLang.fr: 'Prix promo en FCFA (optionnel)',
@@ -499,6 +531,7 @@ const Map<String, Map<AppLang, String>> _strings = {
 
   // Payment methods
   'payment.cash': {AppLang.fr: 'À la livraison', AppLang.en: 'Cash on delivery', AppLang.wo: 'Fey bu ñu yónnee'},
+  'payment.stripe': {AppLang.fr: 'Carte bancaire', AppLang.en: 'Card (Stripe)', AppLang.wo: 'Kaart (Stripe)'},
   'payment.wave': {AppLang.fr: 'Wave', AppLang.en: 'Wave', AppLang.wo: 'Wave'},
   'payment.orange_money': {AppLang.fr: 'Orange Money', AppLang.en: 'Orange Money', AppLang.wo: 'Orange Money'},
   'payment.free_money': {AppLang.fr: 'Free Money', AppLang.en: 'Free Money', AppLang.wo: 'Free Money'},
@@ -543,6 +576,14 @@ const Map<String, Map<AppLang, String>> _strings = {
     AppLang.fr: 'Impossible de charger les commandes',
     AppLang.en: 'Could not load orders',
     AppLang.wo: 'Mënuloo yeb commande yi',
+  },
+  'tracking.connectionHint': {
+    AppLang.fr:
+        'Vérifie que le backend tourne et que le téléphone est connecté en USB avec : adb reverse tcp:8000 tcp:8000',
+    AppLang.en:
+        'Make sure the backend is running and the phone is connected via USB with: adb reverse tcp:8000 tcp:8000',
+    AppLang.wo:
+        'Seetal ne backend bi dafay dox te telefon bi ci USB ak : adb reverse tcp:8000 tcp:8000',
   },
   'tracking.loginRequired': {AppLang.fr: 'Connecte-toi pour suivre tes commandes.', AppLang.en: 'Sign in to track orders.', AppLang.wo: 'Dugg ngir topp sa commande.'},
   'tracking.orderLabel': {AppLang.fr: 'Commande #{id}', AppLang.en: 'Order #{id}', AppLang.wo: 'Commande #{id}'},
@@ -896,9 +937,22 @@ const Map<String, Map<AppLang, String>> _strings = {
 
   // Errors
   'error.network': {
-    AppLang.fr: 'Impossible de joindre le serveur. Vérifie ta connexion.',
-    AppLang.en: 'Cannot reach server. Check your connection.',
+    AppLang.fr: 'Impossible de joindre le serveur.',
+    AppLang.en: 'Cannot reach server.',
     AppLang.wo: 'Mënuloo jëkkandoo ak serveur bi.',
+  },
+  'error.networkDevHint': {
+    AppLang.fr:
+        '1) Backend : cd FOOD && docker compose up -d\n2) Même Wi-Fi : ./scripts/flutter-run-phone.sh\n   (détecte l’IP du PC automatiquement)\n3) Ou USB : adb reverse tcp:8000 tcp:8000',
+    AppLang.en:
+        '1) Backend: cd FOOD && docker compose up -d\n2) Same Wi-Fi: ./scripts/flutter-run-phone.sh\n   (auto-detects PC IP)\n3) Or USB: adb reverse tcp:8000 tcp:8000',
+    AppLang.wo:
+        '1) Backend ci PC\n2) ./scripts/flutter-run-phone.sh\n3) adb reverse tcp:8000 tcp:8000',
+  },
+  'error.apiUnreachableBanner': {
+    AppLang.fr: 'Serveur injoignable — vérifie le backend et adb reverse',
+    AppLang.en: 'Server unreachable — check backend and adb reverse',
+    AppLang.wo: 'Serveur bi amul — seetal backend ak adb reverse',
   },
   'error.generic': {AppLang.fr: 'Erreur réseau', AppLang.en: 'Network error', AppLang.wo: 'Erreur réseau'},
 

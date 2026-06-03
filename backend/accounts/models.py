@@ -36,7 +36,10 @@ class User(AbstractUser):
 
     username = None
     email = models.EmailField("adresse email", unique=True)
+    first_name = models.CharField(max_length=60, blank=True)
+    last_name = models.CharField(max_length=60, blank=True)
     display_name = models.CharField(max_length=120, blank=True)
+    avatar = models.ImageField(upload_to="avatars/", blank=True)
     phone = models.CharField(max_length=30, blank=True)
     loyalty_points = models.PositiveIntegerField(default=0)
 
@@ -50,7 +53,8 @@ class User(AbstractUser):
 
     @property
     def name(self):
-        return self.display_name or self.email.split("@")[0]
+        full = f"{self.first_name} {self.last_name}".strip()
+        return self.display_name or full or self.email.split("@")[0]
 
 
 class SellerProfile(models.Model):
@@ -77,6 +81,10 @@ class SellerProfile(models.Model):
     )
 
     # Business
+    address = models.CharField(max_length=255, blank=True)
+    business_phone = models.CharField(max_length=30, blank=True)
+    cover = models.ImageField(upload_to="sellers/covers/", blank=True)
+    logo = models.ImageField(upload_to="sellers/logos/", blank=True)
     shop_name = models.CharField(max_length=160, blank=True)
     shop_category = models.CharField(max_length=80, blank=True)
     cuisine = models.CharField(max_length=80, blank=True)

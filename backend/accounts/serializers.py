@@ -55,8 +55,11 @@ class UserSerializer(serializers.ModelSerializer):
         fields = (
             "id",
             "email",
+            "first_name",
+            "last_name",
             "display_name",
             "name",
+            "avatar",
             "phone",
             "loyalty_points",
             "seller_profile",
@@ -124,7 +127,7 @@ class PublicSellerSerializer(serializers.ModelSerializer):
 class UserUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ("display_name", "phone")
+        fields = ("first_name", "last_name", "display_name", "phone", "avatar")
 
 
 class RegisterSerializer(serializers.Serializer):
@@ -132,6 +135,11 @@ class RegisterSerializer(serializers.Serializer):
     password = serializers.CharField(write_only=True, min_length=6)
     name = serializers.CharField(required=False, allow_blank=True)
     phone = serializers.CharField(required=False, allow_blank=True)
+    account_type = serializers.ChoiceField(
+        choices=("client", "seller"),
+        required=False,
+        default="client",
+    )
 
     # Optional seller-profile fields
     country = serializers.CharField(required=False, allow_blank=True)
@@ -154,6 +162,7 @@ class RegisterSerializer(serializers.Serializer):
         return value.lower()
 
     def create(self, validated_data):
+        validated_data.pop("account_type", None)
         password = validated_data.pop("password")
         name = validated_data.pop("name", "")
         phone = validated_data.pop("phone", "")

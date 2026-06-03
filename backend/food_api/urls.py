@@ -3,6 +3,11 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.http import JsonResponse
 from django.urls import include, path
+from drf_spectacular.views import (
+    SpectacularAPIView,
+    SpectacularRedocView,
+    SpectacularSwaggerView,
+)
 
 
 def api_root(_request):
@@ -17,6 +22,11 @@ def api_root(_request):
                 "orders": "/api/orders/",
                 "payments": "/api/payments/",
                 "notifications": "/api/notifications/",
+                "chat": "/api/chat/",
+                "deliveries": "/api/deliveries/",
+                "docs": "/api/docs/",
+                "redoc": "/api/redoc/",
+                "schema": "/api/schema/",
                 "health": "/health/",
                 "admin": "/admin/",
             },
@@ -41,6 +51,17 @@ urlpatterns = [
     path("", api_root),
     path("health/", health, name="health"),
     path("admin/", admin.site.urls),
+    path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
+    path(
+        "api/docs/",
+        SpectacularSwaggerView.as_view(url_name="schema"),
+        name="swagger-ui",
+    ),
+    path(
+        "api/redoc/",
+        SpectacularRedocView.as_view(url_name="schema"),
+        name="redoc",
+    ),
     path("api/auth/", include("accounts.urls")),
     path("api/catalog/", include("catalog.urls")),
     path("api/social/", include("social.urls")),
@@ -48,6 +69,7 @@ urlpatterns = [
     path("api/", include("payments.urls")),
     path("api/", include("notifications.urls")),
     path("api/", include("chat.urls")),
+    path("api/deliveries/", include("deliveries.urls")),
 ]
 
 if settings.DEBUG or settings.SERVE_MEDIA:

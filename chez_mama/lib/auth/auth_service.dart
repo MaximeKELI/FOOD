@@ -45,7 +45,7 @@ class AuthService extends ChangeNotifier {
   Future<void> init() async {
     try {
       if (await _client.hasToken()) {
-        await _loadMe();
+        await _loadMe().timeout(const Duration(seconds: 8));
         _isAuthed = true;
       }
     } catch (_) {
@@ -135,6 +135,21 @@ class AuthService extends ChangeNotifier {
     _loyaltyPoints = 0;
     _mealsCount = 0;
     _isSeller = false;
+    notifyListeners();
+  }
+
+  Future<void> signInWithGoogle({required String idToken}) async {
+    final res = await _client.dio.post(
+      '/auth/google/',
+      data: {'id_token': idToken},
+    );
+    final tokens = res.data['tokens'] as Map<String, dynamic>;
+    await _client.saveTokens(
+      access: tokens['access'] as String,
+      refresh: tokens['refresh'] as String,
+    );
+    await _loadMe();
+    _isAuthed = true;
     notifyListeners();
   }
 }

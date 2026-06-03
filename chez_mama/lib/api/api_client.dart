@@ -128,10 +128,25 @@ String apiErrorMessage(Object error) {
       return first.toString();
     }
     if (error.type == DioExceptionType.connectionError ||
-        error.type == DioExceptionType.connectionTimeout) {
-      return tr('error.network');
+        error.type == DioExceptionType.connectionTimeout ||
+        error.type == DioExceptionType.sendTimeout ||
+        error.type == DioExceptionType.receiveTimeout) {
+      return networkErrorDetail();
     }
     return error.message ?? tr('error.generic');
   }
   return error.toString();
+}
+
+bool isNetworkError(Object error) {
+  if (error is! DioException) return false;
+  return error.type == DioExceptionType.connectionError ||
+      error.type == DioExceptionType.connectionTimeout ||
+      error.type == DioExceptionType.sendTimeout ||
+      error.type == DioExceptionType.receiveTimeout;
+}
+
+/// Detailed network error with dev steps (backend + adb reverse).
+String networkErrorDetail() {
+  return '${tr('error.network')}\n\n${tr('error.networkDevHint')}\n\nAPI: ${ApiConfig.baseUrl}';
 }

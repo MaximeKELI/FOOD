@@ -4,12 +4,6 @@ from rest_framework import serializers
 from catalog.models import Meal
 
 from .models import Order, OrderItem, PromoCode
-
-
-def _initial_payment_status(payment_method):
-    if payment_method == Order.Payment.CASH:
-        return Order.PaymentStatus.NOT_REQUIRED
-    return Order.PaymentStatus.PENDING
 from .services import (
     compute_delivery_fee,
     resolve_promo,
@@ -17,6 +11,12 @@ from .services import (
     subtotal_by_seller,
     validate_fulfillment,
 )
+
+
+def _initial_payment_status(payment_method):
+    if payment_method == Order.Payment.CASH:
+        return Order.PaymentStatus.NOT_REQUIRED
+    return Order.PaymentStatus.PENDING
 
 
 class OrderItemSerializer(serializers.ModelSerializer):
@@ -61,6 +61,8 @@ class OrderSerializer(serializers.ModelSerializer):
             "address",
             "phone",
             "note",
+            "latitude",
+            "longitude",
             "subtotal",
             "delivery_fee",
             "discount",
@@ -256,6 +258,9 @@ class OrderCreateSerializer(serializers.Serializer):
                 related_id=order.id,
                 link="received_order",
             )
+        from deliveries.services import create_delivery_for_order
+
+        create_delivery_for_order(order)
         return order
 
 

@@ -112,12 +112,18 @@ class _PublishMealSheetState extends State<PublishMealSheet> {
       );
       return;
     }
+    final price = int.tryParse(_price.text.trim());
+    if (price == null || price <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(tr('publish.priceRequired'))),
+      );
+      return;
+    }
 
     setState(() => _submitting = true);
     try {
-      final price = int.tryParse(_price.text.trim());
       final promo = int.tryParse(_promoPrice.text.trim());
-      if (promo != null && price != null && promo >= price) {
+      if (promo != null && promo >= price) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(tr('publish.promoMustBeLower'))),
         );
@@ -140,7 +146,7 @@ class _PublishMealSheetState extends State<PublishMealSheet> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(trf('checkout.failed', {'error': apiErrorMessage(e)})),
+          content: Text(trf('social.publishFailed', {'error': apiErrorMessage(e)})),
         ),
       );
     } finally {

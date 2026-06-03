@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 
@@ -34,3 +36,14 @@ class NotificationTests(TestCase):
         self.assertEqual(res.status_code, 200)
         n.refresh_from_db()
         self.assertTrue(n.is_read)
+
+    @patch("payments.realtime.emit_notification")
+    def test_notify_emits_socket_event(self, mock_emit):
+        notify(
+            self.user,
+            Notification.Kind.ORDER,
+            "Realtime",
+            "Body",
+            related_id=99,
+        )
+        mock_emit.assert_called_once()

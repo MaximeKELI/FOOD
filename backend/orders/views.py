@@ -5,6 +5,7 @@ from django.db import transaction
 from django.db.models import Count, ExpressionWrapper, F, IntegerField, Sum
 from django.db.models.functions import TruncDate
 from django.utils import timezone
+from drf_spectacular.utils import extend_schema, extend_schema_view
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -37,6 +38,10 @@ def _line_total():
     )
 
 
+@extend_schema_view(
+    get=extend_schema(tags=["orders"], summary="List customer orders"),
+    post=extend_schema(tags=["orders"], summary="Create order from cart"),
+)
 class OrderListCreateView(generics.ListCreateAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
@@ -223,6 +228,9 @@ class OrderStatusUpdateView(APIView):
                 related_id=order.id,
                 link="order",
             )
+            from payments.realtime import emit_order_status
+
+            emit_order_status(order.id, new_status, vendor_id=request.user.id)
 
         return Response(
             ReceivedOrderSerializer(order, context={"request": request}).data

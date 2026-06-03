@@ -1,26 +1,26 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+
 import '../../l10n/app_strings.dart';
-import '../../onboarding/onboarding_controller.dart';
+import '../../providers/bootstrap_provider.dart';
 import '../../ui/african_pattern_painter.dart';
 import '../../ui/chezmama_theme.dart';
 import '../../widgets/brand_logo.dart';
-import '../onboarding/onboarding_screen.dart';
-import '../shell/app_shell.dart';
 
-class SplashScreen extends StatefulWidget {
+class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
 
   @override
-  State<SplashScreen> createState() => _SplashScreenState();
+  ConsumerState<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen>
+class _SplashScreenState extends ConsumerState<SplashScreen>
     with SingleTickerProviderStateMixin {
   late final AnimationController _c;
   late final Animation<double> _fade;
   late final Animation<double> _scale;
-  Timer? _navTimer;
+  bool _navigated = false;
 
   @override
   void initState() {
@@ -34,45 +34,30 @@ class _SplashScreenState extends State<SplashScreen>
       CurvedAnimation(parent: _c, curve: Curves.easeOutBack),
     );
     _c.forward();
-
-    _navTimer = Timer(const Duration(milliseconds: 1350), _goNext);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _tryNavigate());
   }
 
-  Future<void> _goNext() async {
-    if (!mounted) return;
-    final onboardingDone = await OnboardingController.instance.isComplete();
-    if (!mounted) return;
-    final next = onboardingDone ? const AppShell() : const OnboardingScreen();
-    Navigator.of(context).pushReplacement(
-      PageRouteBuilder(
-        transitionDuration: const Duration(milliseconds: 420),
-        pageBuilder: (_, __, ___) => next,
-        transitionsBuilder: (_, a, __, child) {
-          final curve = CurvedAnimation(parent: a, curve: Curves.easeOutCubic);
-          return FadeTransition(
-            opacity: curve,
-            child: SlideTransition(
-              position: Tween<Offset>(
-                begin: const Offset(0, 0.03),
-                end: Offset.zero,
-              ).animate(curve),
-              child: child,
-            ),
-          );
-        },
-      ),
-    );
+  void _tryNavigate() {
+    if (!mounted || _navigated) return;
+    final boot = ref.read(bootstrapProvider);
+    if (!boot.done) return;
+    _navigated = true;
+    final path = boot.onboardingComplete ? '/home' : '/onboarding';
+    context.go(path);
   }
 
   @override
   void dispose() {
-    _navTimer?.cancel();
     _c.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<BootstrapNotifier>(bootstrapProvider, (_, boot) {
+      if (boot.done) _tryNavigate();
+    });
+
     return Scaffold(
       body: Stack(
         fit: StackFit.expand,
@@ -113,6 +98,12 @@ class _SplashScreenState extends State<SplashScreen>
                             color: ChezMamaTheme.mutedInk(context),
                             fontWeight: FontWeight.w600,
                           ),
+                    ),
+                    const SizedBox(height: 28),
+                    const SizedBox(
+                      width: 28,
+                      height: 28,
+                      child: CircularProgressIndicator(strokeWidth: 2.5),
                     ),
                   ],
                 ),

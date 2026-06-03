@@ -4,7 +4,7 @@ from django.db import models
 
 class PaymentIntent(models.Model):
     class Provider(models.TextChoices):
-        MOCK = "mock", "Mock (dev)"
+        STRIPE = "stripe", "Stripe"
         WAVE = "wave", "Wave"
         ORANGE_MONEY = "orange_money", "Orange Money"
 
@@ -27,6 +27,7 @@ class PaymentIntent(models.Model):
     amount = models.PositiveIntegerField()
     external_id = models.CharField(max_length=120, blank=True)
     checkout_url = models.URLField(blank=True)
+    client_secret = models.CharField(max_length=255, blank=True)
     metadata = models.JSONField(default=dict, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

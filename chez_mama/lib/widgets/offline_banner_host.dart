@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 
+import '../services/api_reachability_service.dart';
 import '../services/connectivity_service.dart';
 import '../ui/chezmama_theme.dart';
 import '../l10n/app_strings.dart';
 
-/// Overlays a persistent offline strip at the top when disconnected.
+/// Overlays a persistent strip when offline or when the API is unreachable.
 class OfflineBannerHost extends StatelessWidget {
   const OfflineBannerHost({super.key, required this.child});
 
@@ -13,18 +14,30 @@ class OfflineBannerHost extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
-      animation: ConnectivityService.instance,
+      animation: Listenable.merge([
+        ConnectivityService.instance,
+        ApiReachabilityService.instance,
+      ]),
       builder: (context, _) {
         final offline = !ConnectivityService.instance.isOnline;
+        final apiDown = !ApiReachabilityService.instance.reachable;
+        final show = offline || apiDown;
+        final message = offline
+            ? tr('app.offlineBanner')
+            : tr('error.apiUnreachableBanner');
+        final icon = offline ? Icons.wifi_off_rounded : Icons.cloud_off_rounded;
+
         return Stack(
           children: [
             child,
             AnimatedSlide(
               duration: const Duration(milliseconds: 280),
               curve: Curves.easeOutCubic,
-              offset: offline ? Offset.zero : const Offset(0, -1),
+              offset: show ? Offset.zero : const Offset(0, -1),
               child: Material(
-                color: ChezMamaTheme.brandBrown,
+                color: offline
+                    ? ChezMamaTheme.brandBrown
+                    : ChezMamaTheme.brandOrange,
                 elevation: 2,
                 child: SafeArea(
                   bottom: false,
@@ -35,12 +48,11 @@ class OfflineBannerHost extends StatelessWidget {
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.wifi_off_rounded,
-                            color: Colors.white, size: 18),
+                        Icon(icon, color: Colors.white, size: 18),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            tr('app.offlineBanner'),
+                            message,
                             style: const TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.w600,
@@ -48,6 +60,14 @@ class OfflineBannerHost extends StatelessWidget {
                             ),
                           ),
                         ),
+                        if (apiDown && !offline)
+                          TextButton(
+                            onPressed: ApiReachabilityService.instance.check,
+                            child: Text(
+                              tr('action.retry'),
+                              style: const TextStyle(color: Colors.white),
+                            ),
+                          ),
                       ],
                     ),
                   ),

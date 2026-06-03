@@ -5,10 +5,22 @@ et réseau social (vidéos / shorts, likes, commentaires, abonnements, favoris).
 
 ## Stack
 
-- Django 5 + Django REST Framework
-- PostgreSQL
+- Django 5 + Django REST Framework + OpenAPI (drf-spectacular)
+- PostgreSQL + Redis + MinIO (S3)
 - JWT (djangorestframework-simplejwt)
-- Upload de médias (photos / vidéos) vers `media/`
+- Socket.io gateway (Node) pour temps réel
+- Paiements : Stripe, Wave, Orange Money
+- Upload médias via django-storages (MinIO/S3)
+
+## Docker (local)
+
+```bash
+cp backend/.env.docker backend/.env.docker  # déjà fourni
+docker compose up -d --build
+# API http://127.0.0.1:8000 — docs http://127.0.0.1:8000/api/docs/
+```
+
+Voir [`docs/API_INVENTORY.md`](docs/API_INVENTORY.md) pour la cartographie complète des endpoints.
 
 ## 1. Installation
 
