@@ -3,15 +3,18 @@ import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
 import '../../api/api_client.dart';
 import '../../api/social_api.dart';
+import '../../auth/auth_scope.dart';
 import '../../analytics/event_tracker.dart';
 import '../../l10n/app_strings.dart';
 import '../../services/app_media_picker.dart';
+import '../../services/video_thumbnail_cache.dart';
 import '../../services/platform_utils.dart';
 import '../../ui/chezmama_theme.dart';
 import '../../widgets/empty_state_view.dart';
 import '../../widgets/list_loading_skeleton.dart';
 import '../../widgets/food_network_image.dart';
 import '../../widgets/post_video_player.dart';
+import 'fullscreen_video_page.dart';
 
 enum SocialTab { videos, shorts }
 
@@ -50,6 +53,11 @@ class _SocialFeedScreenState extends State<SocialFeedScreen> {
         _posts = posts;
         _loading = false;
       });
+      VideoThumbnailCache.instance.preloadAll(
+        posts
+            .where((p) => p.isVideo || isVideoUrl(p.mediaUrl))
+            .map((p) => p.mediaUrl),
+      );
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -60,6 +68,19 @@ class _SocialFeedScreenState extends State<SocialFeedScreen> {
   }
 
   Future<void> _publishPost() async {
+    final auth = AuthScope.of(context);
+    if (!auth.isAuthed) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(tr('tracking.loginRequired'))),
+      );
+      return;
+    }
+    if (!auth.isSeller) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(tr('publish.vendorRequired'))),
+      );
+      return;
+    }
     final draft = await showModalBottomSheet<_PostDraft>(
       context: context,
       isScrollControlled: true,
@@ -149,9 +170,21 @@ class _SocialFeedScreenState extends State<SocialFeedScreen> {
     });
   }
 
+  Future<void> _openCommentsAsync(ApiPost post) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      useRootNavigator: true,
+      showDragHandle: true,
+      isScrollControlled: true,
+      builder: (context) => _CommentsSheet(post: post),
+    );
+    if (mounted) setState(() {});
+  }
+
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context);
+    final canPublish = AuthScope.of(context).isSeller;
     return Scaffold(
       body: Column(
         children: [
@@ -181,13 +214,15 @@ class _SocialFeedScreenState extends State<SocialFeedScreen> {
           Expanded(child: _buildBody()),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _publishPost,
-        backgroundColor: ChezMamaTheme.brandOrange,
-        foregroundColor: Colors.white,
-        icon: Icon(_isShort ? Icons.bolt_rounded : Icons.videocam_rounded),
-        label: Text(_isShort ? tr('social.publishShort') : tr('social.publishVideo')),
-      ),
+      floatingActionButton: canPublish
+          ? FloatingActionButton.extended(
+              onPressed: _publishPost,
+              backgroundColor: ChezMamaTheme.brandOrange,
+              foregroundColor: Colors.white,
+              icon: Icon(_isShort ? Icons.bolt_rounded : Icons.videocam_rounded),
+              label: Text(_isShort ? tr('social.publishShort') : tr('social.publishVideo')),
+            )
+          : null,
     );
   }
 
@@ -222,6 +257,9 @@ class _SocialFeedScreenState extends State<SocialFeedScreen> {
         ),
       );
     }
+    final videoPosts = _posts
+        .where((p) => p.isVideo || isVideoUrl(p.mediaUrl))
+        .toList();
     return RefreshIndicator(
       onRefresh: _load,
       child: ListView.separated(
@@ -237,7 +275,11 @@ class _SocialFeedScreenState extends State<SocialFeedScreen> {
           final post = _posts[i];
           return _SocialPostCard(
             post: post,
+            videoPosts: videoPosts,
+            reelLayout: _isShort,
             onLike: () => _toggleLike(post),
+            onLikePost: _toggleLike,
+            onCommentsPost: _openCommentsAsync,
             onFollow: () => _toggleFollow(post),
             onFavorite: () => _toggleFavorite(post),
             onShare: () => ScaffoldMessenger.of(context).showSnackBar(
@@ -254,6 +296,64 @@ class _SocialFeedScreenState extends State<SocialFeedScreen> {
 class _SocialPostCard extends StatelessWidget {
   const _SocialPostCard({
     required this.post,
+    required this.videoPosts,
+    required this.reelLayout,
+    required this.onLike,
+    required this.onLikePost,
+    required this.onCommentsPost,
+    required this.onFollow,
+    required this.onFavorite,
+    required this.onShare,
+    required this.onComments,
+  });
+
+  final ApiPost post;
+  final List<ApiPost> videoPosts;
+  final Future<void> Function(ApiPost post) onLikePost;
+  final Future<void> Function(ApiPost post) onCommentsPost;
+  final bool reelLayout;
+  final VoidCallback onLike;
+  final VoidCallback onFollow;
+  final VoidCallback onFavorite;
+  final VoidCallback onShare;
+  final VoidCallback onComments;
+
+  @override
+  Widget build(BuildContext context) {
+    if (reelLayout) {
+      return _ReelPostCard(
+        post: post,
+        videoPosts: videoPosts,
+        onLikePost: onLikePost,
+        onCommentsPost: onCommentsPost,
+        onLike: onLike,
+        onFollow: onFollow,
+        onFavorite: onFavorite,
+        onShare: onShare,
+        onComments: onComments,
+      );
+    }
+    return _FeedPostCard(
+      post: post,
+      videoPosts: videoPosts,
+      onLikePost: onLikePost,
+      onCommentsPost: onCommentsPost,
+      onLike: onLike,
+      onFollow: onFollow,
+      onFavorite: onFavorite,
+      onShare: onShare,
+      onComments: onComments,
+    );
+  }
+}
+
+/// Shorts: actions overlaid on the right with dark pills (readable on any video).
+class _ReelPostCard extends StatelessWidget {
+  const _ReelPostCard({
+    required this.post,
+    required this.videoPosts,
+    required this.onLikePost,
+    required this.onCommentsPost,
     required this.onLike,
     required this.onFollow,
     required this.onFavorite,
@@ -262,6 +362,224 @@ class _SocialPostCard extends StatelessWidget {
   });
 
   final ApiPost post;
+  final List<ApiPost> videoPosts;
+  final Future<void> Function(ApiPost post) onLikePost;
+  final Future<void> Function(ApiPost post) onCommentsPost;
+  final VoidCallback onLike;
+  final VoidCallback onFollow;
+  final VoidCallback onFavorite;
+  final VoidCallback onShare;
+  final VoidCallback onComments;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = Theme.of(context);
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.black,
+        borderRadius: BorderRadius.circular(ChezMamaTheme.rCard),
+        boxShadow: ChezMamaTheme.softShadow(opacity: 0.11),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(22),
+        child: AspectRatio(
+          aspectRatio: 9 / 16,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              if (post.mediaUrl.isNotEmpty)
+                _PostMedia(
+                  post: post,
+                  videoPosts: videoPosts,
+                  onLikePost: onLikePost,
+                  onCommentsPost: onCommentsPost,
+                )
+              else
+                const _PostPlaceholder(),
+              Positioned.fill(
+                child: IgnorePointer(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.bottomCenter,
+                        end: Alignment.center,
+                        colors: [
+                          Colors.black.withValues(alpha: 0.85),
+                          Colors.transparent,
+                        ],
+                        stops: const [0.0, 0.55],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              Positioned(
+                left: 12,
+                right: 72,
+                bottom: 14,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      post.authorName,
+                      style: t.textTheme.titleSmall?.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w900,
+                        shadows: [
+                          Shadow(
+                            color: Colors.black.withValues(alpha: 0.8),
+                            blurRadius: 6,
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (post.caption.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        post.caption,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: t.textTheme.bodySmall?.copyWith(
+                          color: Colors.white.withValues(alpha: 0.95),
+                          fontWeight: FontWeight.w600,
+                          shadows: [
+                            Shadow(
+                              color: Colors.black.withValues(alpha: 0.8),
+                              blurRadius: 4,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 8),
+                    FilledButton(
+                      onPressed: onFollow,
+                      style: FilledButton.styleFrom(
+                        backgroundColor: ChezMamaTheme.brandOrange,
+                        foregroundColor: Colors.white,
+                        visualDensity: VisualDensity.compact,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 6,
+                        ),
+                      ),
+                      child: Text(tr('social.subscribe')),
+                    ),
+                  ],
+                ),
+              ),
+              Positioned(
+                right: 8,
+                bottom: 24,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _ReelAction(
+                      icon: post.likedByMe
+                          ? Icons.favorite_rounded
+                          : Icons.favorite_border_rounded,
+                      label: '${post.likeCount}',
+                      active: post.likedByMe,
+                      onTap: onLike,
+                    ),
+                    const SizedBox(height: 10),
+                    _ReelAction(
+                      icon: Icons.mode_comment_rounded,
+                      label: '${post.commentCount}',
+                      onTap: onComments,
+                    ),
+                    const SizedBox(height: 10),
+                    _ReelAction(
+                      icon: post.favoritedByMe
+                          ? Icons.bookmark_rounded
+                          : Icons.bookmark_border_rounded,
+                      label: tr('social.favorite'),
+                      active: post.favoritedByMe,
+                      onTap: onFavorite,
+                    ),
+                    const SizedBox(height: 10),
+                    _ReelAction(
+                      icon: Icons.ios_share_rounded,
+                      label: tr('social.share'),
+                      onTap: onShare,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ReelAction extends StatelessWidget {
+  const _ReelAction({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.active = false,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+  final bool active;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.black.withValues(alpha: 0.55),
+      borderRadius: BorderRadius.circular(14),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          child: Column(
+            children: [
+              Icon(
+                icon,
+                color: active ? ChezMamaTheme.brandOrange : Colors.white,
+                size: 26,
+              ),
+              const SizedBox(height: 2),
+              Text(
+                label,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Vidéos longues: barre d’actions sous la vidéo sur fond opaque.
+class _FeedPostCard extends StatelessWidget {
+  const _FeedPostCard({
+    required this.post,
+    required this.videoPosts,
+    required this.onLikePost,
+    required this.onCommentsPost,
+    required this.onLike,
+    required this.onFollow,
+    required this.onFavorite,
+    required this.onShare,
+    required this.onComments,
+  });
+
+  final ApiPost post;
+  final List<ApiPost> videoPosts;
+  final Future<void> Function(ApiPost post) onLikePost;
+  final Future<void> Function(ApiPost post) onCommentsPost;
   final VoidCallback onLike;
   final VoidCallback onFollow;
   final VoidCallback onFavorite;
@@ -283,30 +601,39 @@ class _SocialPostCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             AspectRatio(
-              aspectRatio: post.isShort ? 9 / 11 : 16 / 10,
+              aspectRatio: 16 / 10,
               child: Stack(
                 fit: StackFit.expand,
                 children: [
                   if (post.mediaUrl.isNotEmpty)
-                    _PostMedia(post: post)
+                    _PostMedia(
+                  post: post,
+                  videoPosts: videoPosts,
+                  onLikePost: onLikePost,
+                  onCommentsPost: onCommentsPost,
+                )
                   else
                     const _PostPlaceholder(),
-                  DecoratedBox(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.bottomCenter,
-                        end: Alignment.topCenter,
-                        colors: [
-                          Colors.black.withValues(alpha: 0.62),
-                          Colors.transparent,
-                        ],
+                  Positioned.fill(
+                    child: IgnorePointer(
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.bottomCenter,
+                            end: Alignment.topCenter,
+                            colors: [
+                              Colors.black.withValues(alpha: 0.55),
+                              Colors.transparent,
+                            ],
+                          ),
+                        ),
                       ),
                     ),
                   ),
                   Positioned(
                     left: 14,
                     right: 14,
-                    bottom: 14,
+                    bottom: 12,
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
@@ -328,14 +655,14 @@ class _SocialPostCard extends StatelessWidget {
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
                                 style: t.textTheme.bodySmall?.copyWith(
-                                  color: Colors.white.withValues(alpha: 0.9),
+                                  color: Colors.white.withValues(alpha: 0.92),
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
                             ],
                           ),
                         ),
-                        const SizedBox(width: 10),
+                        const SizedBox(width: 8),
                         FilledButton(
                           onPressed: onFollow,
                           style: FilledButton.styleFrom(
@@ -351,41 +678,44 @@ class _SocialPostCard extends StatelessWidget {
                 ],
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
-              child: Row(
-                children: [
-                  _ActionButton(
-                    icon: post.likedByMe
-                        ? Icons.favorite_rounded
-                        : Icons.favorite_border_rounded,
-                    label: '${post.likeCount}',
-                    active: post.likedByMe,
-                    onTap: onLike,
-                  ),
-                  _ActionButton(
-                    icon: Icons.mode_comment_outlined,
-                    label: '${post.commentCount}',
-                    active: false,
-                    onTap: onComments,
-                  ),
-                  _ActionButton(
-                    icon: post.favoritedByMe
-                        ? Icons.bookmark_rounded
-                        : Icons.bookmark_border_rounded,
-                    label: tr('social.favorite'),
-                    active: post.favoritedByMe,
-                    onTap: onFavorite,
-                  ),
-                  const Spacer(),
-                  IconButton(
-                    tooltip: tr('social.share'),
-                    onPressed: onShare,
-                    icon: const Icon(Icons.ios_share_rounded),
-                  ),
-                ],
+            Material(
+              color: ChezMamaTheme.cardColor(context),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(6, 6, 6, 8),
+                child: Row(
+                  children: [
+                    _ActionButton(
+                      icon: post.likedByMe
+                          ? Icons.favorite_rounded
+                          : Icons.favorite_border_rounded,
+                      label: '${post.likeCount}',
+                      active: post.likedByMe,
+                      onTap: onLike,
+                    ),
+                    _ActionButton(
+                      icon: Icons.mode_comment_outlined,
+                      label: '${post.commentCount}',
+                      active: false,
+                      onTap: onComments,
+                    ),
+                    _ActionButton(
+                      icon: post.favoritedByMe
+                          ? Icons.bookmark_rounded
+                          : Icons.bookmark_border_rounded,
+                      label: tr('social.favorite'),
+                      active: post.favoritedByMe,
+                      onTap: onFavorite,
+                    ),
+                    const Spacer(),
+                    IconButton(
+                      tooltip: tr('social.share'),
+                      onPressed: onShare,
+                      icon: const Icon(Icons.ios_share_rounded),
+                    ),
+                  ],
+                ),
               ),
-            )
+            ),
           ],
         ),
       ),
@@ -394,19 +724,34 @@ class _SocialPostCard extends StatelessWidget {
 }
 
 class _PostMedia extends StatelessWidget {
-  const _PostMedia({required this.post});
+  const _PostMedia({
+    required this.post,
+    required this.videoPosts,
+    required this.onLikePost,
+    required this.onCommentsPost,
+  });
+
   final ApiPost post;
+  final List<ApiPost> videoPosts;
+  final Future<void> Function(ApiPost post) onLikePost;
+  final Future<void> Function(ApiPost post) onCommentsPost;
 
   @override
   Widget build(BuildContext context) {
-    if (!post.isVideo) {
+    final isVideo = post.isVideo || isVideoUrl(post.mediaUrl);
+    if (!isVideo) {
       return FoodNetworkImage(
         url: post.mediaUrl,
         fit: BoxFit.cover,
         placeholder: const _PostPlaceholder(),
       );
     }
-    return PostVideoPlayer(path: post.mediaUrl, isRemote: true);
+    return VideoFeedTile(
+      post: post,
+      videoPosts: videoPosts,
+      onLike: onLikePost,
+      onComments: onCommentsPost,
+    );
   }
 }
 

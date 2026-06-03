@@ -56,14 +56,16 @@ class ApiPost {
   bool favoritedByMe;
 
   factory ApiPost.fromJson(Map<String, dynamic> json) {
+    final mediaUrl = _absolute(json['media'] as String? ?? '');
+    final mediaType = json['media_type'] as String? ?? '';
     return ApiPost(
       id: json['id'] as int,
       authorId: json['author'] as int? ?? 0,
       authorName: json['author_name'] as String? ?? 'Utilisateur',
       caption: json['caption'] as String? ?? '',
-      mediaUrl: _absolute(json['media'] as String? ?? ''),
+      mediaUrl: mediaUrl,
       isShort: json['kind'] == 'short',
-      isVideo: json['media_type'] == 'video',
+      isVideo: mediaType == 'video' || isVideoUrl(mediaUrl),
       likeCount: json['like_count'] as int? ?? 0,
       commentCount: json['comment_count'] as int? ?? 0,
       likedByMe: json['liked_by_me'] as bool? ?? false,
@@ -74,6 +76,18 @@ class ApiPost {
   static String _absolute(String url) {
     return ApiConfig.resolveMediaUrl(url);
   }
+}
+
+/// True when the media URL points to a video file.
+bool isVideoUrl(String url) {
+  if (url.isEmpty) return false;
+  final path = (Uri.tryParse(url)?.path ?? url).toLowerCase();
+  return path.endsWith('.mp4') ||
+      path.endsWith('.mov') ||
+      path.endsWith('.webm') ||
+      path.endsWith('.mkv') ||
+      path.endsWith('.m4v') ||
+      path.endsWith('.3gp');
 }
 
 class SocialApi {

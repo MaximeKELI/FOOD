@@ -156,6 +156,7 @@ class _MyShopScreenState extends State<MyShopScreen> {
         displayName: _displayName.text.trim(),
         phone: _phone.text.trim().isEmpty ? null : _phone.text.trim(),
       );
+      await AuthScope.of(context).refreshMe();
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(tr('shop.updated'))),

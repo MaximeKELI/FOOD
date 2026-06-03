@@ -130,6 +130,14 @@ class ShellToolbarActions extends StatelessWidget {
                     title: Text(tr('menu.publications')),
                   ),
                 ),
+              ] else if (isAuthed) ...[
+                PopupMenuItem(
+                  value: 'shop',
+                  child: ListTile(
+                    leading: const Icon(Icons.store_mall_directory_rounded),
+                    title: Text(tr('auth.sellerRegister')),
+                  ),
+                ),
               ],
               if (isAuthed) ...[
                 PopupMenuItem(

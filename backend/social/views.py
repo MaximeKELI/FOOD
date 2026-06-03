@@ -6,6 +6,8 @@ from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from accounts.permissions import IsVendor
+
 from .models import Comment, Favorite, Like, Post
 from .serializers import (
     CommentSerializer,
@@ -27,6 +29,7 @@ class IsAuthorOrReadOnly(permissions.BasePermission):
 )
 class PostListCreateView(generics.ListCreateAPIView):
     parser_classes = [MultiPartParser, FormParser]
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly, IsVendor]
 
     def get_queryset(self):
         qs = Post.objects.select_related("author").all()

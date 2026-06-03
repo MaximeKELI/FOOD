@@ -8,6 +8,8 @@ from rest_framework.views import APIView
 
 from notifications.models import Notification, notify
 
+from accounts.permissions import IsVendor
+
 from .models import Category, Meal, MealFavorite, Review
 from .serializers import (
     CategorySerializer,
@@ -58,6 +60,7 @@ class CategoryListView(generics.ListAPIView):
 )
 class MealListCreateView(generics.ListCreateAPIView):
     parser_classes = [MultiPartParser, FormParser]
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly, IsVendor]
 
     def get_queryset(self):
         qs = _meal_queryset(self.request)

@@ -56,6 +56,13 @@ class AuthService extends ChangeNotifier {
     notifyListeners();
   }
 
+  bool _vendorFromPayload(Map<String, dynamic> data) {
+    if (data['is_vendor'] == true) return true;
+    final profile = data['seller_profile'] as Map<String, dynamic>?;
+    final shopName = profile?['shop_name'] as String? ?? '';
+    return shopName.trim().isNotEmpty;
+  }
+
   Future<void> _loadMe() async {
     final res = await _client.dio.get('/auth/me/');
     final data = res.data as Map<String, dynamic>;
@@ -64,9 +71,7 @@ class AuthService extends ChangeNotifier {
     _email = data['email'] as String?;
     _loyaltyPoints = data['loyalty_points'] as int? ?? 0;
     _mealsCount = data['meals_count'] as int? ?? 0;
-    final profile = data['seller_profile'] as Map<String, dynamic>?;
-    final shopName = profile?['shop_name'] as String? ?? '';
-    _isSeller = _mealsCount > 0 || shopName.trim().isNotEmpty;
+    _isSeller = _vendorFromPayload(data);
   }
 
   Future<void> refreshMe() async {
@@ -119,9 +124,7 @@ class AuthService extends ChangeNotifier {
     _userName = (user['name'] ?? user['display_name']) as String?;
     _email = user['email'] as String?;
     _mealsCount = user['meals_count'] as int? ?? 0;
-    final sellerProfile = user['seller_profile'] as Map<String, dynamic>?;
-    final shopName = sellerProfile?['shop_name'] as String? ?? '';
-    _isSeller = _mealsCount > 0 || shopName.trim().isNotEmpty;
+    _isSeller = _vendorFromPayload(user);
     _isAuthed = true;
     notifyListeners();
   }

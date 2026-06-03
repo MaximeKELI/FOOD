@@ -102,11 +102,18 @@ class PostCreateSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         media = attrs.get("media")
         media_type = attrs.get("media_type")
+        if media is not None:
+            name = (getattr(media, "name", None) or "").lower()
+            video_ext = (".mp4", ".mov", ".webm", ".mkv", ".m4v", ".3gp")
+            if any(name.endswith(ext) for ext in video_ext):
+                attrs["media_type"] = Post.MediaType.VIDEO
+                media_type = Post.MediaType.VIDEO
         if media_type == Post.MediaType.VIDEO:
             validate_video_upload(media)
         elif media is not None:
             from food_api.validators import validate_image_upload
 
+            attrs["media_type"] = Post.MediaType.IMAGE
             validate_image_upload(media)
         return attrs
 

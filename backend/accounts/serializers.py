@@ -2,6 +2,7 @@ from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
 from .models import SellerProfile
+from .permissions import user_is_vendor
 
 User = get_user_model()
 
@@ -46,6 +47,7 @@ class SellerLocationSerializer(serializers.ModelSerializer):
 class UserSerializer(serializers.ModelSerializer):
     seller_profile = SellerProfileSerializer(read_only=True)
     name = serializers.CharField(read_only=True)
+    is_vendor = serializers.SerializerMethodField()
     followers_count = serializers.SerializerMethodField()
     meals_count = serializers.SerializerMethodField()
     followed_by_me = serializers.SerializerMethodField()
@@ -62,12 +64,16 @@ class UserSerializer(serializers.ModelSerializer):
             "avatar",
             "phone",
             "loyalty_points",
+            "is_vendor",
             "seller_profile",
             "followers_count",
             "meals_count",
             "followed_by_me",
         )
         read_only_fields = ("email", "loyalty_points")
+
+    def get_is_vendor(self, obj):
+        return user_is_vendor(obj)
 
     def get_followers_count(self, obj):
         return obj.followers.count()

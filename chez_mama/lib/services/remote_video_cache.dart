@@ -2,47 +2,67 @@ import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 
-/// Downloads remote videos to a temp cache so desktop players can open them.
+import '../api/api_config.dart';
+
+/// Downloads remote videos to a local cache for reliable playback on mobile.
 class RemoteVideoCache {
   RemoteVideoCache._();
   static final RemoteVideoCache instance = RemoteVideoCache._();
 
-  static const _minBytes = 1024;
+  static const _minBytes = 2048;
 
   final _dio = Dio(
     BaseOptions(
-      connectTimeout: const Duration(seconds: 20),
-      receiveTimeout: const Duration(minutes: 5),
+      connectTimeout: const Duration(seconds: 25),
+      receiveTimeout: const Duration(minutes: 8),
+      headers: {'Accept': '*/*'},
     ),
   );
 
-  Directory get _dir {
-    final d = Directory('${Directory.systemTemp.path}/food_videos');
-    if (!d.existsSync()) d.createSync(recursive: true);
-    return d;
+  Directory? _dir;
+
+  Future<Directory> _cacheDir() async {
+    if (_dir != null) return _dir!;
+    final base = await getTemporaryDirectory();
+    _dir = Directory('${base.path}/food_videos');
+    if (!_dir!.existsSync()) _dir!.createSync(recursive: true);
+    return _dir!;
+  }
+
+  String _resolveUrl(String url) {
+    if (url.startsWith('http://') || url.startsWith('https://')) return url;
+    if (url.startsWith('/')) return '${ApiConfig.baseUrl}$url';
+    return url;
+  }
+
+  String _cacheFileName(String url) {
+    final resolved = _resolveUrl(url);
+    final uri = Uri.parse(resolved);
+    final ext = p.extension(uri.path);
+    final safeExt = ext.isNotEmpty ? ext : '.mp4';
+    final digest = resolved.hashCode.abs().toRadixString(16);
+    return '$digest$safeExt';
   }
 
   /// Returns a local file path ready for playback. Reuses cached copies.
   Future<String> ensureLocal(String url) async {
-    final uri = Uri.parse(url);
-    final name = p.basename(uri.path);
-    if (name.isEmpty) {
-      throw StateError('URL vidéo invalide.');
-    }
-    final file = File('${_dir.path}/$name');
+    final resolved = _resolveUrl(url);
+    final dir = await _cacheDir();
+    final file = File('${dir.path}/${_cacheFileName(url)}');
     if (file.existsSync()) {
       final len = await file.length();
       if (len >= _minBytes) return file.path;
       await file.delete();
     }
-    await _dio.download(url, file.path);
+    await _dio.download(resolved, file.path);
     final len = await file.length();
     if (len < _minBytes) {
       await file.delete();
       throw StateError(
-        'Fichier vidéo invalide sur le serveur ($len octets). '
-        'Republie la vidéo.',
+        'Vidéo inaccessible ou fichier invalide ($len octets). '
+        'Vérifie la connexion au serveur.',
       );
     }
     return file.path;

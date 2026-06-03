@@ -466,6 +466,13 @@ const Map<String, Map<AppLang, String>> _strings = {
   'publish.changePhoto': {AppLang.fr: 'Changer la photo', AppLang.en: 'Change photo', AppLang.wo: 'Soppi foto bi'},
   'publish.publishing': {AppLang.fr: 'Publication…', AppLang.en: 'Publishing…', AppLang.wo: 'Mi ngi yéene…'},
   'publish.submit': {AppLang.fr: 'Publier le plat', AppLang.en: 'Publish dish', AppLang.wo: 'Yéene ñam bi'},
+  'publish.vendorRequired': {
+    AppLang.fr:
+        'Seuls les vendeurs peuvent publier. Menu → Devenir vendeur, puis remplis ta boutique.',
+    AppLang.en:
+        'Only sellers can publish. Menu → Become a seller, then complete your shop profile.',
+    AppLang.wo: 'Jaaykat rekk mën na yéene. Menu → Ne jaaykat.',
+  },
 
   // Cart & checkout
   'cart.title': {AppLang.fr: 'Panier', AppLang.en: 'Cart', AppLang.wo: 'Pañe'},
@@ -859,6 +866,21 @@ const Map<String, Map<AppLang, String>> _strings = {
   'social.shortPublished': {AppLang.fr: 'Short publié avec succès', AppLang.en: 'Short published', AppLang.wo: 'Short bi yéene na'},
   'social.videoPublished': {AppLang.fr: 'Vidéo publiée avec succès', AppLang.en: 'Video published', AppLang.wo: 'Wideo bi yéene na'},
   'social.publishFailed': {AppLang.fr: 'Échec de la publication: {error}', AppLang.en: 'Publish failed: {error}', AppLang.wo: 'Xanaa: {error}'},
+  'social.videoPlayFailed': {
+    AppLang.fr: 'Lecture impossible: {error}',
+    AppLang.en: 'Cannot play video: {error}',
+    AppLang.wo: 'Mënuloo lire wideo bi: {error}',
+  },
+  'social.tapToPlay': {
+    AppLang.fr: 'Appuyer pour lire',
+    AppLang.en: 'Tap to play',
+    AppLang.wo: 'Bësal ngir lire',
+  },
+  'social.videoBadge': {
+    AppLang.fr: 'Vidéo',
+    AppLang.en: 'Video',
+    AppLang.wo: 'Wideo',
+  },
   'social.emptyShort': {AppLang.fr: 'Aucun short publié', AppLang.en: 'No shorts yet', AppLang.wo: 'Amul short'},
   'social.emptyVideo': {AppLang.fr: 'Aucune vidéo publiée', AppLang.en: 'No videos yet', AppLang.wo: 'Amul wideo'},
   'social.emptyShortHint': {

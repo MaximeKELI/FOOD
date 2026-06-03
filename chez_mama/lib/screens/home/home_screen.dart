@@ -273,7 +273,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     final meals = _visibleMeals;
 
     return Scaffold(
-      floatingActionButton: widget.isAuthed
+      floatingActionButton: widget.isSeller && widget.isAuthed
           ? FloatingActionButton.extended(
               onPressed: _publishMeal,
               icon: const Icon(Icons.add_rounded),
