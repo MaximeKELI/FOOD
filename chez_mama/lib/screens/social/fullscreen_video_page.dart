@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../analytics/engagement_tracker.dart';
 import '../../api/social_api.dart';
 import '../../ui/chezmama_theme.dart';
 import '../../widgets/post_video_player.dart';
@@ -53,18 +54,44 @@ class FullscreenVideoFeed extends StatefulWidget {
 class _FullscreenVideoFeedState extends State<FullscreenVideoFeed> {
   late final PageController _pageController;
   late int _currentIndex;
+  DateTime? _postStartedAt;
+  int? _trackedIndex;
 
   ApiPost get _post => widget.posts[_currentIndex];
+
+  void _startTrackingPost(int index) {
+    _postStartedAt = DateTime.now();
+    _trackedIndex = index;
+  }
+
+  void _stopTrackingCurrentPost() {
+    final started = _postStartedAt;
+    final idx = _trackedIndex;
+    if (started == null || idx == null || idx >= widget.posts.length) return;
+    final post = widget.posts[idx];
+    final seconds = DateTime.now().difference(started).inSeconds;
+    _postStartedAt = null;
+    _trackedIndex = null;
+    EngagementTracker.instance.track(
+      contentType: post.isShort ? 'short' : 'video',
+      contentId: post.id,
+      contentTitle: post.caption.isNotEmpty ? post.caption : post.authorName,
+      durationSeconds: seconds,
+    );
+  }
 
   @override
   void initState() {
     super.initState();
     _currentIndex = widget.initialIndex;
     _pageController = PageController(initialPage: widget.initialIndex);
+    _startTrackingPost(widget.initialIndex);
   }
 
   @override
   void dispose() {
+    _stopTrackingCurrentPost();
+    EngagementTracker.instance.flush();
     _pageController.dispose();
     super.dispose();
   }
@@ -95,7 +122,11 @@ class _FullscreenVideoFeedState extends State<FullscreenVideoFeed> {
             controller: _pageController,
             physics: const ClampingScrollPhysics(),
             itemCount: widget.posts.length,
-            onPageChanged: (i) => setState(() => _currentIndex = i),
+            onPageChanged: (i) {
+              _stopTrackingCurrentPost();
+              _startTrackingPost(i);
+              setState(() => _currentIndex = i);
+            },
             itemBuilder: (context, index) {
               final post = widget.posts[index];
               return Stack(

@@ -75,7 +75,7 @@ Admin : http://127.0.0.1:8000/admin/
 | API | http://127.0.0.1:8000/ |
 | Santé | http://127.0.0.1:8000/health/ |
 | Swagger | http://127.0.0.1:8000/api/docs/ |
-| MinIO (fichiers) | http://127.0.0.1:9001/ (`minioadmin` / `minioadmin123`) |
+| MinIO (optionnel, profil `s3`) | `docker compose --profile s3 up -d` puis port-forward si besoin |
 | Socket | http://127.0.0.1:3001/health |
 
 ## Météo et notifications

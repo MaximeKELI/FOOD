@@ -1,0 +1,39 @@
+{% if dashboard %}
+<div style="margin-bottom: 20px; padding: 16px; background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 6px;">
+  <h2 style="margin: 0 0 12px 0; font-size: 16px;">Tableau de bord — Analytiques</h2>
+  <div style="display: flex; flex-wrap: wrap; gap: 16px;">
+    <div style="min-width: 140px;">
+      <strong style="font-size: 22px; color: #417690;">{{ dashboard.total_clients }}</strong><br>
+      <span style="color: #666;">Clients total</span>
+    </div>
+    <div style="min-width: 140px;">
+      <strong style="font-size: 22px; color: #417690;">{{ dashboard.total_orders }}</strong><br>
+      <span style="color: #666;">Commandes</span>
+    </div>
+    <div style="min-width: 140px;">
+      <strong style="font-size: 22px; color: #417690;">{{ dashboard.total_revenue }}</strong> FCFA<br>
+      <span style="color: #666;">Ventes totales</span>
+    </div>
+    <div style="min-width: 140px;">
+      <strong style="font-size: 22px; color: #417690;">{{ dashboard.total_clicks }}</strong><br>
+      <span style="color: #666;">Clics</span>
+    </div>
+    <div style="min-width: 140px;">
+      <strong style="font-size: 22px; color: #417690;">{{ dashboard.total_events }}</strong><br>
+      <span style="color: #666;">Événements</span>
+    </div>
+    <div style="min-width: 140px;">
+      <strong style="font-size: 22px; color: #417690;">{{ dashboard.total_sessions }}</strong><br>
+      <span style="color: #666;">Sessions</span>
+    </div>
+  </div>
+  {% if dashboard.top_cities %}
+  <p style="margin: 12px 0 0 0; color: #666; font-size: 13px;">
+    <strong>Top villes :</strong>
+    {% for item in dashboard.top_cities %}
+      {{ item.city }} ({{ item.c }}){% if not forloop.last %}, {% endif %}
+    {% endfor %}
+  </p>
+  {% endif %}
+</div>
+{% endif %}

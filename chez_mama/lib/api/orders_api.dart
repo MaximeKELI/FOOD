@@ -125,6 +125,7 @@ class OrdersApi {
     double? latitude,
     double? longitude,
     String? promoCode,
+    Map<String, dynamic>? deviceContext,
   }) async {
     final res = await _dio.post('/orders/', data: {
       'fulfillment': fulfillment,
@@ -136,6 +137,7 @@ class OrdersApi {
       if (latitude != null) 'latitude': latitude,
       if (longitude != null) 'longitude': longitude,
       if (promoCode != null && promoCode.isNotEmpty) 'promo_code': promoCode,
+      if (deviceContext != null) 'device_context': deviceContext,
     });
     return OrderView.fromJson(res.data as Map<String, dynamic>);
   }

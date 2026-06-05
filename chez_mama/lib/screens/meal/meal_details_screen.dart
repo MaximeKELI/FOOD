@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../analytics/engagement_tracker.dart';
 import '../../api/api_client.dart';
 import '../../api/catalog_api.dart';
 import '../../auth/auth_scope.dart';
@@ -25,7 +26,8 @@ class MealDetailsScreen extends StatefulWidget {
   State<MealDetailsScreen> createState() => _MealDetailsScreenState();
 }
 
-class _MealDetailsScreenState extends State<MealDetailsScreen> {
+class _MealDetailsScreenState extends State<MealDetailsScreen>
+    with ContentEngagementMixin {
   List<MealReview> _reviews = [];
   bool _loadingReviews = true;
   double _avg = 0;
@@ -36,9 +38,20 @@ class _MealDetailsScreenState extends State<MealDetailsScreen> {
   @override
   void initState() {
     super.initState();
+    startEngagement();
     _avg = widget.meal.rating;
     _favorited = widget.meal.favoritedByMe;
     _loadReviews();
+  }
+
+  @override
+  void dispose() {
+    endEngagement(
+      contentType: 'meal',
+      contentId: int.parse(widget.meal.id),
+      contentTitle: widget.meal.name,
+    );
+    super.dispose();
   }
 
   Future<void> _toggleFavorite() async {

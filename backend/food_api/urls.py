@@ -28,6 +28,7 @@ def api_root(_request):
                 "chat": "/api/chat/",
                 "deliveries": "/api/deliveries/",
                 "weather": "/api/weather/suggestion/",
+                "analytics": "/api/analytics/events/",
                 "docs": "/api/docs/",
                 "redoc": "/api/redoc/",
                 "schema": "/api/schema/",
@@ -98,6 +99,7 @@ urlpatterns = [
     ),
     path("api/", include("chat.urls")),
     path("api/deliveries/", include("deliveries.urls")),
+    path("api/", include("analytics.urls")),
     path(
         "api/weather/suggestion/",
         WeatherSuggestionView.as_view(),

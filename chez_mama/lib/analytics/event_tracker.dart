@@ -1,7 +1,11 @@
 import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
 import 'package:sqflite/sqflite.dart';
+
+import '../api/analytics_api.dart';
+import 'device_context.dart';
 
 class EventTracker {
   EventTracker._();
@@ -13,6 +17,11 @@ class EventTracker {
   bool _disabled = false;
   bool get ready => _ready;
   bool get disabled => _disabled;
+
+  final List<Map<String, dynamic>> _pendingSync = [];
+  Timer? _syncTimer;
+  Timer? _debounceTimer;
+  bool _syncing = false;
 
   Future<void> init() async {
     if (_ready) return;
@@ -36,8 +45,11 @@ class EventTracker {
         },
       );
       _ready = true;
+      _syncTimer = Timer.periodic(
+        const Duration(seconds: 15),
+        (_) => flushNow(),
+      );
     } catch (e) {
-      // sqflite isn't available in some runtimes (e.g. pure dart VM tests).
       _disabled = true;
       _ready = true;
     }
@@ -54,20 +66,70 @@ class EventTracker {
         await init();
       }
       if (_disabled) return;
+
       final db = _db;
-      if (db == null) return;
-      await db.insert('events', {
-        'ts': DateTime.now().millisecondsSinceEpoch,
+      if (db != null) {
+        await db.insert('events', {
+          'ts': DateTime.now().millisecondsSinceEpoch,
+          'name': name,
+          'screen': screen,
+          'element': element,
+          'meta': meta,
+        });
+      }
+
+      _pendingSync.add({
         'name': name,
-        'screen': screen,
-        'element': element,
-        'meta': meta,
+        if (screen != null) 'screen': screen,
+        if (element != null) 'element': element,
+        if (meta != null) 'meta': meta,
       });
+      _scheduleFlush();
     } catch (e) {
       if (kDebugMode) {
         // ignore: avoid_print
         print('EventTracker.track failed: $e');
       }
+    }
+  }
+
+  void _scheduleFlush() {
+    _debounceTimer?.cancel();
+    _debounceTimer = Timer(const Duration(seconds: 2), () {
+      unawaited(flushNow());
+    });
+    if (_pendingSync.length >= 5) {
+      unawaited(flushNow());
+    }
+  }
+
+  /// Push pending events to the backend immediately (e.g. after login).
+  Future<void> flushNow() async {
+    if (_syncing || _pendingSync.isEmpty) return;
+    _syncing = true;
+    final batch = List<Map<String, dynamic>>.from(_pendingSync);
+    _pendingSync.clear();
+    try {
+      final context = await DeviceContext.instance.collect();
+      final sid = context['session_id'] as String?;
+      final ctx = Map<String, dynamic>.from(context)..remove('session_id');
+      await AnalyticsApi.instance.trackBatch(
+        events: batch,
+        context: ctx,
+        sessionId: sid,
+      );
+      if (kDebugMode) {
+        // ignore: avoid_print
+        print('EventTracker: synced ${batch.length} event(s)');
+      }
+    } catch (e) {
+      _pendingSync.insertAll(0, batch);
+      if (kDebugMode) {
+        // ignore: avoid_print
+        print('EventTracker sync failed: $e');
+      }
+    } finally {
+      _syncing = false;
     }
   }
 
@@ -92,10 +154,12 @@ class EventTracker {
   }
 
   Future<void> dispose() async {
+    _syncTimer?.cancel();
+    _debounceTimer?.cancel();
+    await flushNow();
     final db = _db;
     _db = null;
     _ready = false;
     await db?.close();
   }
 }
-

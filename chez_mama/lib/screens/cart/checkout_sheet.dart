@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:latlong2/latlong.dart';
+import '../../analytics/device_context.dart';
+import '../../analytics/event_tracker.dart';
 import '../../api/api_client.dart';
 import '../../api/orders_api.dart';
 import '../../api/payments_api.dart';
@@ -195,6 +197,12 @@ class _CheckoutSheetState extends State<CheckoutSheet> {
     }
     setState(() => _submitting = true);
     try {
+      final deviceContext = Map<String, dynamic>.from(
+        await DeviceContext.instance.collect(
+          context: context,
+          location: _loc,
+        ),
+      )..remove('session_id');
       final order = await OrdersApi.instance.createOrder(
         fulfillment: _fulfillment,
         paymentMethod: _payment,
@@ -205,6 +213,12 @@ class _CheckoutSheetState extends State<CheckoutSheet> {
         latitude: _fulfillment == 'delivery' ? _loc?.latitude : null,
         longitude: _fulfillment == 'delivery' ? _loc?.longitude : null,
         promoCode: _promo.text.trim(),
+        deviceContext: deviceContext,
+      );
+      await EventTracker.instance.track(
+        'order',
+        screen: 'checkout',
+        meta: 'order_id=${order.id}',
       );
       var paid = !_isDigitalPayment(_payment);
       if (_payment == 'stripe') {

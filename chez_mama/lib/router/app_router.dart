@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../analytics/tracked_widgets.dart';
 import '../providers/auth_provider.dart';
 import '../providers/bootstrap_provider.dart';
 import '../screens/auth/login_screen.dart';
@@ -21,6 +22,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
 
   final router = GoRouter(
     navigatorKey: rootNavigatorKey,
+    observers: [TrackedNavigatorObserver()],
     initialLocation: '/',
     refreshListenable: Listenable.merge([auth, bootstrap]),
     redirect: (context, state) {

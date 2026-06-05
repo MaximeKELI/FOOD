@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 
+import '../analytics/event_tracker.dart';
 import '../api/api_client.dart';
 import 'session_handler.dart';
 
@@ -54,6 +57,10 @@ class AuthService extends ChangeNotifier {
     }
     _ready = true;
     notifyListeners();
+    if (_isAuthed) {
+      unawaited(EventTracker.instance.track('login_restore', screen: 'app'));
+      unawaited(EventTracker.instance.flushNow());
+    }
   }
 
   bool _vendorFromPayload(Map<String, dynamic> data) {
@@ -99,6 +106,8 @@ class AuthService extends ChangeNotifier {
     await _loadMe();
     _isAuthed = true;
     notifyListeners();
+    unawaited(EventTracker.instance.track('login', screen: 'login'));
+    unawaited(EventTracker.instance.flushNow());
   }
 
   Future<void> register({
@@ -127,6 +136,8 @@ class AuthService extends ChangeNotifier {
     _isSeller = _vendorFromPayload(user);
     _isAuthed = true;
     notifyListeners();
+    unawaited(EventTracker.instance.track('register', screen: 'register'));
+    unawaited(EventTracker.instance.flushNow());
   }
 
   Future<void> signOut() async {
@@ -154,5 +165,7 @@ class AuthService extends ChangeNotifier {
     await _loadMe();
     _isAuthed = true;
     notifyListeners();
+    unawaited(EventTracker.instance.track('login_google', screen: 'login'));
+    unawaited(EventTracker.instance.flushNow());
   }
 }

@@ -132,6 +132,22 @@ class ReceivedOrderSerializer(serializers.ModelSerializer):
         return sum(i.line_total for i in self._seller_items(obj))
 
 
+class DeviceContextSerializer(serializers.Serializer):
+    latitude = serializers.FloatField(required=False, allow_null=True)
+    longitude = serializers.FloatField(required=False, allow_null=True)
+    city = serializers.CharField(required=False, allow_blank=True)
+    country = serializers.CharField(required=False, allow_blank=True)
+    region = serializers.CharField(required=False, allow_blank=True)
+    device_time = serializers.DateTimeField(required=False, allow_null=True)
+    timezone = serializers.CharField(required=False, allow_blank=True)
+    brightness = serializers.FloatField(required=False, allow_null=True)
+    platform = serializers.CharField(required=False, allow_blank=True)
+    device_model = serializers.CharField(required=False, allow_blank=True)
+    app_version = serializers.CharField(required=False, allow_blank=True)
+    connection_type = serializers.CharField(required=False, allow_blank=True)
+    battery_level = serializers.FloatField(required=False, allow_null=True)
+
+
 class OrderCreateSerializer(serializers.Serializer):
     fulfillment = serializers.ChoiceField(
         choices=Order.Fulfillment.choices, default=Order.Fulfillment.DELIVERY
@@ -145,6 +161,7 @@ class OrderCreateSerializer(serializers.Serializer):
     latitude = serializers.FloatField(required=False, allow_null=True)
     longitude = serializers.FloatField(required=False, allow_null=True)
     promo_code = serializers.CharField(required=False, allow_blank=True)
+    device_context = DeviceContextSerializer(required=False)
     items = OrderItemInputSerializer(many=True)
 
     def validate_items(self, value):
@@ -261,6 +278,22 @@ class OrderCreateSerializer(serializers.Serializer):
         from deliveries.services import create_delivery_for_order
 
         create_delivery_for_order(order)
+
+        device_context = validated_data.get("device_context")
+        if device_context:
+            from analytics.services import record_order_context
+
+            ctx_data = dict(device_context)
+            if order.latitude is not None:
+                ctx_data.setdefault("latitude", order.latitude)
+            if order.longitude is not None:
+                ctx_data.setdefault("longitude", order.longitude)
+            record_order_context(
+                order=order,
+                data=ctx_data,
+                request=self.context["request"],
+            )
+
         return order
 
 
