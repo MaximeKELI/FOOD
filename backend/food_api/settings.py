@@ -1,6 +1,7 @@
 from datetime import timedelta
 from pathlib import Path
 
+import dj_database_url
 from decouple import Csv, config
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -87,6 +88,13 @@ DATABASES = {
         "CONN_MAX_AGE": config("DB_CONN_MAX_AGE", default=60, cast=int),
     }
 }
+
+database_url = config("DATABASE_URL", default="")
+if database_url:
+    DATABASES["default"] = dj_database_url.parse(
+        database_url,
+        conn_max_age=config("DB_CONN_MAX_AGE", default=60, cast=int),
+    )
 
 
 AUTH_PASSWORD_VALIDATORS = [

@@ -6,9 +6,11 @@ import 'package:flutter/foundation.dart';
 
 /// Central configuration for the backend API base URL.
 ///
-/// Production: `--dart-define=API_BASE_URL=https://api.example.com`
-/// Physical phone (USB): `adb reverse tcp:8000 tcp:8000` → uses `127.0.0.1`
-/// Physical phone (Wi‑Fi): `--dart-define=API_LAN_HOST=192.168.x.x`
+/// Default: remote Heroku backend ([remoteBaseUrl]).
+/// Local Docker: `--dart-define=USE_LOCAL_API=true`
+/// Custom URL: `--dart-define=API_BASE_URL=https://api.example.com`
+/// Physical phone (USB, local): `adb reverse tcp:8000` + `USE_LOCAL_API=true`
+/// Physical phone (Wi‑Fi, local): `--dart-define=USE_LOCAL_API=true --dart-define=API_LAN_HOST=192.168.x.x`
 class ApiConfig {
   ApiConfig._();
 
@@ -18,8 +20,18 @@ class ApiConfig {
 
   static const int port = 8000;
 
+  /// Deployed backend on Heroku (used by default).
+  static const String remoteBaseUrl =
+      'https://allcoders-5eced76bab42.herokuapp.com';
+
   /// Set via `--dart-define=API_BASE_URL=https://your-api.com`
   static const String envBaseUrl = String.fromEnvironment('API_BASE_URL');
+
+  /// Local Docker backend — `--dart-define=USE_LOCAL_API=true`
+  static const bool useLocalApi = bool.fromEnvironment(
+    'USE_LOCAL_API',
+    defaultValue: false,
+  );
 
   /// Optional LAN IP for physical Android without adb reverse.
   static const String lanHost = String.fromEnvironment('API_LAN_HOST');
@@ -38,6 +50,15 @@ class ApiConfig {
       return;
     }
 
+    if (!useLocalApi) {
+      _resolvedBaseUrl = remoteBaseUrl.replaceAll(RegExp(r'/+$'), '');
+      _initialized = true;
+      if (kDebugMode) {
+        debugPrint('[ApiConfig] Using remote API at $_resolvedBaseUrl');
+      }
+      return;
+    }
+
     final candidates = await _connectionCandidates();
     for (final url in candidates) {
       if (await _probeHealth(url)) {
@@ -48,6 +69,17 @@ class ApiConfig {
         }
         return;
       }
+    }
+
+    if (await _probeHealth(remoteBaseUrl)) {
+      _resolvedBaseUrl = remoteBaseUrl.replaceAll(RegExp(r'/+$'), '');
+      _initialized = true;
+      if (kDebugMode) {
+        debugPrint(
+          '[ApiConfig] Local API unreachable; using remote at $_resolvedBaseUrl',
+        );
+      }
+      return;
     }
 
     _resolvedBaseUrl = candidates.first;

@@ -6,9 +6,6 @@ import 'api_config.dart';
 
 /// Thin wrapper around Dio that injects the JWT access token and
 /// transparently refreshes it on a 401 response.
-///
-/// Production HTTPS: pass `--dart-define=API_BASE_URL=https://...` and wire
-/// certificate pinning via a custom [HttpClientAdapter] when pins are available.
 class ApiClient {
   ApiClient._() {
     _dio = Dio(
@@ -118,40 +115,98 @@ class ApiClient {
   }
 }
 
-/// Extracts a human-readable message from a Dio error / API response.
+/// Simple, user-facing message for API and network errors (never raw Dio text).
 String apiErrorMessage(Object error) {
-  if (error is DioException) {
-    final data = error.response?.data;
-    if (data is Map) {
-      if (data['detail'] != null) return data['detail'].toString();
-      for (final value in data.values) {
-        if (value is List && value.isNotEmpty) return value.first.toString();
-        if (value is String && value.isNotEmpty) return value;
-      }
-      final first = data.values.first;
-      if (first is List && first.isNotEmpty) return first.first.toString();
-      return first.toString();
-    }
-    if (error.type == DioExceptionType.connectionError ||
-        error.type == DioExceptionType.connectionTimeout ||
-        error.type == DioExceptionType.sendTimeout ||
-        error.type == DioExceptionType.receiveTimeout) {
-      return networkErrorDetail();
-    }
-    return error.message ?? tr('error.generic');
+  if (error is! DioException) {
+    return tr('error.generic');
   }
-  return error.toString();
+
+  if (isNetworkError(error)) {
+    return tr('error.network');
+  }
+
+  final status = error.response?.statusCode;
+  if (status != null) {
+    if (status >= 500) return tr('error.serverUnavailable');
+    if (status == 401) {
+      return _apiDetailOr(error, tr('error.unauthorized'));
+    }
+    if (status == 403) {
+      return _apiDetailOr(error, tr('error.forbidden'));
+    }
+    if (status == 404) return tr('error.notFound');
+    if (status >= 400) {
+      final detail = _extractApiDetail(error.response?.data);
+      if (detail != null) return detail;
+    }
+  }
+
+  final detail = _extractApiDetail(error.response?.data);
+  if (detail != null) return detail;
+
+  return tr('error.generic');
+}
+
+String _apiDetailOr(DioException error, String fallback) {
+  final detail = _extractApiDetail(error.response?.data);
+  if (detail != null) return detail;
+  return fallback;
+}
+
+String? _extractApiDetail(Object? data) {
+  if (data is! Map) return null;
+
+  final detail = data['detail'];
+  if (detail != null) {
+    final text = detail.toString().trim();
+    if (text.isNotEmpty && !_looksTechnical(text)) return text;
+  }
+
+  for (final value in data.values) {
+    if (value is List && value.isNotEmpty) {
+      final text = value.first.toString().trim();
+      if (text.isNotEmpty && !_looksTechnical(text)) return text;
+    }
+    if (value is String && value.isNotEmpty && !_looksTechnical(value)) {
+      return value;
+    }
+  }
+
+  return null;
+}
+
+bool _looksTechnical(String message) {
+  final lower = message.toLowerCase();
+  return lower.contains('dioexception') ||
+      lower.contains('socketexception') ||
+      lower.contains('connection refused') ||
+      lower.contains('connection errored') ||
+      lower.contains('connection reset') ||
+      lower.contains('failed host lookup') ||
+      lower.contains('network is unreachable') ||
+      lower.contains('errno') ||
+      lower.contains('os error') ||
+      lower.contains('handshake exception');
 }
 
 bool isNetworkError(Object error) {
   if (error is! DioException) return false;
-  return error.type == DioExceptionType.connectionError ||
-      error.type == DioExceptionType.connectionTimeout ||
-      error.type == DioExceptionType.sendTimeout ||
-      error.type == DioExceptionType.receiveTimeout;
+  switch (error.type) {
+    case DioExceptionType.connectionError:
+    case DioExceptionType.connectionTimeout:
+    case DioExceptionType.sendTimeout:
+    case DioExceptionType.receiveTimeout:
+      return true;
+    case DioExceptionType.unknown:
+      final inner = error.error?.toString().toLowerCase() ?? '';
+      return inner.contains('socket') ||
+          inner.contains('connection') ||
+          inner.contains('network') ||
+          inner.contains('host lookup');
+    default:
+      return false;
+  }
 }
 
-/// Detailed network error with dev steps (backend + adb reverse).
-String networkErrorDetail() {
-  return '${tr('error.network')}\n\n${tr('error.networkDevHint')}\n\nAPI: ${ApiConfig.baseUrl}';
-}
+/// @deprecated Use [apiErrorMessage] — kept for call sites not yet migrated.
+String networkErrorDetail() => tr('error.network');

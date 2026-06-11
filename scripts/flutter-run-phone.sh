@@ -42,6 +42,9 @@ fi
 
 LAN_IP="$("$ROOT/scripts/detect-lan-ip.sh" || true)"
 
+echo "==> Local Docker mode (USE_LOCAL_API=true)"
+echo "    For Heroku remote API, run: flutter run   (from chez_mama/)"
+
 echo "==> Checking backend..."
 if curl -sf --max-time 3 http://127.0.0.1:8000/health/ >/dev/null; then
   echo "✓ Backend OK at http://127.0.0.1:8000"
@@ -72,7 +75,7 @@ cd "$ROOT/chez_mama"
 
 if [[ "$ADB_OK" == true ]]; then
   echo "==> Launching (USB mode)"
-  exec "$FLUTTER" run "$@"
+  exec "$FLUTTER" run --dart-define=USE_LOCAL_API=true "$@"
 fi
 
 if [[ -z "$LAN_IP" ]]; then
@@ -83,4 +86,7 @@ fi
 
 echo "==> No USB — Wi-Fi mode, LAN IP: $LAN_IP"
 echo "    Phone and PC must be on the same Wi-Fi"
-exec "$FLUTTER" run --dart-define=API_LAN_HOST="$LAN_IP" "$@"
+exec "$FLUTTER" run \
+  --dart-define=USE_LOCAL_API=true \
+  --dart-define=API_LAN_HOST="$LAN_IP" \
+  "$@"

@@ -354,7 +354,11 @@ const Map<String, Map<AppLang, String>> _strings = {
   'home.sortRecent': {AppLang.fr: 'Récents', AppLang.en: 'Recent', AppLang.wo: 'Ci gannaaw'},
   'home.sortDistance': {AppLang.fr: 'Plus proches', AppLang.en: 'Nearest', AppLang.wo: 'Ci gëstu'},
   'home.allCategory': {AppLang.fr: 'Tous', AppLang.en: 'All', AppLang.wo: 'Yépp'},
-  'home.connectionFailed': {AppLang.fr: 'Connexion impossible', AppLang.en: 'Connection failed', AppLang.wo: 'Connexion amul'},
+  'home.connectionFailed': {
+    AppLang.fr: 'Impossible de charger les données',
+    AppLang.en: 'Could not load data',
+    AppLang.wo: 'Mënuloo yeb données yi',
+  },
   'home.noResults': {AppLang.fr: 'Aucun résultat', AppLang.en: 'No results', AppLang.wo: 'Amul benn'},
   'home.noResultsQuery': {
     AppLang.fr: 'Aucun plat ne correspond à « {query} ».',
@@ -585,12 +589,9 @@ const Map<String, Map<AppLang, String>> _strings = {
     AppLang.wo: 'Mënuloo yeb commande yi',
   },
   'tracking.connectionHint': {
-    AppLang.fr:
-        'Vérifie que le backend tourne et que le téléphone est connecté en USB avec : adb reverse tcp:8000 tcp:8000',
-    AppLang.en:
-        'Make sure the backend is running and the phone is connected via USB with: adb reverse tcp:8000 tcp:8000',
-    AppLang.wo:
-        'Seetal ne backend bi dafay dox te telefon bi ci USB ak : adb reverse tcp:8000 tcp:8000',
+    AppLang.fr: 'Vérifiez votre connexion internet et réessayez.',
+    AppLang.en: 'Check your internet connection and try again.',
+    AppLang.wo: 'Seetal sa connexion internet ba noppi jéematal.',
   },
   'tracking.loginRequired': {AppLang.fr: 'Connecte-toi pour suivre tes commandes.', AppLang.en: 'Sign in to track orders.', AppLang.wo: 'Dugg ngir topp sa commande.'},
   'tracking.orderLabel': {AppLang.fr: 'Commande #{id}', AppLang.en: 'Order #{id}', AppLang.wo: 'Commande #{id}'},
@@ -984,24 +985,44 @@ const Map<String, Map<AppLang, String>> _strings = {
 
   // Errors
   'error.network': {
-    AppLang.fr: 'Impossible de joindre le serveur.',
-    AppLang.en: 'Cannot reach server.',
-    AppLang.wo: 'Mënuloo jëkkandoo ak serveur bi.',
-  },
-  'error.networkDevHint': {
     AppLang.fr:
-        '1) Backend : cd FOOD && docker compose up -d\n2) Téléphone USB : ./scripts/flutter-run-phone.sh\n3) Ou : adb reverse tcp:8000 tcp:8000 puis R (restart)',
+        'Impossible de se connecter. Vérifiez votre connexion internet et réessayez.',
     AppLang.en:
-        '1) Backend: cd FOOD && docker compose up -d\n2) USB phone: ./scripts/flutter-run-phone.sh\n3) Or: adb reverse tcp:8000 tcp:8000 then R (restart)',
+        'Unable to connect. Check your internet connection and try again.',
     AppLang.wo:
-        '1) Backend ci PC\n2) ./scripts/flutter-run-phone.sh\n3) adb reverse tcp:8000 tcp:8000',
+        'Mënuloo jëkkandoo. Seetal sa connexion internet ba noppi jéematal.',
+  },
+  'error.serverUnavailable': {
+    AppLang.fr:
+        'Le service est temporairement indisponible. Réessayez dans quelques instants.',
+    AppLang.en: 'The service is temporarily unavailable. Try again in a moment.',
+    AppLang.wo: 'Service bi amul léegi. Jéematal ci kanam tuuti.',
+  },
+  'error.unauthorized': {
+    AppLang.fr: 'Session expirée. Reconnectez-vous.',
+    AppLang.en: 'Session expired. Please sign in again.',
+    AppLang.wo: 'Session bi jeex na. Dugg waat.',
+  },
+  'error.forbidden': {
+    AppLang.fr: 'Accès refusé.',
+    AppLang.en: 'Access denied.',
+    AppLang.wo: 'Amuloo yoon.',
+  },
+  'error.notFound': {
+    AppLang.fr: 'Contenu introuvable.',
+    AppLang.en: 'Content not found.',
+    AppLang.wo: 'Gisul.',
   },
   'error.apiUnreachableBanner': {
-    AppLang.fr: 'Serveur injoignable — vérifie le backend et adb reverse',
-    AppLang.en: 'Server unreachable — check backend and adb reverse',
-    AppLang.wo: 'Serveur bi amul — seetal backend ak adb reverse',
+    AppLang.fr: 'Service momentanément indisponible — réessayez',
+    AppLang.en: 'Service temporarily unavailable — try again',
+    AppLang.wo: 'Service bi amul léegi — jéematal',
   },
-  'error.generic': {AppLang.fr: 'Erreur réseau', AppLang.en: 'Network error', AppLang.wo: 'Erreur réseau'},
+  'error.generic': {
+    AppLang.fr: 'Une erreur est survenue. Réessayez.',
+    AppLang.en: 'Something went wrong. Please try again.',
+    AppLang.wo: 'Am na erreur. Jéematal.',
+  },
 
   // Language
   'lang.choose': {AppLang.fr: 'Choisir la langue', AppLang.en: 'Choose language', AppLang.wo: 'Tann làkk'},

@@ -16,10 +16,10 @@ COPY . .
 
 RUN python manage.py collectstatic --noinput 2>/dev/null || true
 
+ENV PORT=8000
 EXPOSE 8000
 
 COPY docker-entrypoint.sh /docker-entrypoint.sh
 RUN chmod +x /docker-entrypoint.sh
 
 ENTRYPOINT ["/docker-entrypoint.sh"]
-CMD ["gunicorn", "food_api.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "3"]

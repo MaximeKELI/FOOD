@@ -129,7 +129,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       if (!mounted) return;
       if (_allMeals.isEmpty) {
         setState(() {
-          error = isNetworkError(e) ? networkErrorDetail() : apiErrorMessage(e);
+          error = apiErrorMessage(e);
           loading = false;
         });
       } else {

@@ -65,6 +65,7 @@ class _ChezMamaAppState extends ConsumerState<ChezMamaApp> {
       onResume: () {
         PaymentPendingService.instance.onAppResume();
         WeatherNudgeService.instance.maybeNotify(auth: _authService);
+        ApiReachabilityService.instance.check();
       },
     );
     WeatherNudgeService.instance.maybeNotify(auth: _authService);

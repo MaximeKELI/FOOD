@@ -30,7 +30,7 @@ class ApiReachabilityService extends ChangeNotifier {
       );
       final res = await dio.get('/health/');
       _reachable = res.statusCode == 200;
-      _lastError = null;
+      _lastError = _reachable ? null : 'HTTP ${res.statusCode}';
     } catch (e) {
       _reachable = false;
       _lastError = e.toString();

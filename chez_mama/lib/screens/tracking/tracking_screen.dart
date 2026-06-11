@@ -5,7 +5,6 @@ import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import '../../api/accounts_api.dart';
 import '../../api/api_client.dart';
-import '../../api/api_config.dart';
 import '../../api/orders_api.dart';
 import '../../auth/auth_scope.dart';
 import '../../l10n/app_strings.dart';
@@ -125,9 +124,8 @@ class _TrackingScreenState extends State<TrackingScreen> {
       });
     } catch (e) {
       if (!mounted) return;
-      final msg = apiErrorMessage(e);
       setState(() {
-        _ordersError = '$msg\n\n${tr('tracking.connectionHint')}\n(${ApiConfig.baseUrl})';
+        _ordersError = apiErrorMessage(e);
         _ordersLoading = false;
       });
     }
