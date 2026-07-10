@@ -15,6 +15,8 @@ import '../../widgets/list_loading_skeleton.dart';
 import '../../widgets/food_network_image.dart';
 import '../../widgets/post_video_player.dart';
 import 'fullscreen_video_page.dart';
+import 'report_sheet.dart';
+import 'stories_bar.dart';
 
 enum SocialTab { videos, shorts }
 
@@ -32,6 +34,7 @@ class _SocialFeedScreenState extends State<SocialFeedScreen> {
   List<ApiPost> _posts = [];
   bool _loading = true;
   String? _error;
+  bool _feedFollowing = false;
 
   bool get _isShort => widget.initialTab == SocialTab.shorts;
 
@@ -47,7 +50,10 @@ class _SocialFeedScreenState extends State<SocialFeedScreen> {
       _error = null;
     });
     try {
-      final posts = await _api.fetchPosts(isShort: _isShort);
+      final posts = await _api.fetchPosts(
+        isShort: _isShort,
+        feedFollowing: _feedFollowing,
+      );
       if (!mounted) return;
       setState(() {
         _posts = posts;
@@ -208,6 +214,26 @@ class _SocialFeedScreenState extends State<SocialFeedScreen> {
                     fontWeight: FontWeight.w600,
                   ),
                 ),
+                const SizedBox(height: 10),
+                SegmentedButton<bool>(
+                  segments: [
+                    ButtonSegment(
+                      value: false,
+                      label: Text(tr('social.feedDiscover')),
+                    ),
+                    ButtonSegment(
+                      value: true,
+                      label: Text(tr('social.feedFollowing')),
+                    ),
+                  ],
+                  selected: {_feedFollowing},
+                  onSelectionChanged: (s) {
+                    setState(() => _feedFollowing = s.first);
+                    _load();
+                  },
+                ),
+                const SizedBox(height: 8),
+                const StoriesBar(),
               ],
             ),
           ),
@@ -273,19 +299,58 @@ class _SocialFeedScreenState extends State<SocialFeedScreen> {
         separatorBuilder: (_, __) => const SizedBox(height: 14),
         itemBuilder: (context, i) {
           final post = _posts[i];
-          return _SocialPostCard(
-            post: post,
-            videoPosts: videoPosts,
-            reelLayout: _isShort,
-            onLike: () => _toggleLike(post),
-            onLikePost: _toggleLike,
-            onCommentsPost: _openCommentsAsync,
-            onFollow: () => _toggleFollow(post),
-            onFavorite: () => _toggleFavorite(post),
-            onShare: () => ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(tr('social.shareOpened'))),
+          return GestureDetector(
+            onLongPress: () {
+              showModalBottomSheet(
+                context: context,
+                showDragHandle: true,
+                builder: (ctx) => SafeArea(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      ListTile(
+                        leading: const Icon(Icons.flag_outlined),
+                        title: Text(tr('report.post')),
+                        onTap: () {
+                          Navigator.pop(ctx);
+                          showReportSheet(
+                            context,
+                            targetType: 'post',
+                            targetId: post.id,
+                          );
+                        },
+                      ),
+                      ListTile(
+                        leading: const Icon(Icons.person_off_outlined),
+                        title: Text(tr('report.user')),
+                        onTap: () {
+                          Navigator.pop(ctx);
+                          showReportSheet(
+                            context,
+                            targetType: 'user',
+                            targetId: post.authorId,
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+            child: _SocialPostCard(
+              post: post,
+              videoPosts: videoPosts,
+              reelLayout: _isShort,
+              onLike: () => _toggleLike(post),
+              onLikePost: _toggleLike,
+              onCommentsPost: _openCommentsAsync,
+              onFollow: () => _toggleFollow(post),
+              onFavorite: () => _toggleFavorite(post),
+              onShare: () => ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(tr('social.shareOpened'))),
+              ),
+              onComments: () => _openComments(post),
             ),
-            onComments: () => _openComments(post),
           );
         },
       ),

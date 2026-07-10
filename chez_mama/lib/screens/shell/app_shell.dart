@@ -19,6 +19,7 @@ import '../home/home_screen.dart';
 import '../social/shorts_screen.dart';
 import '../social/videos_screen.dart';
 import '../cart/cart_screen.dart';
+import '../cart/group_order_screen.dart';
 import '../chat/conversations_screen.dart';
 import '../notifications/notifications_screen.dart';
 import '../profile/favorite_meals_screen.dart';
@@ -27,6 +28,13 @@ import '../profile/loyalty_screen.dart';
 import '../profile/my_publications_screen.dart';
 import '../profile/my_shop_screen.dart';
 import '../profile/received_orders_screen.dart';
+import '../profile/addresses_screen.dart';
+import '../profile/referral_screen.dart';
+import '../profile/seller_promos_screen.dart';
+import '../profile/seller_shop_settings_screen.dart';
+import '../help/faq_screen.dart';
+import '../orders/disputes_screen.dart';
+import '../driver/driver_home_screen.dart';
 import '../tracking/tracking_screen.dart';
 import '../cart/orders_screen.dart';
 import '../auth/login_screen.dart';
@@ -155,6 +163,22 @@ class _AppShellState extends ConsumerState<AppShell> {
         _go(const FavoriteMealsScreen());
       case 'loyalty':
         _go(const LoyaltyScreen());
+      case 'faq':
+        _go(const FaqScreen());
+      case 'addresses':
+        _go(const AddressesScreen());
+      case 'referral':
+        _go(const ReferralScreen());
+      case 'disputes':
+        _go(const DisputesScreen());
+      case 'driver':
+        _go(const DriverHomeScreen());
+      case 'promos':
+        _go(const SellerPromosScreen());
+      case 'shopSettings':
+        _go(const SellerShopSettingsScreen());
+      case 'groupOrder':
+        _go(const GroupOrderScreen());
       case 'deleteAccount':
         _go(const DeleteAccountScreen());
       case 'messages':

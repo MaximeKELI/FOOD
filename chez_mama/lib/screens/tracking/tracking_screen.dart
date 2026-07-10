@@ -378,8 +378,10 @@ class _TrackingScreenState extends State<TrackingScreen> {
                           return ChoiceChip(
                             label: Text(trf('tracking.orderLabel', {'id': order.id})),
                             selected: selected,
-                            onSelected: (_) =>
-                                setState(() => _selectedOrderIndex = i),
+                            onSelected: (_) {
+                              setState(() => _selectedOrderIndex = i);
+                              _syncDeliverySocket();
+                            },
                           );
                         },
                       ),
@@ -558,6 +560,28 @@ class _TrackingScreenState extends State<TrackingScreen> {
                   ),
                 ),
               ),
+            if (_driverLocation != null)
+              Marker(
+                point: _driverLocation!,
+                width: 48,
+                height: 48,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: ChezMamaTheme.brandAmber,
+                      width: 2,
+                    ),
+                    boxShadow: ChezMamaTheme.softShadow(opacity: 0.18),
+                  ),
+                  child: const Icon(
+                    Icons.two_wheeler_rounded,
+                    color: ChezMamaTheme.brandAmber,
+                    size: 24,
+                  ),
+                ),
+              ),
             if (tracked?.latitude != null && tracked?.longitude != null)
               Marker(
                 point: LatLng(tracked!.latitude!, tracked.longitude!),
@@ -571,7 +595,7 @@ class _TrackingScreenState extends State<TrackingScreen> {
                     boxShadow: ChezMamaTheme.softShadow(opacity: 0.18),
                   ),
                   child: const Icon(
-                    Icons.delivery_dining_rounded,
+                    Icons.place_rounded,
                     color: ChezMamaTheme.brandOrange,
                     size: 24,
                   ),

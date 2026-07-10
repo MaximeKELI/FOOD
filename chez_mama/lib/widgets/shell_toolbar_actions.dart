@@ -161,6 +161,64 @@ class ShellToolbarActions extends StatelessWidget {
                     title: Text(tr('menu.loyalty')),
                   ),
                 ),
+                PopupMenuItem(
+                  value: 'faq',
+                  child: ListTile(
+                    leading: const Icon(Icons.help_outline_rounded),
+                    title: Text(tr('menu.faq')),
+                  ),
+                ),
+                PopupMenuItem(
+                  value: 'addresses',
+                  child: ListTile(
+                    leading: const Icon(Icons.location_on_outlined),
+                    title: Text(tr('menu.addresses')),
+                  ),
+                ),
+                PopupMenuItem(
+                  value: 'referral',
+                  child: ListTile(
+                    leading: const Icon(Icons.card_giftcard_rounded),
+                    title: Text(tr('menu.referral')),
+                  ),
+                ),
+                PopupMenuItem(
+                  value: 'disputes',
+                  child: ListTile(
+                    leading: const Icon(Icons.gavel_rounded),
+                    title: Text(tr('menu.disputes')),
+                  ),
+                ),
+                PopupMenuItem(
+                  value: 'driver',
+                  child: ListTile(
+                    leading: const Icon(Icons.delivery_dining_rounded),
+                    title: Text(tr('menu.driver')),
+                  ),
+                ),
+                PopupMenuItem(
+                  value: 'groupOrder',
+                  child: ListTile(
+                    leading: const Icon(Icons.groups_rounded),
+                    title: Text(tr('menu.groupOrder')),
+                  ),
+                ),
+              ],
+              if (isSeller && isAuthed) ...[
+                PopupMenuItem(
+                  value: 'promos',
+                  child: ListTile(
+                    leading: const Icon(Icons.local_offer_rounded),
+                    title: Text(tr('menu.promos')),
+                  ),
+                ),
+                PopupMenuItem(
+                  value: 'shopSettings',
+                  child: ListTile(
+                    leading: const Icon(Icons.settings_rounded),
+                    title: Text(tr('menu.shopSettings')),
+                  ),
+                ),
               ],
               PopupMenuItem(
                 value: 'language',

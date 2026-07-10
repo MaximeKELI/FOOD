@@ -7,8 +7,14 @@ import '../providers/auth_provider.dart';
 import '../providers/bootstrap_provider.dart';
 import '../screens/auth/login_screen.dart';
 import '../screens/cart/cart_screen.dart';
+import '../screens/cart/group_order_screen.dart';
 import '../screens/cart/orders_screen.dart';
+import '../screens/driver/driver_home_screen.dart';
+import '../screens/help/faq_screen.dart';
 import '../screens/onboarding/onboarding_screen.dart';
+import '../screens/orders/disputes_screen.dart';
+import '../screens/profile/addresses_screen.dart';
+import '../screens/profile/referral_screen.dart';
 import '../screens/profile/seller_dashboard_screen.dart';
 import '../screens/shell/app_shell.dart';
 import '../navigation/root_navigator.dart';
@@ -47,6 +53,16 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       if (!authSvc.isAuthed && loc == '/checkout') {
         return '/login?from=${Uri.encodeComponent('/checkout')}';
       }
+      const authedOnly = {
+        '/addresses',
+        '/referral',
+        '/driver',
+        '/disputes',
+        '/group-order',
+      };
+      if (!authSvc.isAuthed && authedOnly.contains(loc) && !loggingIn) {
+        return '/login?from=${Uri.encodeComponent(loc)}';
+      }
       return null;
     },
     routes: [
@@ -84,6 +100,30 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, __) => CartScreen(
           onSeeOrders: () => context.push('/orders'),
         ),
+      ),
+      GoRoute(
+        path: '/faq',
+        builder: (_, __) => const FaqScreen(),
+      ),
+      GoRoute(
+        path: '/addresses',
+        builder: (_, __) => const AddressesScreen(),
+      ),
+      GoRoute(
+        path: '/referral',
+        builder: (_, __) => const ReferralScreen(),
+      ),
+      GoRoute(
+        path: '/driver',
+        builder: (_, __) => const DriverHomeScreen(),
+      ),
+      GoRoute(
+        path: '/disputes',
+        builder: (_, __) => const DisputesScreen(),
+      ),
+      GoRoute(
+        path: '/group-order',
+        builder: (_, __) => const GroupOrderScreen(),
       ),
       GoRoute(
         path: '/vendor',

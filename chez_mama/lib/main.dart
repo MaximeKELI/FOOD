@@ -18,6 +18,7 @@ import 'router/app_router.dart';
 import 'services/api_reachability_service.dart';
 import 'services/connectivity_service.dart';
 import 'services/deep_link_service.dart';
+import 'services/socket_service.dart';
 import 'ui/chezmama_theme.dart';
 import 'ui/theme_controller.dart';
 import 'widgets/offline_banner_host.dart';
@@ -60,7 +61,9 @@ class _ChezMamaAppState extends ConsumerState<ChezMamaApp> {
     ConnectivityService.instance.init();
     DeepLinkService.instance.init();
     ApiReachabilityService.instance.check();
-    _authService.init();
+    _authService.init().then((_) {
+      SocketService.instance.bindAuth(_authService);
+    });
     _lifecycle = AppLifecycleListener(
       onResume: () {
         PaymentPendingService.instance.onAppResume();

@@ -431,6 +431,31 @@ class _CheckoutSheetState extends State<CheckoutSheet> {
                     ),
                     const SizedBox(height: 12),
                     if (_fulfillment == 'delivery') ...[
+                      if (_savedAddresses.isNotEmpty) ...[
+                        Text(
+                          tr('checkout.savedAddresses'),
+                          style: t.textTheme.titleSmall
+                              ?.copyWith(fontWeight: FontWeight.w800),
+                        ),
+                        const SizedBox(height: 6),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: _savedAddresses.map((a) {
+                            final selected = _selectedAddressId == a.id;
+                            return ChoiceChip(
+                              label: Text(
+                                a.label.isEmpty ? a.address : a.label,
+                              ),
+                              selected: selected,
+                              onSelected: (_) {
+                                setState(() => _applyAddress(a));
+                              },
+                            );
+                          }).toList(),
+                        ),
+                        const SizedBox(height: 12),
+                      ],
                       TextField(
                         controller: _address,
                         decoration: InputDecoration(
@@ -488,6 +513,66 @@ class _CheckoutSheetState extends State<CheckoutSheet> {
                       decoration: InputDecoration(
                         labelText: tr('checkout.note'),
                         prefixIcon: const Icon(Icons.notes_rounded),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: const Icon(Icons.schedule_rounded),
+                      title: Text(tr('checkout.schedule')),
+                      subtitle: Text(
+                        _scheduledFor == null
+                            ? tr('checkout.scheduleNow')
+                            : _scheduledFor!.toLocal().toString().substring(0, 16),
+                      ),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (_scheduledFor != null)
+                            IconButton(
+                              onPressed: () =>
+                                  setState(() => _scheduledFor = null),
+                              icon: const Icon(Icons.clear_rounded),
+                            ),
+                          IconButton(
+                            onPressed: _pickSchedule,
+                            icon: const Icon(Icons.edit_calendar_rounded),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: _points,
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(
+                        labelText: tr('checkout.pointsRedeem'),
+                        prefixIcon:
+                            const Icon(Icons.workspace_premium_rounded),
+                        suffixIcon: AccessibleIconButton(
+                          icon: Icons.check_rounded,
+                          label: tr('checkout.verifyPoints'),
+                          onPressed: _previewPoints,
+                        ),
+                      ),
+                    ),
+                    if (_pointsDiscount > 0) ...[
+                      const SizedBox(height: 6),
+                      Text(
+                        trf('checkout.pointsDiscount', {
+                          'amount': formatFcfa(_pointsDiscount),
+                        }),
+                        style: t.textTheme.bodySmall?.copyWith(
+                          color: ChezMamaTheme.brandBrown,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 8),
+                    Text(
+                      tr('checkout.multiSellerNote'),
+                      style: t.textTheme.bodySmall?.copyWith(
+                        color: ChezMamaTheme.mutedInk(context),
                       ),
                     ),
                     const SizedBox(height: ChezMamaTheme.spaceLg),
