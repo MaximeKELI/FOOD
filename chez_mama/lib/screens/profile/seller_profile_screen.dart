@@ -87,6 +87,10 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> {
               seller.followersCount + (following ? 1 : -1),
           mealsCount: seller.mealsCount,
           followedByMe: following,
+          badges: seller.badges,
+          acceptsOrders: seller.acceptsOrders,
+          minOrderAmount: seller.minOrderAmount,
+          defaultPrepMinutes: seller.defaultPrepMinutes,
         );
       });
     } catch (e) {
@@ -236,12 +240,40 @@ class _Header extends StatelessWidget {
                     if (seller.cuisine.isNotEmpty)
                       Text(seller.cuisine,
                           style: t.textTheme.bodySmall),
+                    if (seller.badges.isNotEmpty) ...[
+                      const SizedBox(height: 6),
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 4,
+                        children: [
+                          for (final b in seller.badges)
+                            Chip(
+                              label: Text(b),
+                              visualDensity: VisualDensity.compact,
+                              materialTapTargetSize:
+                                  MaterialTapTargetSize.shrinkWrap,
+                              padding: EdgeInsets.zero,
+                              labelPadding:
+                                  const EdgeInsets.symmetric(horizontal: 8),
+                            ),
+                        ],
+                      ),
+                    ],
                   ],
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          if (!seller.acceptsOrders) ...[
+            const SizedBox(height: 8),
+            Text(
+              tr('seller.paused'),
+              style: t.textTheme.bodySmall?.copyWith(
+                color: t.colorScheme.error,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
           Row(
             children: [
               _Stat(value: '${seller.mealsCount}', label: tr('dashboard.meals')),

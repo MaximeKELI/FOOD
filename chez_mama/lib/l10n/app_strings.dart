@@ -341,6 +341,11 @@ const Map<String, Map<AppLang, String>> _strings = {
   },
   'action.unavailable': {AppLang.fr: 'Indisponible', AppLang.en: 'Unavailable', AppLang.wo: 'Amul'},
   'action.contactSeller': {AppLang.fr: 'Contacter le vendeur', AppLang.en: 'Contact seller', AppLang.wo: 'Jokkoo ak jaaykat bi'},
+  'seller.paused': {
+    AppLang.fr: 'Boutique en pause — commandes temporairement fermées',
+    AppLang.en: 'Shop paused — not accepting orders',
+    AppLang.wo: 'Butig bi tëj — order amul',
+  },
   'action.delete': {AppLang.fr: 'Supprimer', AppLang.en: 'Remove', AppLang.wo: 'Dindi'},
   'action.decreaseQty': {AppLang.fr: 'Diminuer la quantité', AppLang.en: 'Decrease quantity', AppLang.wo: 'Waññi lim'},
   'action.increaseQty': {AppLang.fr: 'Augmenter la quantité', AppLang.en: 'Increase quantity', AppLang.wo: 'Yokk lim'},

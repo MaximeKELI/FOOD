@@ -16,6 +16,7 @@ import '../../widgets/primary_button.dart';
 import '../../widgets/status_pill.dart';
 import '../chat/conversation_screen.dart';
 import '../profile/seller_profile_screen.dart';
+import 'meal_options_sheet.dart';
 
 class MealDetailsScreen extends StatefulWidget {
   const MealDetailsScreen({super.key, required this.meal});
@@ -307,12 +308,26 @@ class _MealDetailsScreenState extends State<MealDetailsScreen>
                                 ? tr('action.addToCart')
                                 : tr('action.unavailable'),
                             onPressed: meal.isAvailable
-                                ? () {
-                                    final added =
-                                        CartService.instance.addMeal(meal);
+                                ? () async {
+                                    final opts = await showMealOptionsSheet(
+                                      context,
+                                      meal,
+                                    );
+                                    if (!mounted || opts == null) return;
+                                    final ids =
+                                        (opts['ids'] as List<int>?) ?? const [];
+                                    final extra =
+                                        opts['extra'] as int? ?? 0;
+                                    final added = CartService.instance.addMeal(
+                                      meal,
+                                      optionIds: ids,
+                                      optionsExtra: extra,
+                                    );
+                                    if (!mounted) return;
                                     if (added) {
                                       hapticLight();
-                                      final btnCtx = _addButtonKey.currentContext;
+                                      final btnCtx =
+                                          _addButtonKey.currentContext;
                                       if (btnCtx != null) {
                                         CartFlyService.instance.flyFromContext(
                                           btnCtx,
@@ -320,6 +335,7 @@ class _MealDetailsScreenState extends State<MealDetailsScreen>
                                         );
                                       }
                                     }
+                                    if (!mounted) return;
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(
                                         content: Text(
