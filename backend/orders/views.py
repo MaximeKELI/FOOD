@@ -4,20 +4,24 @@ from django.contrib.auth import get_user_model
 from django.db import transaction
 from django.db.models import Count, ExpressionWrapper, F, IntegerField, Sum
 from django.db.models.functions import TruncDate
+from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from drf_spectacular.utils import extend_schema, extend_schema_view
 from rest_framework import generics, permissions, status
+from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from rest_framework.exceptions import ValidationError
-
+from accounts.permissions import IsVendor
 from catalog.models import Meal
 
-from .models import Order, OrderItem
+from .models import Order, OrderItem, OrderStatusEvent, PromoCode
 from .serializers import (
+    LoyaltyRedeemPreviewSerializer,
     OrderCreateSerializer,
     OrderSerializer,
+    OrderStatusEventSerializer,
+    PromoCodeSerializer,
     PromoValidateSerializer,
     ReceivedOrderSerializer,
 )
@@ -34,7 +38,8 @@ User = get_user_model()
 def _line_total():
     """Fresh expression each call (reusing one instance corrupts queries)."""
     return ExpressionWrapper(
-        F("unit_price") * F("quantity"), output_field=IntegerField()
+        (F("unit_price") + F("options_extra")) * F("quantity"),
+        output_field=IntegerField(),
     )
 
 
@@ -46,12 +51,25 @@ class OrderListCreateView(generics.ListCreateAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        return (
+        qs = (
             Order.objects.filter(customer=self.request.user)
             .select_related("customer")
             .prefetch_related("items", "items__meal")
-            .all()
         )
+        params = self.request.query_params
+        status_filter = params.get("status")
+        if status_filter:
+            qs = qs.filter(status=status_filter)
+        seller = params.get("seller")
+        if seller:
+            qs = qs.filter(items__meal__seller_id=seller).distinct()
+        date_from = params.get("from")
+        if date_from:
+            qs = qs.filter(created_at__date__gte=date_from)
+        date_to = params.get("to")
+        if date_to:
+            qs = qs.filter(created_at__date__lte=date_to)
+        return qs
 
     def get_serializer_class(self):
         if self.request.method == "POST":
@@ -78,6 +96,44 @@ class OrderDetailView(generics.RetrieveAPIView):
             .select_related("customer")
             .prefetch_related("items", "items__meal")
         )
+
+
+class OrderTimelineView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, pk):
+        order = get_object_or_404(Order, pk=pk)
+        is_customer = order.customer_id == request.user.id
+        is_seller = OrderItem.objects.filter(
+            order=order, meal__seller=request.user
+        ).exists()
+        if not is_customer and not is_seller and not request.user.is_staff:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+        events = order.status_events.select_related("actor").all()
+        return Response(OrderStatusEventSerializer(events, many=True).data)
+
+
+class OrderReorderView(APIView):
+    """Returns cart payload from a past order (does not create a new order)."""
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, pk):
+        order = get_object_or_404(Order, pk=pk, customer=request.user)
+        items = []
+        for item in order.items.all():
+            if item.meal_id is None:
+                continue
+            payload = {
+                "meal": item.meal_id,
+                "quantity": item.quantity,
+                "note": item.note or "",
+            }
+            # Reconstruct choice ids is not stored; return option snapshot only
+            if item.options:
+                payload["options_snapshot"] = item.options
+            items.append(payload)
+        return Response({"items": items})
 
 
 class ReceivedOrderListView(generics.ListAPIView):
@@ -198,6 +254,13 @@ class OrderStatusUpdateView(APIView):
         old_status = order.status
         order.status = new_status
         update_fields = ["status"]
+        reason = (request.data.get("cancellation_reason") or "").strip()
+        if new_status == Order.Status.CANCELLED:
+            if reason:
+                order.cancellation_reason = reason
+                update_fields.append("cancellation_reason")
+            order.cancelled_by = request.user
+            update_fields.append("cancelled_by")
 
         if (
             new_status == Order.Status.DELIVERED
@@ -220,6 +283,12 @@ class OrderStatusUpdateView(APIView):
         order.save(update_fields=update_fields)
 
         if new_status != old_status:
+            OrderStatusEvent.objects.create(
+                order=order,
+                status=new_status,
+                note=reason or "",
+                actor=request.user,
+            )
             notify(
                 order.customer,
                 Notification.Kind.ORDER_STATUS,
@@ -242,8 +311,13 @@ class OrderCancelView(APIView):
 
     permission_classes = [permissions.IsAuthenticated]
 
+    @transaction.atomic
     def post(self, request, pk):
-        order = Order.objects.filter(pk=pk, customer=request.user).first()
+        order = (
+            Order.objects.select_for_update()
+            .filter(pk=pk, customer=request.user)
+            .first()
+        )
         if order is None:
             return Response(
                 {"detail": "Commande introuvable."},
@@ -254,8 +328,27 @@ class OrderCancelView(APIView):
                 {"detail": "Seules les commandes en attente peuvent être annulées."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+        reason = (request.data.get("reason") or request.data.get("cancellation_reason") or "").strip()
         order.status = Order.Status.CANCELLED
-        order.save(update_fields=["status"])
+        order.cancellation_reason = reason
+        order.cancelled_by = request.user
+        order.save(
+            update_fields=["status", "cancellation_reason", "cancelled_by"]
+        )
+        OrderStatusEvent.objects.create(
+            order=order,
+            status=Order.Status.CANCELLED,
+            note=reason or "Annulée par le client",
+            actor=request.user,
+        )
+        from payments.realtime import emit_order_status
+
+        vendor_id = (
+            OrderItem.objects.filter(order=order, meal__isnull=False)
+            .values_list("meal__seller_id", flat=True)
+            .first()
+        )
+        emit_order_status(order.id, Order.Status.CANCELLED, vendor_id=vendor_id)
         return Response(
             OrderSerializer(order, context={"request": request}).data
         )
@@ -324,5 +417,43 @@ class PromoValidateView(APIView):
                 "promo_code": serializer.validated_data["promo_code"],
                 "discount": serializer.validated_data["discount"],
                 "subtotal": serializer.validated_data["subtotal"],
+            }
+        )
+
+
+class SellerPromoListCreateView(generics.ListCreateAPIView):
+    serializer_class = PromoCodeSerializer
+    permission_classes = [permissions.IsAuthenticated, IsVendor]
+
+    def get_queryset(self):
+        return PromoCode.objects.filter(seller=self.request.user)
+
+
+class SellerPromoDetailView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = PromoCodeSerializer
+    permission_classes = [permissions.IsAuthenticated, IsVendor]
+
+    def get_queryset(self):
+        return PromoCode.objects.filter(seller=self.request.user)
+
+
+class LoyaltyRedeemPreviewView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        serializer = LoyaltyRedeemPreviewSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        points = serializer.validated_data["points"]
+        subtotal = serializer.validated_data.get("subtotal")
+        available = request.user.loyalty_points or 0
+        usable = min(points, available)
+        if subtotal is not None:
+            usable = min(usable, subtotal)
+        return Response(
+            {
+                "points_requested": points,
+                "points_available": available,
+                "points_usable": usable,
+                "discount_fcfa": usable,
             }
         )

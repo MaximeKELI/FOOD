@@ -47,6 +47,21 @@ class PostListCreateView(generics.ListCreateAPIView):
                     Favorite.objects.filter(post_id=OuterRef("pk"), user_id=user.id)
                 ),
             )
+            # Exclude posts from blocked users
+            from support.models import UserBlock
+
+            blocked_ids = UserBlock.objects.filter(blocker=user).values_list(
+                "blocked_id", flat=True
+            )
+            qs = qs.exclude(author_id__in=blocked_ids)
+            feed = self.request.query_params.get("feed")
+            if feed == "following":
+                from accounts.models import Follow
+
+                following_ids = Follow.objects.filter(follower=user).values_list(
+                    "seller_id", flat=True
+                )
+                qs = qs.filter(author_id__in=following_ids)
         kind = self.request.query_params.get("kind")
         if kind in (Post.Kind.SHORT, Post.Kind.VIDEO):
             qs = qs.filter(kind=kind)

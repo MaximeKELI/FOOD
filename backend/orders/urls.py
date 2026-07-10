@@ -2,12 +2,17 @@ from django.urls import path
 
 from .views import (
     DeliveryQuoteView,
+    LoyaltyRedeemPreviewView,
     OrderCancelView,
     OrderDetailView,
     OrderListCreateView,
+    OrderReorderView,
     OrderStatusUpdateView,
+    OrderTimelineView,
     PromoValidateView,
     ReceivedOrderListView,
+    SellerPromoDetailView,
+    SellerPromoListCreateView,
     SellerStatsView,
 )
 
@@ -35,5 +40,22 @@ urlpatterns = [
         "orders/<int:pk>/status/",
         OrderStatusUpdateView.as_view(),
         name="order_status",
+    ),
+    path(
+        "orders/<int:pk>/timeline/",
+        OrderTimelineView.as_view(),
+        name="order_timeline",
+    ),
+    path(
+        "orders/<int:pk>/reorder/",
+        OrderReorderView.as_view(),
+        name="order_reorder",
+    ),
+    path("promos/", SellerPromoListCreateView.as_view(), name="promos"),
+    path("promos/<int:pk>/", SellerPromoDetailView.as_view(), name="promo_detail"),
+    path(
+        "loyalty/redeem-preview/",
+        LoyaltyRedeemPreviewView.as_view(),
+        name="loyalty_redeem_preview",
     ),
 ]

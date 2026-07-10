@@ -70,15 +70,26 @@ class MessageListCreateView(generics.ListCreateAPIView):
     def get_queryset(self):
         convo = self._conversation()
         # Mark incoming messages as read.
-        convo.messages.filter(is_read=False).exclude(
+        updated = convo.messages.filter(is_read=False).exclude(
             sender=self.request.user
         ).update(is_read=True)
+        if updated:
+            from .realtime import emit_chat_read
+
+            emit_chat_read(convo.id, self.request.user.id)
         return convo.messages.all()
 
     def perform_create(self, serializer):
         convo = self._conversation()
         message = serializer.save(conversation=convo, sender=self.request.user)
         convo.save(update_fields=["updated_at"])
+        from .realtime import emit_chat_message
+        from .serializers import MessageSerializer
+
+        emit_chat_message(
+            convo.id,
+            MessageSerializer(message).data,
+        )
         recipient = (
             convo.user_high
             if convo.user_low_id == self.request.user.id

@@ -11,7 +11,12 @@ class SellerProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = SellerProfile
         exclude = ("id", "user")
-        read_only_fields = ("is_verified", "created_at", "updated_at")
+        read_only_fields = (
+            "is_verified",
+            "badges",
+            "created_at",
+            "updated_at",
+        )
 
     def validate(self, attrs):
         lat = attrs.get("latitude", getattr(self.instance, "latitude", None))
@@ -64,13 +69,14 @@ class UserSerializer(serializers.ModelSerializer):
             "avatar",
             "phone",
             "loyalty_points",
+            "badges",
             "is_vendor",
             "seller_profile",
             "followers_count",
             "meals_count",
             "followed_by_me",
         )
-        read_only_fields = ("email", "loyalty_points")
+        read_only_fields = ("email", "loyalty_points", "badges")
 
     def get_is_vendor(self, obj):
         return user_is_vendor(obj)
