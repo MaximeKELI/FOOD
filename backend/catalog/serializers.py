@@ -1,15 +1,114 @@
 from django.db.models import Avg, Count, Exists, OuterRef, Q
+from django.utils import timezone
 from rest_framework import serializers
 
 from food_api.validators import validate_image_upload
 
-from .models import Category, Meal, MealFavorite, MealImage, Review
+from .models import (
+    Category,
+    Meal,
+    MealCombo,
+    MealFavorite,
+    MealImage,
+    MealOptionChoice,
+    MealOptionGroup,
+    Review,
+)
 
 
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
         fields = ("id", "name", "order")
+
+
+class MealOptionChoiceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = MealOptionChoice
+        fields = ("id", "name", "price_extra", "is_available", "order")
+
+
+class MealOptionGroupSerializer(serializers.ModelSerializer):
+    choices = MealOptionChoiceSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = MealOptionGroup
+        fields = (
+            "id",
+            "name",
+            "required",
+            "min_select",
+            "max_select",
+            "order",
+            "choices",
+        )
+
+
+class MealOptionGroupWriteSerializer(serializers.ModelSerializer):
+    choices = MealOptionChoiceSerializer(many=True, required=False)
+
+    class Meta:
+        model = MealOptionGroup
+        fields = (
+            "id",
+            "name",
+            "required",
+            "min_select",
+            "max_select",
+            "order",
+            "choices",
+        )
+
+    def create(self, validated_data):
+        choices_data = validated_data.pop("choices", [])
+        meal = self.context["meal"]
+        group = MealOptionGroup.objects.create(meal=meal, **validated_data)
+        for choice in choices_data:
+            MealOptionChoice.objects.create(group=group, **choice)
+        return group
+
+    def update(self, instance, validated_data):
+        choices_data = validated_data.pop("choices", None)
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+        if choices_data is not None:
+            instance.choices.all().delete()
+            for choice in choices_data:
+                MealOptionChoice.objects.create(group=instance, **choice)
+        return instance
+
+
+class MealComboSerializer(serializers.ModelSerializer):
+    meal_ids = serializers.PrimaryKeyRelatedField(
+        source="meals",
+        many=True,
+        queryset=Meal.objects.all(),
+        required=False,
+    )
+
+    class Meta:
+        model = MealCombo
+        fields = (
+            "id",
+            "name",
+            "description",
+            "price",
+            "image",
+            "is_available",
+            "meal_ids",
+            "seller",
+            "created_at",
+        )
+        read_only_fields = ("seller", "created_at")
+
+    def create(self, validated_data):
+        meals = validated_data.pop("meals", [])
+        validated_data["seller"] = self.context["request"].user
+        combo = MealCombo.objects.create(**validated_data)
+        if meals:
+            combo.meals.set(meals)
+        return combo
 
 
 class MealSerializer(serializers.ModelSerializer):
@@ -24,6 +123,7 @@ class MealSerializer(serializers.ModelSerializer):
     seller_lat = serializers.SerializerMethodField()
     seller_lng = serializers.SerializerMethodField()
     gallery = serializers.SerializerMethodField()
+    option_groups = MealOptionGroupSerializer(many=True, read_only=True)
 
     class Meta:
         model = Meal
@@ -39,6 +139,10 @@ class MealSerializer(serializers.ModelSerializer):
             "has_promo",
             "is_available",
             "is_special",
+            "stock_qty",
+            "prep_time_minutes",
+            "tags",
+            "option_groups",
             "category",
             "category_name",
             "seller",
@@ -99,8 +203,22 @@ class ReviewSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Review
-        fields = ("id", "rating", "comment", "user_name", "created_at")
-        read_only_fields = ("user_name", "created_at")
+        fields = (
+            "id",
+            "rating",
+            "comment",
+            "photo",
+            "seller_reply",
+            "seller_replied_at",
+            "user_name",
+            "created_at",
+        )
+        read_only_fields = (
+            "user_name",
+            "created_at",
+            "seller_reply",
+            "seller_replied_at",
+        )
 
     def validate_rating(self, value):
         if value < 1 or value > 5:
@@ -114,9 +232,14 @@ class ReviewSerializer(serializers.ModelSerializer):
         return text
 
 
+class ReviewReplySerializer(serializers.Serializer):
+    reply = serializers.CharField(max_length=2000)
+
+
 class MealCreateSerializer(serializers.ModelSerializer):
     is_available = serializers.BooleanField(required=False, default=True)
     is_special = serializers.BooleanField(required=False, default=False)
+    tags = serializers.JSONField(required=False)
 
     class Meta:
         model = Meal
@@ -129,6 +252,9 @@ class MealCreateSerializer(serializers.ModelSerializer):
             "promo_price",
             "is_available",
             "is_special",
+            "stock_qty",
+            "prep_time_minutes",
+            "tags",
             "category",
         )
 
