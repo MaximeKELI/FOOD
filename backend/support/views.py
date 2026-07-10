@@ -1,6 +1,7 @@
 import secrets
 import string
 from collections import defaultdict
+from datetime import timedelta
 
 from django.contrib.auth import get_user_model
 from django.db import transaction
@@ -171,7 +172,7 @@ class StoryListCreateView(generics.ListCreateAPIView):
             author=request.user,
             media=serializer.validated_data["media"],
             caption=serializer.validated_data.get("caption", ""),
-            expires_at=timezone.now() + timezone.timedelta(hours=24),
+            expires_at=timezone.now() + timedelta(hours=24),
         )
         return Response(
             StorySerializer(story, context={"request": request}).data,
