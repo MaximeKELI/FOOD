@@ -388,6 +388,20 @@ class _TrackingScreenState extends State<TrackingScreen> {
                     ),
                   ),
                 _OrderStatusCard(order: tracked),
+                if (_delivery != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Text(
+                      trf('driver.statusLine', {'status': _delivery!.status}) +
+                          (_delivery!.etaMinutes != null
+                              ? ' · ${trf('driver.eta', {'min': _delivery!.etaMinutes!})}'
+                              : ''),
+                      style: t.textTheme.bodySmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: ChezMamaTheme.brandBrown,
+                      ),
+                    ),
+                  ),
               ],
               const SizedBox(height: 16),
               Text(

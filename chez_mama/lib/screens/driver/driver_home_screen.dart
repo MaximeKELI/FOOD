@@ -131,7 +131,7 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
   Future<void> _toggleOnline() async {
     final driver = _driver;
     if (driver == null) return;
-    final next = driver.status == 'online' ? 'offline' : 'online';
+    final next = driver.status == 'available' ? 'offline' : 'available';
     try {
       final updated =
           await DeliveriesApi.instance.updateDriverMe(status: next);
@@ -155,7 +155,7 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
             TextButton(
               onPressed: _toggleOnline,
               child: Text(
-                _driver!.status == 'online'
+                _driver!.status == 'available'
                     ? tr('driver.goOffline')
                     : tr('driver.goOnline'),
               ),
