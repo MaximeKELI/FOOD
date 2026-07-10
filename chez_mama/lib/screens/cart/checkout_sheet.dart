@@ -660,6 +660,14 @@ class _CheckoutSheetState extends State<CheckoutSheet> {
                               '−${formatFcfa(_promoDiscount)}',
                             ),
                           ],
+                          if (_pointsDiscount > 0) ...[
+                            const SizedBox(height: 6),
+                            _line(
+                              t,
+                              tr('checkout.pointsRedeem'),
+                              '−${formatFcfa(_pointsDiscount)}',
+                            ),
+                          ],
                           const Divider(height: 18),
                           _line(
                             t,
