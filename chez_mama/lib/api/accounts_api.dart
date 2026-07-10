@@ -17,6 +17,10 @@ class SellerProfileView {
     required this.followersCount,
     required this.mealsCount,
     required this.followedByMe,
+    this.badges = const [],
+    this.acceptsOrders = true,
+    this.minOrderAmount = 0,
+    this.defaultPrepMinutes = 30,
   });
 
   final int id;
@@ -34,9 +38,14 @@ class SellerProfileView {
   final int followersCount;
   final int mealsCount;
   final bool followedByMe;
+  final List<String> badges;
+  final bool acceptsOrders;
+  final int minOrderAmount;
+  final int defaultPrepMinutes;
 
   factory SellerProfileView.fromJson(Map<String, dynamic> json) {
     final profile = (json['seller_profile'] as Map<String, dynamic>?) ?? const {};
+    final badgesRaw = (profile['badges'] as List?) ?? const [];
     return SellerProfileView(
       id: json['id'] as int,
       name: (json['name'] ?? json['display_name'] ?? '') as String,
@@ -53,6 +62,10 @@ class SellerProfileView {
       followersCount: json['followers_count'] as int? ?? 0,
       mealsCount: json['meals_count'] as int? ?? 0,
       followedByMe: json['followed_by_me'] as bool? ?? false,
+      badges: badgesRaw.map((e) => e.toString()).toList(),
+      acceptsOrders: profile['accepts_orders'] as bool? ?? true,
+      minOrderAmount: profile['min_order_amount'] as int? ?? 0,
+      defaultPrepMinutes: profile['default_prep_minutes'] as int? ?? 30,
     );
   }
 }

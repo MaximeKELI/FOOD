@@ -12,6 +12,9 @@ class CartItem {
     required this.unitPrice,
     required this.image,
     this.quantity = 1,
+    this.note = '',
+    this.optionIds = const [],
+    this.optionsExtra = 0,
   });
 
   final int mealId;
@@ -19,8 +22,16 @@ class CartItem {
   final int unitPrice;
   final String image;
   int quantity;
+  final String note;
+  /// Selected MealOptionChoice ids sent to the API.
+  final List<int> optionIds;
+  final int optionsExtra;
 
-  int get lineTotal => unitPrice * quantity;
+  int get lineTotal => (unitPrice + optionsExtra) * quantity;
+
+  /// Cart line key so same meal with different options stays separate.
+  String get lineKey =>
+      '$mealId:${optionIds.join(",")}:${note.trim()}';
 
   Map<String, dynamic> toJson() => {
         'mealId': mealId,
@@ -28,6 +39,9 @@ class CartItem {
         'unitPrice': unitPrice,
         'image': image,
         'quantity': quantity,
+        'note': note,
+        'optionIds': optionIds,
+        'optionsExtra': optionsExtra,
       };
 
   factory CartItem.fromJson(Map<String, dynamic> json) => CartItem(
@@ -36,6 +50,11 @@ class CartItem {
         unitPrice: json['unitPrice'] as int? ?? 0,
         image: json['image'] as String? ?? '',
         quantity: json['quantity'] as int? ?? 1,
+        note: json['note'] as String? ?? '',
+        optionIds: ((json['optionIds'] as List?) ?? const [])
+            .map((e) => e as int)
+            .toList(),
+        optionsExtra: json['optionsExtra'] as int? ?? 0,
       );
 }
 
@@ -84,21 +103,29 @@ class CartService extends ChangeNotifier {
   }
 
   /// Returns false when the meal cannot be added (invalid id or unavailable).
-  bool addMeal(Meal meal) {
+  bool addMeal(
+    Meal meal, {
+    List<int> optionIds = const [],
+    int optionsExtra = 0,
+    String note = '',
+  }) {
     final id = int.tryParse(meal.id);
     if (id == null || !meal.isAvailable) return false;
-    final existing = _items.where((i) => i.mealId == id).toList();
+    final candidate = CartItem(
+      mealId: id,
+      name: meal.name,
+      unitPrice: meal.effectivePrice.round(),
+      image: meal.image,
+      optionIds: List<int>.from(optionIds),
+      optionsExtra: optionsExtra,
+      note: note,
+    );
+    final existing =
+        _items.where((i) => i.lineKey == candidate.lineKey).toList();
     if (existing.isNotEmpty) {
       existing.first.quantity += 1;
     } else {
-      _items.add(
-        CartItem(
-          mealId: id,
-          name: meal.name,
-          unitPrice: meal.effectivePrice.round(),
-          image: meal.image,
-        ),
-      );
+      _items.add(candidate);
     }
     notifyListeners();
     _persist();
@@ -164,7 +191,14 @@ class CartService extends ChangeNotifier {
   /// Payload for the orders API.
   List<Map<String, dynamic>> toOrderItems() {
     return _items
-        .map((i) => {'meal': i.mealId, 'quantity': i.quantity})
+        .map(
+          (i) => {
+            'meal': i.mealId,
+            'quantity': i.quantity,
+            if (i.note.isNotEmpty) 'note': i.note,
+            if (i.optionIds.isNotEmpty) 'options': i.optionIds,
+          },
+        )
         .toList();
   }
 

@@ -329,6 +329,16 @@ const Map<String, Map<AppLang, String>> _strings = {
   'action.retry': {AppLang.fr: 'Réessayer', AppLang.en: 'Retry', AppLang.wo: 'Jéemataat'},
   'action.continueGuest': {AppLang.fr: 'Continuer', AppLang.en: 'Continue', AppLang.wo: 'Kontine'},
   'action.addToCart': {AppLang.fr: 'Ajouter au panier', AppLang.en: 'Add to cart', AppLang.wo: 'Yokk ci pañe'},
+  'meal.optionsRequired': {
+    AppLang.fr: 'Choisissez une option pour « {name} ».',
+    AppLang.en: 'Pick an option for "{name}".',
+    AppLang.wo: 'Tànn benn option ci « {name} ».',
+  },
+  'meal.optionsMax': {
+    AppLang.fr: 'Trop d’options pour « {name} ».',
+    AppLang.en: 'Too many options for "{name}".',
+    AppLang.wo: 'Option yu bare ci « {name} ».',
+  },
   'action.unavailable': {AppLang.fr: 'Indisponible', AppLang.en: 'Unavailable', AppLang.wo: 'Amul'},
   'action.contactSeller': {AppLang.fr: 'Contacter le vendeur', AppLang.en: 'Contact seller', AppLang.wo: 'Jokkoo ak jaaykat bi'},
   'action.delete': {AppLang.fr: 'Supprimer', AppLang.en: 'Remove', AppLang.wo: 'Dindi'},
