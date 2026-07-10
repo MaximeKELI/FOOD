@@ -10,6 +10,9 @@ class Notification(models.Model):
         REVIEW = "review", "Avis"
         CHAT = "chat", "Message"
         WEATHER = "weather", "Météo"
+        DISPUTE = "dispute", "Litige"
+        REFERRAL = "referral", "Parrainage"
+        SYSTEM = "system", "Système"
 
     recipient = models.ForeignKey(
         settings.AUTH_USER_MODEL,

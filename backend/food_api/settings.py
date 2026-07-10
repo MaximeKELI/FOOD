@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     "deliveries",
     "weather",
     "analytics",
+    "support",
 ]
 
 MIDDLEWARE = [
@@ -152,7 +153,7 @@ if USE_S3:
         MEDIA_URL = f"https://{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com/"
 
 REDIS_URL = config("REDIS_URL", default="")
-DELIVERIES_ENABLED = config("DELIVERIES_ENABLED", default=False, cast=bool)
+DELIVERIES_ENABLED = config("DELIVERIES_ENABLED", default=True, cast=bool)
 
 STRIPE_SECRET_KEY = config("STRIPE_SECRET_KEY", default="")
 STRIPE_WEBHOOK_SECRET = config("STRIPE_WEBHOOK_SECRET", default="")

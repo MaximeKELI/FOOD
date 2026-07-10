@@ -42,6 +42,11 @@ class Meal(models.Model):
     is_available = models.BooleanField(default=True)
     # "Plat du jour" highlight.
     is_special = models.BooleanField(default=False)
+    # null = unlimited stock; 0 = out of stock
+    stock_qty = models.PositiveIntegerField(null=True, blank=True)
+    prep_time_minutes = models.PositiveSmallIntegerField(null=True, blank=True)
+    # Dietary / filter tags: ["halal", "vegetarien", "epice", ...]
+    tags = models.JSONField(default=list, blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -120,6 +125,9 @@ class Review(models.Model):
     )
     rating = models.PositiveSmallIntegerField()  # 1..5
     comment = models.TextField(blank=True)
+    photo = models.ImageField(upload_to="reviews/", blank=True)
+    seller_reply = models.TextField(blank=True)
+    seller_replied_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -128,3 +136,77 @@ class Review(models.Model):
 
     def __str__(self):
         return f"{self.rating}/5 sur {self.meal.name}"
+
+
+class MealOptionGroup(models.Model):
+    """Option group for a meal (e.g. Size, Extras)."""
+
+    meal = models.ForeignKey(
+        Meal, on_delete=models.CASCADE, related_name="option_groups"
+    )
+    name = models.CharField(max_length=80)
+    required = models.BooleanField(default=False)
+    min_select = models.PositiveSmallIntegerField(default=0)
+    max_select = models.PositiveSmallIntegerField(default=1)
+    order = models.PositiveSmallIntegerField(default=0)
+
+    class Meta:
+        ordering = ["order", "id"]
+
+    def __str__(self):
+        return f"{self.name} — {self.meal.name}"
+
+
+class MealOptionChoice(models.Model):
+    group = models.ForeignKey(
+        MealOptionGroup, on_delete=models.CASCADE, related_name="choices"
+    )
+    name = models.CharField(max_length=80)
+    price_extra = models.PositiveIntegerField(default=0)
+    is_available = models.BooleanField(default=True)
+    order = models.PositiveSmallIntegerField(default=0)
+
+    class Meta:
+        ordering = ["order", "id"]
+
+    def __str__(self):
+        return self.name
+
+
+class MealCombo(models.Model):
+    """Fixed-price combo pack sold by a seller."""
+
+    seller = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="combos",
+    )
+    name = models.CharField(max_length=160)
+    description = models.CharField(max_length=255, blank=True)
+    price = models.PositiveIntegerField()
+    image = models.ImageField(upload_to="combos/", blank=True)
+    is_available = models.BooleanField(default=True)
+    meals = models.ManyToManyField(Meal, related_name="combos", blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return self.name
+
+
+class RecentlyViewedMeal(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="recently_viewed",
+    )
+    meal = models.ForeignKey(
+        Meal, on_delete=models.CASCADE, related_name="viewed_by"
+    )
+    viewed_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ("user", "meal")
+        ordering = ["-viewed_at"]

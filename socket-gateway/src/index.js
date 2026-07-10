@@ -74,6 +74,27 @@ io.on("connection", (socket) => {
     if (!deliveryId) return;
     io.to(`delivery:${deliveryId}`).emit("delivery:location", payload);
   });
+
+  socket.on("chat:typing", (payload) => {
+    const conversationId = payload?.conversation_id;
+    if (!conversationId) return;
+    socket.to(`conversation:${conversationId}`).emit("chat:typing", {
+      conversation_id: conversationId,
+      user_id: uid,
+      is_typing: Boolean(payload?.is_typing),
+    });
+  });
+
+  socket.on("chat:read", (payload) => {
+    const conversationId = payload?.conversation_id;
+    if (!conversationId) return;
+    io.to(`conversation:${conversationId}`).emit("chat:read", {
+      conversation_id: conversationId,
+      message_id: payload?.message_id || null,
+      reader_id: uid,
+      read_at: new Date().toISOString(),
+    });
+  });
 });
 
 app.post("/internal/emit", (req, res) => {

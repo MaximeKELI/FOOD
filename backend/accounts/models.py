@@ -42,6 +42,8 @@ class User(AbstractUser):
     avatar = models.ImageField(upload_to="avatars/", blank=True)
     phone = models.CharField(max_length=30, blank=True)
     loyalty_points = models.PositiveIntegerField(default=0)
+    # Computed badges for sellers: ["verified", "fast", ...] — also on SellerProfile
+    badges = models.JSONField(default=list, blank=True)
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = []
@@ -93,6 +95,12 @@ class SellerProfile(models.Model):
     delivery_radius_km = models.PositiveIntegerField(default=5)
     accepts_delivery = models.BooleanField(default=True)
     accepts_pickup = models.BooleanField(default=True)
+    # Pause accepting new orders (independent of open hours).
+    accepts_orders = models.BooleanField(default=True)
+    min_order_amount = models.PositiveIntegerField(default=0)
+    default_prep_minutes = models.PositiveSmallIntegerField(default=30)
+    # Seller badges: verified, fast, top_rated, etc.
+    badges = models.JSONField(default=list, blank=True)
 
     # Delivery pricing
     delivery_fee_base = models.PositiveIntegerField(default=500)
