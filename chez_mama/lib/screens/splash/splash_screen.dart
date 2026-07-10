@@ -6,7 +6,8 @@ import '../../l10n/app_strings.dart';
 import '../../providers/bootstrap_provider.dart';
 import '../../ui/african_pattern_painter.dart';
 import '../../ui/chezmama_theme.dart';
-import '../../widgets/brand_logo.dart';
+import '../../widgets/animated_brand_logo.dart';
+import '../../widgets/luxe.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
@@ -16,8 +17,9 @@ class SplashScreen extends ConsumerStatefulWidget {
 }
 
 class _SplashScreenState extends ConsumerState<SplashScreen>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late final AnimationController _c;
+  late final AnimationController _bg;
   late final Animation<double> _fade;
   late final Animation<double> _scale;
   bool _navigated = false;
@@ -27,10 +29,14 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     super.initState();
     _c = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 900),
+      duration: const Duration(milliseconds: 1200),
     );
+    _bg = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 10),
+    )..repeat(reverse: true);
     _fade = CurvedAnimation(parent: _c, curve: Curves.easeOutCubic);
-    _scale = Tween<double>(begin: 0.92, end: 1).animate(
+    _scale = Tween<double>(begin: 0.88, end: 1).animate(
       CurvedAnimation(parent: _c, curve: Curves.easeOutBack),
     );
     _c.forward();
@@ -49,6 +55,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   @override
   void dispose() {
     _c.dispose();
+    _bg.dispose();
     super.dispose();
   }
 
@@ -62,10 +69,21 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
       body: Stack(
         fit: StackFit.expand,
         children: [
-          DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: ChezMamaTheme.headerGradient(context),
-            ),
+          AnimatedBuilder(
+            animation: _bg,
+            builder: (context, _) {
+              final t = _bg.value;
+              return DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment(-1 + 2 * t, -1),
+                    end: Alignment(1 - 2 * t, 1),
+                    colors: ChezMamaTheme.cinematicGradient(context).colors,
+                    stops: ChezMamaTheme.cinematicGradient(context).stops,
+                  ),
+                ),
+              );
+            },
           ),
           CustomPaint(
             painter: AfricanPatternPainter(
@@ -74,6 +92,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
               c: ChezMamaTheme.brandBrown.withValues(alpha: 0.2),
             ),
           ),
+          const Positioned.fill(child: FloatingMotes(count: 22)),
           Center(
             child: FadeTransition(
               opacity: _fade,
@@ -82,11 +101,14 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const BrandLogo(size: 104, radius: 26, showShadow: true),
+                    const AnimatedBrandLogo(size: 118, radius: 30),
                     const SizedBox(height: ChezMamaTheme.spaceLg),
-                    Text(
+                    ShimmerText(
                       tr('app.name'),
-                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      style: Theme.of(context)
+                          .textTheme
+                          .headlineMedium
+                          ?.copyWith(
                             fontWeight: FontWeight.w900,
                             letterSpacing: -0.4,
                           ),
@@ -97,13 +119,19 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                             color: ChezMamaTheme.mutedInk(context),
                             fontWeight: FontWeight.w600,
+                            letterSpacing: 0.3,
                           ),
                     ),
-                    const SizedBox(height: 28),
-                    const SizedBox(
-                      width: 28,
-                      height: 28,
-                      child: CircularProgressIndicator(strokeWidth: 2.5),
+                    const SizedBox(height: 30),
+                    SizedBox(
+                      width: 26,
+                      height: 26,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.4,
+                        valueColor: AlwaysStoppedAnimation(
+                          ChezMamaTheme.gold,
+                        ),
+                      ),
                     ),
                   ],
                 ),

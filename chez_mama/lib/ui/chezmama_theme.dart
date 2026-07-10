@@ -15,6 +15,104 @@ class ChezMamaTheme {
   static const Color soldOutGray = Color(0xFF8A8A8A);
   static const Color favorite = Color(0xFFE84545);
 
+  // ---- Luxe palette (gold / champagne / espresso) -------------------------
+  /// Deep metallic gold used for premium accents & shimmer highlights.
+  static const Color gold = Color(0xFFE7B84B);
+  static const Color goldLight = Color(0xFFF6E1A1);
+  static const Color champagne = Color(0xFFF7E9C9);
+  static const Color espresso = Color(0xFF2A1810);
+  static const Color onyx = Color(0xFF120D0A);
+
+  // ---- Motion tokens ------------------------------------------------------
+  static const Duration dFast = Duration(milliseconds: 220);
+  static const Duration dMed = Duration(milliseconds: 420);
+  static const Duration dSlow = Duration(milliseconds: 820);
+  static const Curve easeLuxe = Curves.easeOutCubic;
+
+  /// Sweeping metallic gold gradient (shimmer, gilded text/borders).
+  static const LinearGradient goldGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [Color(0xFFB8860B), gold, goldLight, gold, Color(0xFFB8860B)],
+    stops: [0.0, 0.30, 0.5, 0.70, 1.0],
+  );
+
+  /// Rich radial glow used behind hero elements & the animated logo.
+  static RadialGradient haloGradient(BuildContext c) {
+    return RadialGradient(
+      colors: [
+        brandAmber.withValues(alpha: _isDark(c) ? 0.42 : 0.55),
+        brandOrange.withValues(alpha: 0.18),
+        Colors.transparent,
+      ],
+      stops: const [0.0, 0.45, 1.0],
+    );
+  }
+
+  /// Deep cinematic multi-stop background (splash / premium headers).
+  static LinearGradient cinematicGradient(BuildContext c) {
+    return LinearGradient(
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+      colors: _isDark(c)
+          ? const [onyx, espresso, Color(0xFF3A2416), onyx]
+          : const [
+              Color(0xFFFFF3E0),
+              Color(0xFFFFE0B8),
+              Color(0xFFFFD59A),
+              Color(0xFFFFF3E0),
+            ],
+      stops: const [0.0, 0.38, 0.66, 1.0],
+    );
+  }
+
+  /// Frosted-glass decoration (use inside a ClipRRect + BackdropFilter).
+  static BoxDecoration glassDecoration(
+    BuildContext c, {
+    double radius = rCard,
+    double opacity = 0.14,
+  }) {
+    final dark = _isDark(c);
+    return BoxDecoration(
+      borderRadius: BorderRadius.circular(radius),
+      gradient: LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: dark
+            ? [
+                Colors.white.withValues(alpha: opacity),
+                Colors.white.withValues(alpha: opacity * 0.35),
+              ]
+            : [
+                Colors.white.withValues(alpha: 0.55),
+                Colors.white.withValues(alpha: 0.22),
+              ],
+      ),
+      border: Border.all(
+        color: Colors.white.withValues(alpha: dark ? 0.16 : 0.55),
+        width: 1.2,
+      ),
+    );
+  }
+
+  /// Brand-tinted glow shadow for premium CTAs and floating elements.
+  static List<BoxShadow> glowShadow(
+    Color color, {
+    double opacity = 0.45,
+    double blur = 28,
+    double spread = 0,
+    Offset offset = const Offset(0, 10),
+  }) {
+    return [
+      BoxShadow(
+        color: color.withValues(alpha: opacity),
+        blurRadius: blur,
+        spreadRadius: spread,
+        offset: offset,
+      ),
+    ];
+  }
+
   // ---- Spacing scale ------------------------------------------------------
   static const double spaceXs = 6;
   static const double spaceSm = 10;

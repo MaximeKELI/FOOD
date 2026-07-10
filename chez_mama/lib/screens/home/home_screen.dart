@@ -10,7 +10,10 @@ import '../../models/meal.dart';
 import '../../services/app_location_service.dart';
 import '../../ui/african_pattern_painter.dart';
 import '../../ui/chezmama_theme.dart';
+import '../../utils/haptic_utils.dart';
 import '../../widgets/empty_state_view.dart';
+import '../../widgets/luxe.dart';
+import '../../widgets/scroll_reveal.dart';
 import '../../widgets/shimmer_skeleton.dart';
 import '../../widgets/shell_toolbar_actions.dart';
 import '../meal/meal_details_screen.dart';
@@ -290,6 +293,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         slivers: [
           SliverAppBar(
             pinned: true,
+            stretch: true,
+            onStretchTrigger: () async => hapticLight(),
             expandedHeight: 232,
             automaticallyImplyLeading: false,
             backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -306,6 +311,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               ),
             ],
             flexibleSpace: FlexibleSpaceBar(
+              collapseMode: CollapseMode.parallax,
+              stretchModes: const [
+                StretchMode.zoomBackground,
+                StretchMode.fadeTitle,
+              ],
               background: Stack(
                 fit: StackFit.expand,
                 children: [
@@ -323,6 +333,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       ),
                     ),
                   ),
+                  const Positioned.fill(child: FloatingMotes(count: 14)),
                   Positioned(
                     left: 16,
                     right: 16,
@@ -380,9 +391,21 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               child: Column(
                 children: [
                   if (widget.isAuthed) ...[
-                    const StoriesBar(),
+                    ScrollReveal(
+                      controller: scroll,
+                      slide: 40,
+                      tilt: 0.0,
+                      minScale: 0.96,
+                      child: const StoriesBar(),
+                    ),
                     const SizedBox(height: 8),
-                    const RecentMealsSection(),
+                    ScrollReveal(
+                      controller: scroll,
+                      slide: 48,
+                      tilt: 0.0,
+                      minScale: 0.95,
+                      child: const RecentMealsSection(),
+                    ),
                     const SizedBox(height: 8),
                   ],
                   if (_fromCache)
@@ -562,24 +585,31 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                     curve: Curves.easeOutCubic),
                               );
 
-                              return FadeTransition(
-                                opacity: a,
-                                child: SlideTransition(
-                                  position: Tween<Offset>(
-                                    begin: const Offset(0, 0.08),
-                                    end: Offset.zero,
-                                  ).animate(a),
-                                  child: MealCard(
-                                    meal: meal,
-                                    distanceKm: _distanceKm(meal),
-                                    onTap: () {
-                                      Navigator.of(context).push(
-                                        MaterialPageRoute(
-                                          builder: (_) =>
-                                              MealDetailsScreen(meal: meal),
-                                        ),
-                                      );
-                                    },
+                              return ScrollReveal(
+                                controller: scroll,
+                                slide: 64,
+                                minScale: 0.90,
+                                tilt: 0.16,
+                                horizontal: i.isEven ? -22 : 22,
+                                child: FadeTransition(
+                                  opacity: a,
+                                  child: SlideTransition(
+                                    position: Tween<Offset>(
+                                      begin: const Offset(0, 0.08),
+                                      end: Offset.zero,
+                                    ).animate(a),
+                                    child: MealCard(
+                                      meal: meal,
+                                      distanceKm: _distanceKm(meal),
+                                      onTap: () {
+                                        Navigator.of(context).push(
+                                          MaterialPageRoute(
+                                            builder: (_) =>
+                                                MealDetailsScreen(meal: meal),
+                                          ),
+                                        );
+                                      },
+                                    ),
                                   ),
                                 ),
                               );

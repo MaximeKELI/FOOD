@@ -1,5 +1,3 @@
-import 'dart:io' show Platform;
-
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
@@ -105,7 +103,7 @@ class ApiConfig {
       return ordered;
     }
 
-    if (Platform.isAndroid) {
+    if (defaultTargetPlatform == TargetPlatform.android) {
       try {
         final info = await DeviceInfoPlugin()
             .androidInfo

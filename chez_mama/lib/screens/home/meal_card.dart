@@ -92,6 +92,23 @@ class _MealCardState extends State<MealCard> {
                               accent: m.accent,
                               memCacheWidth: 640,
                             ),
+                            // Glossy sheen for a premium, glass-like finish.
+                            Positioned.fill(
+                              child: DecoratedBox(
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                    colors: [
+                                      Colors.white.withValues(alpha: 0.22),
+                                      Colors.white.withValues(alpha: 0.0),
+                                      Colors.black.withValues(alpha: 0.12),
+                                    ],
+                                    stops: const [0.0, 0.42, 1.0],
+                                  ),
+                                ),
+                              ),
+                            ),
                             if (!m.isAvailable)
                               Container(
                                 color: Colors.black.withValues(alpha: 0.48),

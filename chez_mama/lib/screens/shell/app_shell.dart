@@ -250,7 +250,7 @@ class _AppShellState extends ConsumerState<AppShell> {
               title: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const BrandLogo(size: 30, radius: 9),
+                  const BrandLogo(size: 30, radius: 9, spin: true),
                   const SizedBox(width: 10),
                   Text(_titles[index]),
                 ],

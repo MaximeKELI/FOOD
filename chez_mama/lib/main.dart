@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -27,7 +28,9 @@ late final AuthService _authService;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  Stripe.merchantIdentifier = 'merchant.com.chez_mama';
+  if (!kIsWeb) {
+    Stripe.merchantIdentifier = 'merchant.com.chez_mama';
+  }
   await ApiConfig.init();
   ApiClient.instance.updateBaseUrl();
   _authService = AuthService();
