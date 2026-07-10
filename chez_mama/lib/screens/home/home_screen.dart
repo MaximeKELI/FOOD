@@ -17,6 +17,8 @@ import '../meal/meal_details_screen.dart';
 import 'hero_carousel.dart';
 import 'meal_card.dart';
 import 'publish_meal_sheet.dart';
+import 'recent_meals_section.dart';
+import '../social/stories_bar.dart';
 
 enum MealSort { recent, priceAsc, priceDesc, rating, distance }
 
@@ -377,6 +379,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             ),
               child: Column(
                 children: [
+                  if (widget.isAuthed) ...[
+                    const StoriesBar(),
+                    const SizedBox(height: 8),
+                    const RecentMealsSection(),
+                    const SizedBox(height: 8),
+                  ],
                   if (_fromCache)
                     Padding(
                       padding: const EdgeInsets.only(bottom: 8),

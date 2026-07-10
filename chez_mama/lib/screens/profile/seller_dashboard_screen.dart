@@ -6,6 +6,8 @@ import '../../ui/chezmama_theme.dart';
 import '../../utils/currency_format.dart';
 import '../../widgets/empty_state_view.dart';
 import '../../widgets/list_loading_skeleton.dart';
+import 'seller_promos_screen.dart';
+import 'seller_shop_settings_screen.dart';
 
 class SellerDashboardScreen extends StatefulWidget {
   const SellerDashboardScreen({super.key});
@@ -49,7 +51,31 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(tr('dashboard.title'))),
+      appBar: AppBar(
+        title: Text(tr('dashboard.title')),
+        actions: [
+          IconButton(
+            tooltip: tr('menu.promos'),
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const SellerPromosScreen()),
+              );
+            },
+            icon: const Icon(Icons.local_offer_rounded),
+          ),
+          IconButton(
+            tooltip: tr('menu.shopSettings'),
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => const SellerShopSettingsScreen(),
+                ),
+              );
+            },
+            icon: const Icon(Icons.settings_rounded),
+          ),
+        ],
+      ),
       body: _buildBody(),
     );
   }
