@@ -6,6 +6,7 @@ import '../../analytics/event_tracker.dart';
 import '../../api/api_client.dart';
 import '../../api/orders_api.dart';
 import '../../api/payments_api.dart';
+import '../../api/support_api.dart';
 import '../../auth/auth_scope.dart';
 import '../../cart/cart_service.dart';
 import '../../cart/received_orders_notifier.dart';
@@ -32,6 +33,7 @@ class _CheckoutSheetState extends State<CheckoutSheet> {
   final _phone = TextEditingController();
   final _note = TextEditingController();
   final _promo = TextEditingController();
+  final _points = TextEditingController();
   String _fulfillment = 'delivery';
   String _payment = 'cash';
   bool _submitting = false;
@@ -40,14 +42,21 @@ class _CheckoutSheetState extends State<CheckoutSheet> {
   bool _locating = false;
   int _deliveryFee = 0;
   int _promoDiscount = 0;
+  int _pointsDiscount = 0;
   String? _quoteError;
   bool _quoting = false;
   bool _validatingPromo = false;
+  DateTime? _scheduledFor;
+  List<SavedAddress> _savedAddresses = [];
+  int? _selectedAddressId;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _refreshQuote());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _refreshQuote();
+      _loadAddresses();
+    });
   }
 
   @override
@@ -56,7 +65,78 @@ class _CheckoutSheetState extends State<CheckoutSheet> {
     _phone.dispose();
     _note.dispose();
     _promo.dispose();
+    _points.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadAddresses() async {
+    if (!AuthScope.of(context).isAuthed) return;
+    try {
+      final list = await SupportApi.instance.fetchAddresses();
+      if (!mounted) return;
+      setState(() {
+        _savedAddresses = list;
+        final def = list.where((a) => a.isDefault).toList();
+        if (def.isNotEmpty) _applyAddress(def.first);
+      });
+    } catch (_) {}
+  }
+
+  void _applyAddress(SavedAddress a) {
+    _selectedAddressId = a.id;
+    _address.text = a.address;
+    if (a.phone.isNotEmpty) _phone.text = a.phone;
+    if (a.latitude != null && a.longitude != null) {
+      _loc = LatLng(a.latitude!, a.longitude!);
+      _refreshQuote();
+    }
+  }
+
+  Future<void> _pickSchedule() async {
+    final now = DateTime.now();
+    final date = await showDatePicker(
+      context: context,
+      initialDate: now.add(const Duration(hours: 2)),
+      firstDate: now,
+      lastDate: now.add(const Duration(days: 14)),
+    );
+    if (date == null || !mounted) return;
+    final time = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.fromDateTime(now.add(const Duration(hours: 2))),
+    );
+    if (time == null || !mounted) return;
+    setState(() {
+      _scheduledFor = DateTime(
+        date.year,
+        date.month,
+        date.day,
+        time.hour,
+        time.minute,
+      );
+    });
+  }
+
+  Future<void> _previewPoints() async {
+    final pts = int.tryParse(_points.text.trim()) ?? 0;
+    if (pts <= 0) {
+      setState(() => _pointsDiscount = 0);
+      return;
+    }
+    try {
+      final preview = await OrdersApi.instance.loyaltyRedeemPreview(
+        points: pts,
+        subtotal: _cart.total,
+      );
+      if (!mounted) return;
+      setState(() => _pointsDiscount = preview.discountFcfa);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _pointsDiscount = 0);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(apiErrorMessage(e))),
+      );
+    }
   }
 
   Future<void> _useMyLocation() async {
@@ -149,7 +229,8 @@ class _CheckoutSheetState extends State<CheckoutSheet> {
   }
 
   int get _grandTotal =>
-      (_cart.total + _deliveryFee - _promoDiscount).clamp(0, 1 << 30);
+      (_cart.total + _deliveryFee - _promoDiscount - _pointsDiscount)
+          .clamp(0, 1 << 30);
 
   bool _isDigitalPayment(String method) =>
       method == 'stripe' ||
@@ -213,6 +294,8 @@ class _CheckoutSheetState extends State<CheckoutSheet> {
         latitude: _fulfillment == 'delivery' ? _loc?.latitude : null,
         longitude: _fulfillment == 'delivery' ? _loc?.longitude : null,
         promoCode: _promo.text.trim(),
+        scheduledFor: _scheduledFor?.toUtc().toIso8601String(),
+        pointsToRedeem: int.tryParse(_points.text.trim()),
         deviceContext: deviceContext,
       );
       await EventTracker.instance.track(

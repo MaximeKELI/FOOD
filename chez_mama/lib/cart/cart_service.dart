@@ -105,6 +105,33 @@ class CartService extends ChangeNotifier {
     return true;
   }
 
+  /// Adds a meal by id (e.g. reorder). Skips availability check.
+  void addMealById({
+    required int mealId,
+    required String name,
+    int unitPrice = 0,
+    String image = '',
+    int quantity = 1,
+  }) {
+    if (mealId <= 0 || quantity <= 0) return;
+    final existing = _items.where((i) => i.mealId == mealId).toList();
+    if (existing.isNotEmpty) {
+      existing.first.quantity += quantity;
+    } else {
+      _items.add(
+        CartItem(
+          mealId: mealId,
+          name: name,
+          unitPrice: unitPrice,
+          image: image,
+          quantity: quantity,
+        ),
+      );
+    }
+    notifyListeners();
+    _persist();
+  }
+
   void increment(int mealId) {
     for (final i in _items) {
       if (i.mealId == mealId) i.quantity += 1;

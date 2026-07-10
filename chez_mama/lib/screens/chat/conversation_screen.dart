@@ -6,6 +6,7 @@ import '../../api/api_client.dart';
 import '../../api/chat_api.dart';
 import '../../auth/auth_scope.dart';
 import '../../l10n/app_strings.dart';
+import '../../services/socket_service.dart';
 import '../../ui/chezmama_theme.dart';
 
 /// A 1:1 chat thread. Either [conversationId] or [otherUserId] must be given.
@@ -33,21 +34,113 @@ class _ConversationScreenState extends State<ConversationScreen> {
   final _input = TextEditingController();
   final _scroll = ScrollController();
   Timer? _poll;
+  Timer? _typingDebounce;
   bool _sending = false;
+  bool _otherTyping = false;
+  bool _socketBound = false;
+
+  void Function(dynamic)? _onMessage;
+  void Function(dynamic)? _onTyping;
+  void Function(dynamic)? _onRead;
 
   @override
   void initState() {
     super.initState();
-    _conversationId = widget.conversationId;
+    _input.addListener(_onInputChanged);
     _bootstrap();
   }
 
   @override
   void dispose() {
     _poll?.cancel();
+    _typingDebounce?.cancel();
+    _unbindSocket();
+    _input.removeListener(_onInputChanged);
     _input.dispose();
     _scroll.dispose();
     super.dispose();
+  }
+
+  void _onInputChanged() {
+    if (_conversationId == null) return;
+    _typingDebounce?.cancel();
+    _typingDebounce = Timer(const Duration(milliseconds: 400), () {
+      SocketService.instance.emit('chat:typing', {
+        'conversation_id': _conversationId,
+        'is_typing': _input.text.trim().isNotEmpty,
+      });
+    });
+  }
+
+  void _bindSocket() {
+    if (_conversationId == null || _socketBound) return;
+    final sock = SocketService.instance;
+    sock.join(['conversation:$_conversationId']);
+
+    _onMessage = (data) {
+      if (!mounted || data is! Map) return;
+      final map = Map<String, dynamic>.from(data);
+      final convoId = map['conversation_id'] as int? ??
+          map['conversation'] as int?;
+      if (convoId != null && convoId != _conversationId) return;
+      final msg = ChatMessage.fromJson(map);
+      if (_messages.any((m) => m.id == msg.id && msg.id != 0)) return;
+      setState(() => _messages = [..._messages, msg]);
+      _jumpToBottom();
+    };
+    _onTyping = (data) {
+      if (!mounted || data is! Map) return;
+      final map = Map<String, dynamic>.from(data);
+      final convoId = map['conversation_id'] as int?;
+      if (convoId != null && convoId != _conversationId) return;
+      final me = AuthScope.of(context).userId;
+      final uid = map['user_id'] as int?;
+      if (uid != null && uid == me) return;
+      setState(() => _otherTyping = map['is_typing'] == true);
+    };
+    _onRead = (data) {
+      if (!mounted || data is! Map) return;
+      final map = Map<String, dynamic>.from(data);
+      final convoId = map['conversation_id'] as int?;
+      if (convoId != null && convoId != _conversationId) return;
+      final messageId = map['message_id'] as int?;
+      setState(() {
+        for (final m in _messages) {
+          if (messageId == null || m.id == messageId) {
+            m.isRead = true;
+          }
+        }
+      });
+    };
+
+    sock.on(SocketService.eventChatMessage, _onMessage!);
+    sock.on(SocketService.eventChatTyping, _onTyping!);
+    sock.on(SocketService.eventChatRead, _onRead!);
+    _socketBound = true;
+
+    // Fallback poll only when socket is not connected.
+    _poll?.cancel();
+    if (!sock.isConnected) {
+      _poll = Timer.periodic(
+        const Duration(seconds: 15),
+        (_) => _load(silent: true),
+      );
+    }
+  }
+
+  void _unbindSocket() {
+    if (!_socketBound) return;
+    final sock = SocketService.instance;
+    if (_onMessage != null) {
+      sock.off(SocketService.eventChatMessage, _onMessage);
+    }
+    if (_onTyping != null) {
+      sock.off(SocketService.eventChatTyping, _onTyping);
+    }
+    if (_onRead != null) {
+      sock.off(SocketService.eventChatRead, _onRead);
+    }
+    _socketBound = false;
   }
 
   Future<void> _bootstrap() async {
@@ -57,10 +150,7 @@ class _ConversationScreenState extends State<ConversationScreen> {
         _conversationId = convo.id;
       }
       await _load();
-      _poll = Timer.periodic(
-        const Duration(seconds: 5),
-        (_) => _load(silent: true),
-      );
+      _bindSocket();
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -109,10 +199,16 @@ class _ConversationScreenState extends State<ConversationScreen> {
     if (text.isEmpty || _conversationId == null || _sending) return;
     setState(() => _sending = true);
     _input.clear();
+    SocketService.instance.emit('chat:typing', {
+      'conversation_id': _conversationId,
+      'is_typing': false,
+    });
     try {
       final msg = await ChatApi.instance.sendMessage(_conversationId!, text);
       if (!mounted) return;
-      setState(() => _messages = [..._messages, msg]);
+      if (!_messages.any((m) => m.id == msg.id)) {
+        setState(() => _messages = [..._messages, msg]);
+      }
       _jumpToBottom();
     } catch (e) {
       if (!mounted) return;
@@ -155,10 +251,29 @@ class _ConversationScreenState extends State<ConversationScreen> {
                             itemCount: _messages.length,
                             itemBuilder: (_, i) {
                               final m = _messages[i];
-                              return _Bubble(text: m.text, mine: m.sender == me);
+                              return _Bubble(
+                                text: m.text,
+                                mine: m.sender == me,
+                                isRead: m.isRead,
+                              );
                             },
                           ),
           ),
+          if (_otherTyping)
+            Padding(
+              padding: const EdgeInsets.only(left: 16, bottom: 4),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  tr('chat.typing'),
+                  style: TextStyle(
+                    color: ChezMamaTheme.mutedInk(context),
+                    fontStyle: FontStyle.italic,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+            ),
           SafeArea(
             top: false,
             child: Padding(
@@ -191,9 +306,14 @@ class _ConversationScreenState extends State<ConversationScreen> {
 }
 
 class _Bubble extends StatelessWidget {
-  const _Bubble({required this.text, required this.mine});
+  const _Bubble({
+    required this.text,
+    required this.mine,
+    this.isRead = false,
+  });
   final String text;
   final bool mine;
+  final bool isRead;
 
   @override
   Widget build(BuildContext context) {
@@ -217,12 +337,25 @@ class _Bubble extends StatelessWidget {
           ),
           boxShadow: ChezMamaTheme.softShadow(opacity: 0.06),
         ),
-        child: Text(
-          text,
-          style: TextStyle(
-            color: mine ? Colors.white : ChezMamaTheme.inkColor(context),
-            fontWeight: FontWeight.w500,
-          ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Text(
+              text,
+              style: TextStyle(
+                color: mine ? Colors.white : ChezMamaTheme.inkColor(context),
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            if (mine) ...[
+              const SizedBox(height: 2),
+              Icon(
+                isRead ? Icons.done_all_rounded : Icons.done_rounded,
+                size: 14,
+                color: Colors.white.withValues(alpha: 0.85),
+              ),
+            ],
+          ],
         ),
       ),
     );

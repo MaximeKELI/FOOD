@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../../api/api_client.dart';
 import '../../api/support_api.dart';
-import '../../api/api_config.dart';
 import '../../auth/auth_scope.dart';
 import '../../l10n/app_strings.dart';
 import '../../services/app_media_picker.dart';
@@ -44,10 +43,10 @@ class _StoriesBarState extends State<StoriesBar> {
   Future<void> _addStory() async {
     final auth = AuthScope.of(context);
     if (!auth.isAuthed) return;
-    final path = await AppMediaPicker.pickImagePath();
+    final path = await AppMediaPicker.instance.pickPhotoFromGallery();
     if (path == null || !mounted) return;
     try {
-      await SupportApi.instance.createStory(mediaPath: path);
+      await SupportApi.instance.createStory(mediaPath: path.path);
       await _load();
     } catch (e) {
       if (!mounted) return;
@@ -69,9 +68,7 @@ class _StoriesBarState extends State<StoriesBar> {
             AspectRatio(
               aspectRatio: 9 / 16,
               child: FoodNetworkImage(
-                url: story.mediaUrl.isEmpty
-                    ? null
-                    : ApiConfig.resolveMediaUrl(story.mediaUrl),
+                url: story.mediaUrl,
                 fit: BoxFit.cover,
               ),
             ),

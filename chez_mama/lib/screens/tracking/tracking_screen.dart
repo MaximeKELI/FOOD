@@ -5,11 +5,13 @@ import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import '../../api/accounts_api.dart';
 import '../../api/api_client.dart';
+import '../../api/deliveries_api.dart';
 import '../../api/orders_api.dart';
 import '../../auth/auth_scope.dart';
 import '../../l10n/app_strings.dart';
 import '../../services/app_location_service.dart';
 import '../../services/platform_utils.dart';
+import '../../services/socket_service.dart';
 import '../../ui/chezmama_theme.dart';
 import '../../utils/currency_format.dart';
 import '../../widgets/empty_state_view.dart';
@@ -63,6 +65,12 @@ class _TrackingScreenState extends State<TrackingScreen> {
   String? _ordersError;
   int _selectedOrderIndex = 0;
   bool _wasAuthed = false;
+
+  DeliveryView? _delivery;
+  LatLng? _driverLocation;
+  void Function(dynamic)? _onOrderStatus;
+  void Function(dynamic)? _onDeliveryLocation;
+  int? _socketOrderId;
 
   @override
   void initState() {
@@ -122,6 +130,7 @@ class _TrackingScreenState extends State<TrackingScreen> {
           _selectedOrderIndex = 0;
         }
       });
+      await _syncDeliverySocket();
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -129,6 +138,61 @@ class _TrackingScreenState extends State<TrackingScreen> {
         _ordersLoading = false;
       });
     }
+  }
+
+  Future<void> _syncDeliverySocket() async {
+    final order = _trackedOrder;
+    final orderId = order?.id;
+    if (orderId == _socketOrderId) return;
+    _unbindOrderSocket();
+    _socketOrderId = orderId;
+    if (orderId == null) {
+      setState(() {
+        _delivery = null;
+        _driverLocation = null;
+      });
+      return;
+    }
+
+    final delivery = await DeliveriesApi.instance.byOrder(orderId);
+    if (!mounted) return;
+    setState(() => _delivery = delivery);
+
+    final sock = SocketService.instance;
+    sock.join([
+      'order:$orderId',
+      if (delivery != null) 'delivery:${delivery.id}',
+    ]);
+
+    _onOrderStatus = (data) {
+      if (!mounted || data is! Map) return;
+      final map = Map<String, dynamic>.from(data);
+      final id = map['order_id'] as int? ?? map['id'] as int?;
+      if (id != null && id != orderId) return;
+      _loadOrders();
+    };
+    _onDeliveryLocation = (data) {
+      if (!mounted || data is! Map) return;
+      final map = Map<String, dynamic>.from(data);
+      final lat = (map['latitude'] as num?)?.toDouble();
+      final lng = (map['longitude'] as num?)?.toDouble();
+      if (lat == null || lng == null) return;
+      setState(() => _driverLocation = LatLng(lat, lng));
+    };
+    sock.on(SocketService.eventOrderStatus, _onOrderStatus!);
+    sock.on(SocketService.eventDeliveryLocation, _onDeliveryLocation!);
+  }
+
+  void _unbindOrderSocket() {
+    final sock = SocketService.instance;
+    if (_onOrderStatus != null) {
+      sock.off(SocketService.eventOrderStatus, _onOrderStatus);
+    }
+    if (_onDeliveryLocation != null) {
+      sock.off(SocketService.eventDeliveryLocation, _onDeliveryLocation);
+    }
+    _onOrderStatus = null;
+    _onDeliveryLocation = null;
   }
 
   Future<void> _loadSellers() async {
@@ -204,6 +268,7 @@ class _TrackingScreenState extends State<TrackingScreen> {
   void dispose() {
     _positionSub?.cancel();
     _ordersTimer?.cancel();
+    _unbindOrderSocket();
     super.dispose();
   }
 

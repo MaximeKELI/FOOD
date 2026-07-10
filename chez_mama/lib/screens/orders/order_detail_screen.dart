@@ -5,7 +5,6 @@ import '../../api/orders_api.dart';
 import '../../api/support_api.dart';
 import '../../cart/cart_service.dart';
 import '../../l10n/app_strings.dart';
-import '../../models/meal.dart';
 import '../../ui/chezmama_theme.dart';
 import '../../utils/currency_format.dart';
 import '../../widgets/empty_state_view.dart';
@@ -109,21 +108,22 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     setState(() => _busy = true);
     try {
       final items = await OrdersApi.instance.reorder(widget.orderId);
+      final order = _order;
       for (final item in items) {
         if (item.mealId <= 0) continue;
-        final meal = Meal(
-          id: item.mealId.toString(),
-          name: 'Meal #${item.mealId}',
-          subtitle: '',
-          price: 0,
-          rating: 0,
-          image: '',
-          accent: ChezMamaTheme.brandOrange,
-          category: '',
+        final match = order?.items.where((i) => i.mealId == item.mealId);
+        final name = match != null && match.isNotEmpty
+            ? match.first.mealName
+            : 'Meal #${item.mealId}';
+        final price = match != null && match.isNotEmpty
+            ? match.first.unitPrice
+            : 0;
+        CartService.instance.addMealById(
+          mealId: item.mealId,
+          name: name,
+          unitPrice: price,
+          quantity: item.quantity,
         );
-        for (var i = 0; i < item.quantity; i++) {
-          CartService.instance.addMeal(meal);
-        }
       }
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
