@@ -9,6 +9,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
+        ("accounts", "0006_feature_pack"),
         ("catalog", "0006_feature_pack"),
         ("orders", "0006_feature_pack"),
     ]

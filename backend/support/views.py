@@ -18,7 +18,6 @@ from notifications.models import Notification, notify
 from orders.models import Order, OrderItem, OrderStatusEvent
 
 from .models import (
-    ContentReport,
     Dispute,
     FaqEntry,
     GroupOrder,

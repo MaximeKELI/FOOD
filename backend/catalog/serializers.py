@@ -1,5 +1,4 @@
-from django.db.models import Avg, Count, Exists, OuterRef, Q
-from django.utils import timezone
+from django.db.models import Avg
 from rest_framework import serializers
 
 from food_api.validators import validate_image_upload
@@ -8,7 +7,6 @@ from .models import (
     Category,
     Meal,
     MealCombo,
-    MealFavorite,
     MealImage,
     MealOptionChoice,
     MealOptionGroup,

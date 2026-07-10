@@ -1,4 +1,4 @@
-from django.db.models import Avg, Count, Exists, OuterRef, Q
+from django.db.models import Count, Exists, OuterRef, Q
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from drf_spectacular.utils import extend_schema, extend_schema_view
@@ -40,6 +40,8 @@ class IsOwnerOrReadOnly(permissions.BasePermission):
 
 
 def _meal_queryset(request):
+    from django.db.models import Avg
+
     qs = Meal.objects.select_related(
         "seller", "seller__seller_profile", "category"
     ).prefetch_related("gallery", "option_groups__choices")
@@ -132,17 +134,22 @@ class RecentlyViewedMealsView(generics.ListAPIView):
     permission_classes = [permissions.IsAuthenticated]
     pagination_class = None
 
-    def get_queryset(self):
-        meal_ids = (
-            RecentlyViewedMeal.objects.filter(user=self.request.user)
+    def list(self, request, *args, **kwargs):
+        meal_ids = list(
+            RecentlyViewedMeal.objects.filter(user=request.user)
             .order_by("-viewed_at")
             .values_list("meal_id", flat=True)[:30]
         )
-        ids = list(meal_ids)
-        qs = _meal_queryset(self.request).filter(pk__in=ids)
-        # Preserve viewed_at order
-        order_map = {mid: i for i, mid in enumerate(ids)}
-        return sorted(qs, key=lambda m: order_map.get(m.pk, 999))
+        if not meal_ids:
+            return Response([])
+        meals = {
+            m.pk: m
+            for m in _meal_queryset(request).filter(pk__in=meal_ids)
+        }
+        ordered = [meals[mid] for mid in meal_ids if mid in meals]
+        return Response(
+            MealSerializer(ordered, many=True, context={"request": request}).data
+        )
 
 
 class ReviewListCreateView(generics.ListCreateAPIView):
