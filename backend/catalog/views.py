@@ -1,7 +1,8 @@
 from django.db.models import Avg, Count, Exists, OuterRef, Q
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
 from drf_spectacular.utils import extend_schema, extend_schema_view
-from rest_framework import generics, permissions
+from rest_framework import generics, permissions, status
 from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -10,11 +11,23 @@ from notifications.models import Notification, notify
 
 from accounts.permissions import IsVendor
 
-from .models import Category, Meal, MealFavorite, Review
+from .models import (
+    Category,
+    Meal,
+    MealCombo,
+    MealFavorite,
+    MealOptionGroup,
+    RecentlyViewedMeal,
+    Review,
+)
 from .serializers import (
     CategorySerializer,
+    MealComboSerializer,
     MealCreateSerializer,
+    MealOptionGroupSerializer,
+    MealOptionGroupWriteSerializer,
     MealSerializer,
+    ReviewReplySerializer,
     ReviewSerializer,
 )
 
@@ -29,7 +42,7 @@ class IsOwnerOrReadOnly(permissions.BasePermission):
 def _meal_queryset(request):
     qs = Meal.objects.select_related(
         "seller", "seller__seller_profile", "category"
-    ).prefetch_related("gallery")
+    ).prefetch_related("gallery", "option_groups__choices")
     qs = qs.annotate(
         rating_avg=Avg("reviews__rating"),
         reviews_count_annotated=Count("reviews", distinct=True),
@@ -83,6 +96,9 @@ class MealListCreateView(generics.ListCreateAPIView):
             qs = qs.filter(is_available=True)
         if params.get("special") == "true":
             qs = qs.filter(is_special=True)
+        tag = (params.get("tag") or "").strip()
+        if tag:
+            qs = qs.filter(tags__contains=[tag])
         return qs
 
     def get_serializer_class(self):
@@ -99,11 +115,41 @@ class MealDetailView(generics.RetrieveUpdateDestroyAPIView):
     def get_queryset(self):
         return _meal_queryset(self.request)
 
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        if request.user.is_authenticated:
+            RecentlyViewedMeal.objects.update_or_create(
+                user=request.user,
+                meal=instance,
+                defaults={},
+            )
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
+
+
+class RecentlyViewedMealsView(generics.ListAPIView):
+    serializer_class = MealSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    pagination_class = None
+
+    def get_queryset(self):
+        meal_ids = (
+            RecentlyViewedMeal.objects.filter(user=self.request.user)
+            .order_by("-viewed_at")
+            .values_list("meal_id", flat=True)[:30]
+        )
+        ids = list(meal_ids)
+        qs = _meal_queryset(self.request).filter(pk__in=ids)
+        # Preserve viewed_at order
+        order_map = {mid: i for i, mid in enumerate(ids)}
+        return sorted(qs, key=lambda m: order_map.get(m.pk, 999))
+
 
 class ReviewListCreateView(generics.ListCreateAPIView):
     serializer_class = ReviewSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
     pagination_class = None
+    parser_classes = [MultiPartParser, FormParser]
 
     def get_queryset(self):
         return Review.objects.filter(meal_id=self.kwargs["meal_id"]).select_related(
@@ -112,11 +158,12 @@ class ReviewListCreateView(generics.ListCreateAPIView):
 
     def perform_create(self, serializer):
         meal = get_object_or_404(Meal, pk=self.kwargs["meal_id"])
-        # One review per user: update if it already exists.
         existing = Review.objects.filter(meal=meal, user=self.request.user).first()
         if existing:
             existing.rating = serializer.validated_data["rating"]
             existing.comment = serializer.validated_data.get("comment", "")
+            if "photo" in serializer.validated_data:
+                existing.photo = serializer.validated_data["photo"]
             existing.save()
             serializer.instance = existing
         else:
@@ -130,6 +177,22 @@ class ReviewListCreateView(generics.ListCreateAPIView):
                     related_id=meal.id,
                     link="meal",
                 )
+
+
+class ReviewReplyView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, meal_id, review_id):
+        meal = get_object_or_404(Meal, pk=meal_id)
+        if meal.seller_id != request.user.id:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+        review = get_object_or_404(Review, pk=review_id, meal=meal)
+        serializer = ReviewReplySerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        review.seller_reply = serializer.validated_data["reply"]
+        review.seller_replied_at = timezone.now()
+        review.save(update_fields=["seller_reply", "seller_replied_at"])
+        return Response(ReviewSerializer(review).data)
 
 
 class MealFavoriteToggleView(APIView):
@@ -154,3 +217,75 @@ class MyFavoriteMealsView(generics.ListAPIView):
         return _meal_queryset(self.request).filter(
             favorited_by__user=self.request.user
         )
+
+
+class MealOptionsView(APIView):
+    """GET/POST option groups for a meal (vendor owner)."""
+
+    permission_classes = [permissions.IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser]
+
+    def get(self, request, meal_id):
+        meal = get_object_or_404(Meal, pk=meal_id)
+        groups = meal.option_groups.prefetch_related("choices").all()
+        return Response(MealOptionGroupSerializer(groups, many=True).data)
+
+    def post(self, request, meal_id):
+        meal = get_object_or_404(Meal, pk=meal_id)
+        if meal.seller_id != request.user.id:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+        serializer = MealOptionGroupWriteSerializer(
+            data=request.data, context={"meal": meal, "request": request}
+        )
+        serializer.is_valid(raise_exception=True)
+        group = serializer.save()
+        return Response(
+            MealOptionGroupSerializer(group).data,
+            status=status.HTTP_201_CREATED,
+        )
+
+
+class MealOptionDetailView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def patch(self, request, meal_id, group_id):
+        meal = get_object_or_404(Meal, pk=meal_id)
+        if meal.seller_id != request.user.id:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+        group = get_object_or_404(MealOptionGroup, pk=group_id, meal=meal)
+        serializer = MealOptionGroupWriteSerializer(
+            group, data=request.data, partial=True, context={"meal": meal}
+        )
+        serializer.is_valid(raise_exception=True)
+        group = serializer.save()
+        return Response(MealOptionGroupSerializer(group).data)
+
+    def delete(self, request, meal_id, group_id):
+        meal = get_object_or_404(Meal, pk=meal_id)
+        if meal.seller_id != request.user.id:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+        group = get_object_or_404(MealOptionGroup, pk=group_id, meal=meal)
+        group.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class MealComboListCreateView(generics.ListCreateAPIView):
+    serializer_class = MealComboSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly, IsVendor]
+    parser_classes = [MultiPartParser, FormParser]
+
+    def get_queryset(self):
+        qs = MealCombo.objects.prefetch_related("meals").select_related("seller")
+        seller = self.request.query_params.get("seller")
+        if seller:
+            qs = qs.filter(seller_id=seller)
+        if self.request.query_params.get("available") == "true":
+            qs = qs.filter(is_available=True)
+        return qs
+
+
+class MealComboDetailView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = MealComboSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly, IsOwnerOrReadOnly]
+    parser_classes = [MultiPartParser, FormParser]
+    queryset = MealCombo.objects.prefetch_related("meals").select_related("seller")
