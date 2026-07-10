@@ -1,29 +1,28 @@
-import 'dart:ui' show ImageFilter;
-
 import 'package:flutter/material.dart';
 
-/// Premium scroll-driven reveal.
+/// Premium "reveal on scroll" entrance.
 ///
-/// As the child enters the viewport from the bottom, it continuously fades,
-/// slides up, scales up and tilts back into place — all mapped to the live
-/// scroll position (not a one-shot timer). The effect plays both ways, so
-/// scrolling up "re-arms" items for a cohesive, high-end feel.
+/// The child starts hidden (faded, shifted down, slightly scaled and tilted)
+/// and plays a single, smooth entrance the first time it enters the viewport
+/// while scrolling. Once revealed it stays perfectly crisp — so nothing ever
+/// gets stuck half-visible at the edges of the screen.
 ///
-/// Give it the [controller] of the enclosing scroll view so it can recompute
-/// on every scroll tick. It reads its own render position each frame, so it
-/// works inside slivers, lists and columns without knowing its index.
+/// Pass the [controller] of the surrounding scrollable and, optionally, an
+/// [index] to stagger a batch of items that appear together (e.g. the first
+/// screenful on load).
 class ScrollReveal extends StatefulWidget {
   const ScrollReveal({
     super.key,
     required this.controller,
     required this.child,
-    this.slide = 56,
-    this.minScale = 0.90,
-    this.tilt = 0.14,
-    this.blur = 0,
+    this.index = 0,
+    this.slide = 60,
+    this.minScale = 0.92,
+    this.tilt = 0.12,
     this.horizontal = 0,
-    this.enterAt = 0.96,
-    this.settleAt = 0.72,
+    this.duration = const Duration(milliseconds: 620),
+    this.stagger = const Duration(milliseconds: 70),
+    this.triggerFraction = 0.90,
     this.curve = Curves.easeOutCubic,
   });
 
@@ -31,27 +30,27 @@ class ScrollReveal extends StatefulWidget {
   final ScrollController controller;
   final Widget child;
 
-  /// Vertical travel (px) applied while hidden.
+  /// Stagger index for batched items (clamped internally).
+  final int index;
+
+  /// Vertical travel (px) while hidden.
   final double slide;
 
   /// Scale while fully hidden (1.0 = no scale).
   final double minScale;
 
-  /// Max back-tilt in radians while hidden (3D perspective).
+  /// Back-tilt in radians while hidden (3D perspective).
   final double tilt;
-
-  /// Max gaussian blur (sigma) while hidden. 0 disables (cheaper).
-  final double blur;
 
   /// Horizontal travel (px) while hidden. Signed for left/right entrance.
   final double horizontal;
 
-  /// Fraction of screen height at which the item starts revealing
-  /// (1.0 = very bottom edge).
-  final double enterAt;
+  final Duration duration;
+  final Duration stagger;
 
-  /// Fraction of screen height at which the item is fully revealed.
-  final double settleAt;
+  /// Trigger once the item's top rises above this fraction of the screen
+  /// height (0.90 = when it is ~10% up from the bottom edge).
+  final double triggerFraction;
 
   final Curve curve;
 
@@ -59,33 +58,41 @@ class ScrollReveal extends StatefulWidget {
   State<ScrollReveal> createState() => _ScrollRevealState();
 }
 
-class _ScrollRevealState extends State<ScrollReveal> {
-  final ValueNotifier<double> _t = ValueNotifier<double>(0);
+class _ScrollRevealState extends State<ScrollReveal>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _c = AnimationController(
+    vsync: this,
+    duration: widget.duration,
+  );
+  late final Animation<double> _anim =
+      CurvedAnimation(parent: _c, curve: widget.curve);
+  bool _triggered = false;
 
   @override
   void initState() {
     super.initState();
-    widget.controller.addListener(_recompute);
-    WidgetsBinding.instance.addPostFrameCallback((_) => _recompute());
+    widget.controller.addListener(_maybeTrigger);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _maybeTrigger());
   }
 
   @override
   void didUpdateWidget(covariant ScrollReveal oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.controller != widget.controller) {
-      oldWidget.controller.removeListener(_recompute);
-      widget.controller.addListener(_recompute);
+      oldWidget.controller.removeListener(_maybeTrigger);
+      widget.controller.addListener(_maybeTrigger);
     }
   }
 
   @override
   void dispose() {
-    widget.controller.removeListener(_recompute);
-    _t.dispose();
+    widget.controller.removeListener(_maybeTrigger);
+    _c.dispose();
     super.dispose();
   }
 
-  void _recompute() {
+  void _maybeTrigger() {
+    if (_triggered || !mounted) return;
     final render = context.findRenderObject();
     if (render is! RenderBox || !render.attached) return;
     final media = MediaQuery.maybeOf(context);
@@ -94,32 +101,34 @@ class _ScrollRevealState extends State<ScrollReveal> {
     final screenH = media.size.height;
     final topY = render.localToGlobal(Offset.zero).dy;
 
-    final enterY = screenH * widget.enterAt;
-    final settleY = screenH * widget.settleAt;
-    final span = (enterY - settleY).abs();
-    if (span < 1) return;
-
-    // 0 when the item top sits at/below the enter line, 1 once it reaches
-    // the settle line. Clamped so it stays revealed further up.
-    final raw = ((enterY - topY) / span).clamp(0.0, 1.0);
-    final eased = widget.curve.transform(raw);
-
-    if ((eased - _t.value).abs() > 0.002 || eased == 0 || eased == 1) {
-      _t.value = eased;
+    // Fire as soon as the top edge has entered the viewport far enough.
+    if (topY <= screenH * widget.triggerFraction) {
+      _triggered = true;
+      widget.controller.removeListener(_maybeTrigger);
+      final delay = widget.stagger * widget.index.clamp(0, 10);
+      if (delay == Duration.zero) {
+        _c.forward();
+      } else {
+        Future.delayed(delay, () {
+          if (mounted) _c.forward();
+        });
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    // Recompute after this frame's layout so freshly-built (scrolled-in)
-    // items start hidden instead of popping in at full opacity.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _recompute();
-    });
+    // Re-check after this frame in case the item was just built into view.
+    if (!_triggered) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _maybeTrigger();
+      });
+    }
 
-    return ValueListenableBuilder<double>(
-      valueListenable: _t,
-      builder: (context, t, child) {
+    return AnimatedBuilder(
+      animation: _anim,
+      builder: (context, child) {
+        final t = _anim.value;
         final inv = 1 - t;
         final scale = widget.minScale + (1 - widget.minScale) * t;
 
@@ -129,22 +138,14 @@ class _ScrollRevealState extends State<ScrollReveal> {
           ..scaleByDouble(scale, scale, 1, 1)
           ..rotateX(widget.tilt * inv);
 
-        Widget content = Transform(
-          alignment: Alignment.topCenter,
-          transform: matrix,
-          child: Opacity(opacity: t.clamp(0.0, 1.0), child: child),
+        return Opacity(
+          opacity: t.clamp(0.0, 1.0),
+          child: Transform(
+            alignment: Alignment.topCenter,
+            transform: matrix,
+            child: child,
+          ),
         );
-
-        if (widget.blur > 0 && inv > 0.01) {
-          content = ImageFiltered(
-            imageFilter: ImageFilter.blur(
-              sigmaX: widget.blur * inv,
-              sigmaY: widget.blur * inv,
-            ),
-            child: content,
-          );
-        }
-        return content;
       },
       child: widget.child,
     );

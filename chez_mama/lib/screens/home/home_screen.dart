@@ -61,7 +61,7 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
+class _HomeScreenState extends State<HomeScreen> {
   final ScrollController scroll = ScrollController();
 
   bool loading = true;
@@ -82,15 +82,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   LatLng? _userLoc;
   bool _locating = false;
 
-  late final AnimationController _stagger;
-
   @override
   void initState() {
     super.initState();
-    _stagger = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 900),
-    );
     _loadMeals();
   }
 
@@ -129,7 +123,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         loading = false;
         _fromCache = false;
       });
-      _stagger.forward(from: 0);
     } catch (e) {
       if (!mounted) return;
       if (_allMeals.isEmpty) {
@@ -183,7 +176,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   @override
   void dispose() {
-    _stagger.dispose();
     scroll.dispose();
     _searchCtrl.dispose();
     super.dispose();
@@ -371,7 +363,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         ),
                         onSelected: (_) {
                           setState(() => activeCategory = c);
-                          if (!loading) _stagger.forward(from: 0);
                         },
                       );
                     },
@@ -577,40 +568,25 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                 const SizedBox(height: 14),
                             itemBuilder: (context, i) {
                               final meal = meals[i];
-                              final start = (i * 0.08).clamp(0.0, 0.7);
-                              final end = (start + 0.3).clamp(0.0, 1.0);
-                              final a = CurvedAnimation(
-                                parent: _stagger,
-                                curve: Interval(start, end,
-                                    curve: Curves.easeOutCubic),
-                              );
-
                               return ScrollReveal(
+                                key: ValueKey('reveal_${activeCategory}_${meal.id}'),
                                 controller: scroll,
+                                index: i,
                                 slide: 64,
                                 minScale: 0.90,
-                                tilt: 0.16,
-                                horizontal: i.isEven ? -22 : 22,
-                                child: FadeTransition(
-                                  opacity: a,
-                                  child: SlideTransition(
-                                    position: Tween<Offset>(
-                                      begin: const Offset(0, 0.08),
-                                      end: Offset.zero,
-                                    ).animate(a),
-                                    child: MealCard(
-                                      meal: meal,
-                                      distanceKm: _distanceKm(meal),
-                                      onTap: () {
-                                        Navigator.of(context).push(
-                                          MaterialPageRoute(
-                                            builder: (_) =>
-                                                MealDetailsScreen(meal: meal),
-                                          ),
-                                        );
-                                      },
-                                    ),
-                                  ),
+                                tilt: 0.14,
+                                horizontal: i.isEven ? -20 : 20,
+                                child: MealCard(
+                                  meal: meal,
+                                  distanceKm: _distanceKm(meal),
+                                  onTap: () {
+                                    Navigator.of(context).push(
+                                      MaterialPageRoute(
+                                        builder: (_) =>
+                                            MealDetailsScreen(meal: meal),
+                                      ),
+                                    );
+                                  },
                                 ),
                               );
                             },
