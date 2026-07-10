@@ -96,12 +96,17 @@ class SocialApi {
 
   final _dio = ApiClient.instance.dio;
 
-  Future<List<ApiPost>> fetchPosts({required bool isShort, int? authorId}) async {
+  Future<List<ApiPost>> fetchPosts({
+    required bool isShort,
+    int? authorId,
+    bool feedFollowing = false,
+  }) async {
     final res = await _dio.get(
       '/social/posts/',
       queryParameters: {
         'kind': isShort ? 'short' : 'video',
         if (authorId != null) 'author': authorId,
+        if (feedFollowing) 'feed': 'following',
       },
     );
     final results = (res.data['results'] as List?) ?? const [];

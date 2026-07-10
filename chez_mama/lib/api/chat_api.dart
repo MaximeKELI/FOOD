@@ -33,18 +33,21 @@ class ChatMessage {
     required this.sender,
     required this.text,
     required this.createdAt,
+    this.isRead = false,
   });
 
   final int id;
   final int sender;
   final String text;
   final String createdAt;
+  bool isRead;
 
   factory ChatMessage.fromJson(Map<String, dynamic> json) => ChatMessage(
         id: json['id'] as int,
-        sender: json['sender'] as int? ?? 0,
+        sender: json['sender'] as int? ?? json['sender_id'] as int? ?? 0,
         text: json['text'] as String? ?? '',
         createdAt: json['created_at'] as String? ?? '',
+        isRead: json['is_read'] as bool? ?? false,
       );
 }
 

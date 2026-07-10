@@ -407,28 +407,28 @@ class Migration(migrations.Migration):
             model_name="contentreport",
             index=models.Index(
                 fields=["status", "-created_at"],
-                name="support_con_status_7e8a1a_idx",
+                name="support_con_status_9836b0_idx",
             ),
         ),
         migrations.AddIndex(
             model_name="contentreport",
             index=models.Index(
                 fields=["target_type", "target_id"],
-                name="support_con_target__b2c4d1_idx",
+                name="support_con_target__da1830_idx",
             ),
         ),
         migrations.AddIndex(
             model_name="story",
             index=models.Index(
                 fields=["author", "-created_at"],
-                name="support_sto_author__a1b2c3_idx",
+                name="support_sto_author__5ee46e_idx",
             ),
         ),
         migrations.AddIndex(
             model_name="story",
             index=models.Index(
                 fields=["expires_at"],
-                name="support_sto_expires_d4e5f6_idx",
+                name="support_sto_expires_dce42b_idx",
             ),
         ),
     ]

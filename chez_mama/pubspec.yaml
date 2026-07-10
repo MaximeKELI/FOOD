@@ -67,6 +67,7 @@ dependencies:
   flutter_stripe: ^11.4.0
   video_thumbnail: ^0.5.6
   flutter_local_notifications: ^20.1.0
+  socket_io_client: ^3.0.2
 
 dev_dependencies:
   flutter_test:

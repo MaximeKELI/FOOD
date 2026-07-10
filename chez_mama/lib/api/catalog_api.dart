@@ -77,6 +77,29 @@ class CatalogApi {
     return results.map((e) => _mealFromJson(e as Map<String, dynamic>)).toList();
   }
 
+  Future<List<Meal>> fetchRecent() async {
+    final res = await _dio.get('/catalog/recent/');
+    final results = res.data is Map
+        ? ((res.data['results'] as List?) ?? const [])
+        : ((res.data as List?) ?? const []);
+    return results.map((e) => _mealFromJson(e as Map<String, dynamic>)).toList();
+  }
+
+  Future<List<MealCombo>> fetchCombos({int? sellerId}) async {
+    final res = await _dio.get(
+      '/catalog/combos/',
+      queryParameters: {
+        if (sellerId != null) 'seller': sellerId,
+      },
+    );
+    final results = res.data is Map
+        ? ((res.data['results'] as List?) ?? const [])
+        : ((res.data as List?) ?? const []);
+    return results
+        .map((e) => MealCombo.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
   Future<List<MealReview>> fetchReviews(String mealId) async {
     final res = await _dio.get('/catalog/meals/$mealId/reviews/');
     final list = (res.data as List?) ?? const [];
@@ -93,6 +116,18 @@ class CatalogApi {
     final res = await _dio.post(
       '/catalog/meals/$mealId/reviews/',
       data: {'rating': rating, 'comment': comment},
+    );
+    return MealReview.fromJson(res.data as Map<String, dynamic>);
+  }
+
+  Future<MealReview> replyToReview(
+    String mealId,
+    int reviewId, {
+    required String reply,
+  }) async {
+    final res = await _dio.post(
+      '/catalog/meals/$mealId/reviews/$reviewId/reply/',
+      data: {'reply': reply},
     );
     return MealReview.fromJson(res.data as Map<String, dynamic>);
   }
@@ -132,6 +167,8 @@ class CatalogApi {
     final gallery = galleryRaw.map((e) {
       return ApiConfig.resolveMediaUrl(e.toString());
     }).toList();
+    final tagsRaw = (json['tags'] as List?) ?? const [];
+    final groupsRaw = (json['option_groups'] as List?) ?? const [];
     return Meal(
       id: (json['id']).toString(),
       name: json['name'] as String? ?? '',
@@ -152,29 +189,69 @@ class CatalogApi {
       reviewsCount: json['reviews_count'] as int? ?? 0,
       favoritedByMe: json['favorited_by_me'] as bool? ?? false,
       gallery: gallery,
+      stockQty: json['stock_qty'] as int?,
+      prepTimeMinutes: json['prep_time_minutes'] as int?,
+      tags: tagsRaw.map((e) => e.toString()).toList(),
+      optionGroups: groupsRaw
+          .map((e) => MealOptionGroup.fromJson(e as Map<String, dynamic>))
+          .toList(),
+    );
+  }
+}
+
+class MealCombo {
+  MealCombo({
+    required this.id,
+    required this.name,
+    required this.price,
+    required this.mealIds,
+  });
+
+  final int id;
+  final String name;
+  final int price;
+  final List<int> mealIds;
+
+  factory MealCombo.fromJson(Map<String, dynamic> json) {
+    final meals = (json['meals'] as List?) ?? const [];
+    return MealCombo(
+      id: json['id'] as int,
+      name: json['name'] as String? ?? '',
+      price: json['price'] as int? ?? 0,
+      mealIds: meals.map((e) {
+        if (e is int) return e;
+        if (e is Map) return e['id'] as int? ?? 0;
+        return int.tryParse(e.toString()) ?? 0;
+      }).toList(),
     );
   }
 }
 
 class MealReview {
   MealReview({
+    required this.id,
     required this.rating,
     required this.comment,
     required this.userName,
     required this.createdAt,
+    this.sellerReply = '',
   });
 
+  final int id;
   final int rating;
   final String comment;
   final String userName;
   final String createdAt;
+  final String sellerReply;
 
   factory MealReview.fromJson(Map<String, dynamic> json) {
     return MealReview(
+      id: json['id'] as int? ?? 0,
       rating: json['rating'] as int? ?? 0,
       comment: json['comment'] as String? ?? '',
       userName: json['user_name'] as String? ?? '',
       createdAt: json['created_at'] as String? ?? '',
+      sellerReply: json['seller_reply'] as String? ?? '',
     );
   }
 }

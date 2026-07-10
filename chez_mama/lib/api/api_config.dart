@@ -159,6 +159,9 @@ class ApiConfig {
 
   static String get apiUrl => '$baseUrl/api';
 
+  /// Same host as [baseUrl]; socket_io_client uses http(s) + path `/socket.io/`.
+  static String get socketUrl => baseUrl;
+
   static bool get isProduction => baseUrl.startsWith('https://');
 
   /// Rewrites MinIO/localhost media URLs so images work on a physical phone.
