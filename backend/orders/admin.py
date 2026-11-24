@@ -70,13 +70,16 @@ class OrderStatusEventAdmin(admin.ModelAdmin):
 class PromoCodeAdmin(admin.ModelAdmin):
     list_display = (
         "code",
+        "kind",
         "percent",
         "amount",
         "min_total",
+        "max_uses",
+        "uses_count",
         "active",
         "starts_at",
         "ends_at",
         "seller",
     )
-    list_filter = ("active",)
+    list_filter = ("active", "kind")
     search_fields = ("code",)

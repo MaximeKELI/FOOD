@@ -348,7 +348,6 @@ class OpenNowSellersView(APIView):
 
     def get(self, request):
         from accounts.models import SellerProfile
-        from accounts.serializers import PublicSellerSerializer
         from orders.serializers import _seller_open_now
 
         profiles = SellerProfile.objects.filter(
