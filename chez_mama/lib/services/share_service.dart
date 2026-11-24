@@ -8,7 +8,7 @@ class ShareService {
 
   Future<void> shareMeal(Meal meal) {
     final price = meal.effectivePrice.round();
-  final deep = 'food://meal/${meal.id}';
+    final deep = 'food://meal/${meal.id}';
     return SharePlus.instance.share(
       ShareParams(
         text: '${meal.name} — $price FCFA\n${meal.subtitle}\n$deep',

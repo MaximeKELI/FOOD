@@ -6,6 +6,7 @@ import '../../analytics/event_tracker.dart';
 import '../../api/api_client.dart';
 import '../../api/orders_api.dart';
 import '../../api/payments_api.dart';
+import '../../api/platform_api.dart';
 import '../../api/support_api.dart';
 import '../../auth/auth_scope.dart';
 import '../../cart/cart_service.dart';
@@ -49,6 +50,9 @@ class _CheckoutSheetState extends State<CheckoutSheet> {
   DateTime? _scheduledFor;
   List<SavedAddress> _savedAddresses = [];
   int? _selectedAddressId;
+  List<PickupSlot> _pickupSlots = [];
+  PickupSlot? _selectedSlot;
+  bool _loadingSlots = false;
 
   @override
   void initState() {
@@ -89,6 +93,30 @@ class _CheckoutSheetState extends State<CheckoutSheet> {
     if (a.latitude != null && a.longitude != null) {
       _loc = LatLng(a.latitude!, a.longitude!);
       _refreshQuote();
+    }
+  }
+
+  Future<void> _loadPickupSlots() async {
+    final sellers = _cart.sellerIds;
+    if (sellers.length != 1) {
+      setState(() {
+        _pickupSlots = [];
+        _selectedSlot = null;
+      });
+      return;
+    }
+    setState(() => _loadingSlots = true);
+    try {
+      final slots =
+          await PlatformApi.instance.fetchPickupSlots(sellerId: sellers.first);
+      if (!mounted) return;
+      setState(() {
+        _pickupSlots = slots;
+        _loadingSlots = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _loadingSlots = false);
     }
   }
 
@@ -278,6 +306,9 @@ class _CheckoutSheetState extends State<CheckoutSheet> {
     }
     setState(() => _submitting = true);
     try {
+      if (_fulfillment == 'pickup' && _selectedSlot != null) {
+        await PlatformApi.instance.bookPickupSlot(_selectedSlot!.id);
+      }
       final deviceContext = Map<String, dynamic>.from(
         await DeviceContext.instance.collect(
           context: context,
@@ -425,6 +456,34 @@ class _CheckoutSheetState extends State<CheckoutSheet> {
                         color: ChezMamaTheme.brandBrown,
                       ),
                     ),
+                    if (_cart.subtotalsBySeller().length > 1) ...[
+                      const SizedBox(height: 12),
+                      Text(
+                        tr('checkout.multiVendorTitle'),
+                        style: t.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        trf('checkout.multiVendorHint', {
+                          'count': _cart.subtotalsBySeller().length,
+                        }),
+                        style: t.textTheme.bodySmall,
+                      ),
+                      const SizedBox(height: 8),
+                      for (final e in _cart.subtotalsBySeller().entries)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 4),
+                          child: Text(
+                            trf('checkout.vendorSubtotal', {
+                              'vendor': e.key,
+                              'amount': formatFcfa(e.value),
+                            }),
+                            style: const TextStyle(fontWeight: FontWeight.w700),
+                          ),
+                        ),
+                    ],
                     const SizedBox(height: ChezMamaTheme.spaceLg),
                     SectionHeader(
                       title: tr('checkout.fulfillmentSection'),
@@ -446,9 +505,51 @@ class _CheckoutSheetState extends State<CheckoutSheet> {
                       selected: {_fulfillment},
                       onSelectionChanged: (s) {
                         setState(() => _fulfillment = s.first);
+                        if (s.first == 'pickup') _loadPickupSlots();
                         _refreshQuote();
                       },
                     ),
+                    if (_fulfillment == 'pickup') ...[
+                      const SizedBox(height: 12),
+                      Text(
+                        tr('checkout.pickupSlot'),
+                        style: t.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      if (_loadingSlots)
+                        const Padding(
+                          padding: EdgeInsets.all(8),
+                          child: LinearProgressIndicator(),
+                        )
+                      else if (_pickupSlots.isEmpty)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          child: Text(tr('checkout.noSlots')),
+                        )
+                      else
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: _pickupSlots.map((slot) {
+                            final selected = _selectedSlot?.id == slot.id;
+                            final label =
+                                '${slot.startsAt.substring(0, 16)} (${slot.remaining})';
+                            return ChoiceChip(
+                              label: Text(label),
+                              selected: selected,
+                              onSelected: (_) {
+                                setState(() {
+                                  _selectedSlot = slot;
+                                  _scheduledFor = DateTime.tryParse(
+                                    slot.startsAt,
+                                  )?.toLocal();
+                                });
+                              },
+                            );
+                          }).toList(),
+                        ),
+                    ],
                     const SizedBox(height: 12),
                     if (_fulfillment == 'delivery') ...[
                       if (_savedAddresses.isNotEmpty) ...[

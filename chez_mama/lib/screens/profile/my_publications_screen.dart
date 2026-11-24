@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../api/api_client.dart';
 import '../../api/catalog_api.dart';
+import '../../api/platform_api.dart';
 import '../../api/social_api.dart';
 import '../../auth/auth_scope.dart';
 import '../../l10n/app_strings.dart';
@@ -93,6 +94,24 @@ class _MyPublicationsScreenState extends State<MyPublicationsScreen>
     return ok ?? false;
   }
 
+  Future<void> _boostMeal(Meal meal) async {
+    final id = int.tryParse(meal.id);
+    if (id == null) return;
+    try {
+      await PlatformApi.instance.createBoost(mealId: id);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(tr('boost.done'))),
+      );
+      await _load();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(apiErrorMessage(e))),
+      );
+    }
+  }
+
   Future<void> _deleteMeal(Meal meal) async {
     if (!await _confirm('le plat "${meal.name}"')) return;
     try {
@@ -172,6 +191,7 @@ class _MyPublicationsScreenState extends State<MyPublicationsScreen>
                       meals: _meals,
                       onDelete: _deleteMeal,
                       onUpdate: _updateMeal,
+                      onBoost: _boostMeal,
                     ),
                     _PostsTab(
                       posts: _videos,
@@ -194,10 +214,12 @@ class _MealsTab extends StatelessWidget {
     required this.meals,
     required this.onDelete,
     required this.onUpdate,
+    required this.onBoost,
   });
   final List<Meal> meals;
   final ValueChanged<Meal> onDelete;
   final void Function(Meal, {bool? available, bool? special}) onUpdate;
+  final ValueChanged<Meal> onBoost;
 
   @override
   Widget build(BuildContext context) {
@@ -231,11 +253,20 @@ class _MealsTab extends StatelessWidget {
                   onUpdate(meal, available: !meal.isAvailable);
                 case 'special':
                   onUpdate(meal, special: !meal.isSpecial);
+                case 'boost':
+                  onBoost(meal);
                 case 'delete':
                   onDelete(meal);
               }
             },
             itemBuilder: (_) => [
+              PopupMenuItem(
+                value: 'boost',
+                child: ListTile(
+                  leading: const Icon(Icons.rocket_launch_rounded),
+                  title: Text(tr('boost.action')),
+                ),
+              ),
               PopupMenuItem(
                 value: 'avail',
                 child: ListTile(

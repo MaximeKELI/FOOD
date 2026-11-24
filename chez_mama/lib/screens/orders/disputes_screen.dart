@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 
 import '../../api/api_client.dart';
+import '../../api/platform_api.dart';
 import '../../api/support_api.dart';
 import '../../l10n/app_strings.dart';
+import '../../services/app_media_picker.dart';
 import '../../ui/chezmama_theme.dart';
 import '../../widgets/empty_state_view.dart';
 import '../../widgets/list_loading_skeleton.dart';
@@ -43,6 +45,26 @@ class _DisputesScreenState extends State<DisputesScreen> {
         _error = apiErrorMessage(e);
         _loading = false;
       });
+    }
+  }
+
+  Future<void> _attachEvidence(DisputeView dispute) async {
+    final path = await AppMediaPicker.instance.pickPhotoFromGallery();
+    if (path == null || !mounted) return;
+    try {
+      await PlatformApi.instance.uploadDisputeEvidence(
+        disputeId: dispute.id,
+        filePath: path.path,
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(tr('disputes.evidenceSent'))),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(apiErrorMessage(e))),
+      );
     }
   }
 
@@ -179,6 +201,16 @@ class _DisputesScreenState extends State<DisputesScreen> {
                     style: TextStyle(color: ChezMamaTheme.mutedInk(context)),
                   ),
                 ],
+                const SizedBox(height: 8),
+                Semantics(
+                  label: tr('disputes.attachEvidence'),
+                  button: true,
+                  child: OutlinedButton.icon(
+                    onPressed: () => _attachEvidence(d),
+                    icon: const Icon(Icons.attach_file_rounded),
+                    label: Text(tr('disputes.attachEvidence')),
+                  ),
+                ),
               ],
             ),
           );

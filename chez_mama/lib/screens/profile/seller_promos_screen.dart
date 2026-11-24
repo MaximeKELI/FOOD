@@ -57,6 +57,15 @@ class _SellerPromosScreenState extends State<SellerPromosScreen> {
     final minTotal = TextEditingController(
       text: existing != null ? '${existing.minTotal}' : '0',
     );
+    final maxUses = TextEditingController(
+      text: existing?.maxUses?.toString() ?? '',
+    );
+    final maxUsesUser = TextEditingController(
+      text: existing?.maxUsesPerUser?.toString() ?? '',
+    );
+    final happyStart = TextEditingController(text: existing?.happyStart ?? '');
+    final happyEnd = TextEditingController(text: existing?.happyEnd ?? '');
+    var kind = existing?.kind ?? 'percent';
     var active = existing?.active ?? true;
 
     final ok = await showDialog<bool>(
@@ -88,6 +97,40 @@ class _SellerPromosScreenState extends State<SellerPromosScreen> {
                   decoration: InputDecoration(labelText: tr('promos.minTotal')),
                   keyboardType: TextInputType.number,
                 ),
+                DropdownButtonFormField<String>(
+                  value: kind,
+                  decoration: InputDecoration(labelText: tr('promos.kind')),
+                  items: const [
+                    DropdownMenuItem(value: 'percent', child: Text('%')),
+                    DropdownMenuItem(value: 'amount', child: Text('FCFA')),
+                    DropdownMenuItem(
+                      value: 'happy_hour',
+                      child: Text('Happy hour'),
+                    ),
+                    DropdownMenuItem(value: 'bogo', child: Text('BOGO')),
+                  ],
+                  onChanged: (v) => setLocal(() => kind = v ?? 'percent'),
+                ),
+                TextField(
+                  controller: maxUses,
+                  decoration: InputDecoration(labelText: tr('promos.maxUses')),
+                  keyboardType: TextInputType.number,
+                ),
+                TextField(
+                  controller: maxUsesUser,
+                  decoration:
+                      InputDecoration(labelText: tr('promos.maxUsesPerUser')),
+                  keyboardType: TextInputType.number,
+                ),
+                TextField(
+                  controller: happyStart,
+                  decoration:
+                      InputDecoration(labelText: tr('promos.happyStart')),
+                ),
+                TextField(
+                  controller: happyEnd,
+                  decoration: InputDecoration(labelText: tr('promos.happyEnd')),
+                ),
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
                   title: Text(tr('promos.active')),
@@ -115,18 +158,28 @@ class _SellerPromosScreenState extends State<SellerPromosScreen> {
       if (existing == null) {
         await OrdersApi.instance.createPromo(
           code: code.text.trim(),
+          kind: kind,
           percent: int.tryParse(percent.text) ?? 0,
           amount: int.tryParse(amount.text) ?? 0,
           minTotal: int.tryParse(minTotal.text) ?? 0,
+          maxUses: int.tryParse(maxUses.text),
+          maxUsesPerUser: int.tryParse(maxUsesUser.text),
+          happyStart: happyStart.text.trim(),
+          happyEnd: happyEnd.text.trim(),
           active: active,
         );
       } else {
         await OrdersApi.instance.updatePromo(
           existing.id,
           code: code.text.trim(),
+          kind: kind,
           percent: int.tryParse(percent.text) ?? 0,
           amount: int.tryParse(amount.text) ?? 0,
           minTotal: int.tryParse(minTotal.text) ?? 0,
+          maxUses: int.tryParse(maxUses.text),
+          maxUsesPerUser: int.tryParse(maxUsesUser.text),
+          happyStart: happyStart.text.trim(),
+          happyEnd: happyEnd.text.trim(),
           active: active,
         );
       }

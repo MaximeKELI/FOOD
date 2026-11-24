@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../api/api_client.dart';
 import '../../api/orders_api.dart';
+import '../../api/platform_api.dart';
 import '../../api/support_api.dart';
 import '../../cart/cart_service.dart';
 import '../../l10n/app_strings.dart';
@@ -136,6 +137,80 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
       );
     } finally {
       if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _rateDelivery() async {
+    var sellerRating = 5;
+    int? driverRating;
+    final commentCtrl = TextEditingController();
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setLocal) => AlertDialog(
+          title: Text(tr('deliveryReview.title')),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(tr('deliveryReview.seller')),
+              Slider(
+                value: sellerRating.toDouble(),
+                min: 1,
+                max: 5,
+                divisions: 4,
+                label: '$sellerRating',
+                onChanged: (v) => setLocal(() => sellerRating = v.round()),
+              ),
+              Text(tr('deliveryReview.driver')),
+              Slider(
+                value: (driverRating ?? 5).toDouble(),
+                min: 1,
+                max: 5,
+                divisions: 4,
+                label: '${driverRating ?? 5}',
+                onChanged: (v) => setLocal(() => driverRating = v.round()),
+              ),
+              TextField(
+                controller: commentCtrl,
+                decoration: InputDecoration(hintText: tr('social.addComment')),
+                maxLines: 2,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text(tr('action.cancel')),
+            ),
+            Semantics(
+              label: tr('action.send'),
+              button: true,
+              child: FilledButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                child: Text(tr('action.send')),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (ok != true || !mounted) return;
+    try {
+      await PlatformApi.instance.submitDeliveryReview(
+        orderId: widget.orderId,
+        sellerRating: sellerRating,
+        driverRating: driverRating,
+        comment: commentCtrl.text.trim(),
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(tr('deliveryReview.sent'))),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(apiErrorMessage(e))),
+      );
     }
   }
 
@@ -317,6 +392,15 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                 onPressed: _busy ? null : _reorder,
                 child: Text(tr('orders.reorder')),
               ),
+              if (order.status == 'delivered')
+                Semantics(
+                  label: tr('deliveryReview.title'),
+                  button: true,
+                  child: FilledButton.tonal(
+                    onPressed: _busy ? null : _rateDelivery,
+                    child: Text(tr('deliveryReview.title')),
+                  ),
+                ),
               OutlinedButton(
                 onPressed: _busy ? null : _openDispute,
                 child: Text(tr('disputes.open')),

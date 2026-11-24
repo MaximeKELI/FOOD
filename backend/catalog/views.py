@@ -125,6 +125,13 @@ class MealListCreateView(generics.ListCreateAPIView):
             return MealCreateSerializer
         return MealSerializer
 
+    def perform_create(self, serializer):
+        meal = serializer.save()
+        try:
+            meal.update_search_vector()
+        except Exception:
+            pass
+
 
 class MealShareView(APIView):
     """Public share payload for deep links / OG-style meta."""
@@ -161,11 +168,10 @@ class MealDetailView(generics.RetrieveUpdateDestroyAPIView):
 
     def perform_update(self, serializer):
         meal = serializer.save()
-        meal.update_search_vector()
-
-    def perform_create(self, serializer):
-        meal = serializer.save()
-        meal.update_search_vector()
+        try:
+            meal.update_search_vector()
+        except Exception:
+            pass
 
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../auth/auth_scope.dart';
 import '../../cart/received_orders_notifier.dart';
 import '../../chat/chat_unread_notifier.dart';
 import '../../l10n/app_strings.dart';
@@ -148,6 +149,13 @@ class ShellToolbarActions extends StatelessWidget {
                   ),
                 ),
                 PopupMenuItem(
+                  value: 'wishlists',
+                  child: ListTile(
+                    leading: const Icon(Icons.bookmark_rounded),
+                    title: Text(tr('menu.wishlists')),
+                  ),
+                ),
+                PopupMenuItem(
                   value: 'messages',
                   child: ListTile(
                     leading: const Icon(Icons.forum_rounded),
@@ -197,6 +205,13 @@ class ShellToolbarActions extends StatelessWidget {
                   ),
                 ),
                 PopupMenuItem(
+                  value: 'kyc',
+                  child: ListTile(
+                    leading: const Icon(Icons.verified_user_outlined),
+                    title: Text(tr('menu.kyc')),
+                  ),
+                ),
+                PopupMenuItem(
                   value: 'groupOrder',
                   child: ListTile(
                     leading: const Icon(Icons.groups_rounded),
@@ -220,6 +235,16 @@ class ShellToolbarActions extends StatelessWidget {
                   ),
                 ),
               ],
+              if (isAuthed &&
+                  (AuthScope.of(context).isStaff ||
+                      AuthScope.of(context).isSuperuser))
+                PopupMenuItem(
+                  value: 'ops',
+                  child: ListTile(
+                    leading: const Icon(Icons.admin_panel_settings_outlined),
+                    title: Text(tr('menu.ops')),
+                  ),
+                ),
               PopupMenuItem(
                 value: 'language',
                 child: ListTile(

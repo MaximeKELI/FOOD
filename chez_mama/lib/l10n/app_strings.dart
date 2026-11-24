@@ -1170,6 +1170,327 @@ const Map<String, Map<AppLang, String>> _strings = {
     AppLang.wo: 'Am na erreur. Jéematal.',
   },
 
+  // Platform — home
+  'home.openNowTitle': {
+    AppLang.fr: 'Ouvert maintenant',
+    AppLang.en: 'Open now',
+    AppLang.wo: 'Ubbi léegi',
+  },
+  'home.forYou': {
+    AppLang.fr: 'Pour vous',
+    AppLang.en: 'For you',
+    AppLang.wo: 'Ngir yaw',
+  },
+  'home.filter.openNow': {
+    AppLang.fr: 'Ouverts',
+    AppLang.en: 'Open now',
+    AppLang.wo: 'Ubbi',
+  },
+  'home.openNowBadge': {
+    AppLang.fr: 'Ouvert',
+    AppLang.en: 'Open',
+    AppLang.wo: 'Ubbi',
+  },
+  'menu.wishlists': {
+    AppLang.fr: 'Listes de souhaits',
+    AppLang.en: 'Wishlists',
+    AppLang.wo: 'Liste yu bëgg',
+  },
+  'menu.kyc': {
+    AppLang.fr: 'Vérification identité',
+    AppLang.en: 'Identity verification',
+    AppLang.wo: 'Xaam-xam kenn',
+  },
+  'menu.ops': {
+    AppLang.fr: 'Opérations',
+    AppLang.en: 'Operations',
+    AppLang.wo: 'Ops',
+  },
+  'wishlist.title': {
+    AppLang.fr: 'Mes listes',
+    AppLang.en: 'My wishlists',
+    AppLang.wo: 'Sama liste yi',
+  },
+  'wishlist.create': {
+    AppLang.fr: 'Nouvelle liste',
+    AppLang.en: 'New list',
+    AppLang.wo: 'Liste bu bees',
+  },
+  'wishlist.name': {AppLang.fr: 'Nom', AppLang.en: 'Name', AppLang.wo: 'Tur'},
+  'wishlist.empty': {
+    AppLang.fr: 'Aucune liste',
+    AppLang.en: 'No wishlists yet',
+    AppLang.wo: 'Amul liste',
+  },
+  'wishlist.emptyHint': {
+    AppLang.fr: 'Créez une liste pour garder vos envies.',
+    AppLang.en: 'Create a list to save meals you want.',
+    AppLang.wo: 'Sos liste ngir bëgg ëpp.',
+  },
+  'wishlist.itemCount': {
+    AppLang.fr: '{count} plat(s)',
+    AppLang.en: '{count} meal(s)',
+    AppLang.wo: '{count} plat',
+  },
+  'wishlist.noItems': {
+    AppLang.fr: 'Liste vide',
+    AppLang.en: 'Empty list',
+    AppLang.wo: 'Liste bu leer',
+  },
+  'kyc.title': {
+    AppLang.fr: 'Vérification',
+    AppLang.en: 'Verification',
+    AppLang.wo: 'Xaam-xam',
+  },
+  'kyc.upload': {
+    AppLang.fr: 'Envoyer un document',
+    AppLang.en: 'Upload document',
+    AppLang.wo: 'Yónnee document',
+  },
+  'kyc.subject': {AppLang.fr: 'Profil', AppLang.en: 'Profile', AppLang.wo: 'Profil'},
+  'kyc.subjectSeller': {
+    AppLang.fr: 'Vendeur',
+    AppLang.en: 'Seller',
+    AppLang.wo: 'Jaaykat',
+  },
+  'kyc.subjectDriver': {
+    AppLang.fr: 'Livreur',
+    AppLang.en: 'Driver',
+    AppLang.wo: 'Yónneekat',
+  },
+  'kyc.idNumber': {
+    AppLang.fr: 'N° pièce',
+    AppLang.en: 'ID number',
+    AppLang.wo: 'Nimero kart',
+  },
+  'kyc.hint': {
+    AppLang.fr: 'Pièce d\'identité ou justificatif pour vendre ou livrer.',
+    AppLang.en: 'ID or proof needed to sell or deliver.',
+    AppLang.wo: 'Document ngir jaay walla yónnee.',
+  },
+  'kyc.empty': {
+    AppLang.fr: 'Aucun document envoyé.',
+    AppLang.en: 'No documents yet.',
+    AppLang.wo: 'Amul document.',
+  },
+  'ops.title': {AppLang.fr: 'Ops', AppLang.en: 'Ops', AppLang.wo: 'Ops'},
+  'ops.forbidden': {
+    AppLang.fr: 'Réservé au staff.',
+    AppLang.en: 'Staff only.',
+    AppLang.wo: 'Staff rekk.',
+  },
+  'ops.metrics': {
+    AppLang.fr: 'Indicateurs',
+    AppLang.en: 'Metrics',
+    AppLang.wo: 'Métrique',
+  },
+  'ops.killSwitches': {
+    AppLang.fr: 'Interrupteurs',
+    AppLang.en: 'Kill switches',
+    AppLang.wo: 'Kill switches',
+  },
+  'ops.ordersToday': {
+    AppLang.fr: 'Commandes aujourd\'hui',
+    AppLang.en: 'Orders today',
+    AppLang.wo: 'Commande tey',
+  },
+  'ops.pendingDisputes': {
+    AppLang.fr: 'Litiges ouverts',
+    AppLang.en: 'Open disputes',
+    AppLang.wo: 'Litige yi ubbi',
+  },
+  'ops.pendingKyc': {
+    AppLang.fr: 'KYC en attente',
+    AppLang.en: 'Pending KYC',
+    AppLang.wo: 'KYC xaar',
+  },
+  'ops.paymentsEnabled': {
+    AppLang.fr: 'Paiements actifs',
+    AppLang.en: 'Payments enabled',
+    AppLang.wo: 'Fey dafa am',
+  },
+  'ops.newOrdersEnabled': {
+    AppLang.fr: 'Nouvelles commandes',
+    AppLang.en: 'New orders',
+    AppLang.wo: 'Commande yu bees',
+  },
+  'ops.cashEnabled': {
+    AppLang.fr: 'Espèces',
+    AppLang.en: 'Cash',
+    AppLang.wo: 'Cash',
+  },
+  'ops.digitalPaymentsEnabled': {
+    AppLang.fr: 'Paiement digital',
+    AppLang.en: 'Digital pay',
+    AppLang.wo: 'Digital',
+  },
+  'loyalty.tierCurrent': {
+    AppLang.fr: 'Niveau : {name}',
+    AppLang.en: 'Tier: {name}',
+    AppLang.wo: 'Niveau : {name}',
+  },
+  'loyalty.tierNext': {
+    AppLang.fr: 'Prochain : {name}',
+    AppLang.en: 'Next: {name}',
+    AppLang.wo: 'Bi ci topp : {name}',
+  },
+  'loyalty.ledgerTitle': {
+    AppLang.fr: 'Historique',
+    AppLang.en: 'History',
+    AppLang.wo: 'Jaar-jàr',
+  },
+  'loyalty.redeem': {
+    AppLang.fr: 'Échanger',
+    AppLang.en: 'Redeem',
+    AppLang.wo: 'Jëfandikoo',
+  },
+  'loyalty.redeemed': {
+    AppLang.fr: 'Récompense obtenue',
+    AppLang.en: 'Reward claimed',
+    AppLang.wo: 'Jot nañu la',
+  },
+  'dashboard.extraToday': {
+    AppLang.fr: 'CA aujourd\'hui',
+    AppLang.en: 'Today revenue',
+    AppLang.wo: 'Revenu tey',
+  },
+  'dashboard.lowStock': {
+    AppLang.fr: 'Stock bas',
+    AppLang.en: 'Low stock',
+    AppLang.wo: 'Stock bu suuf',
+  },
+  'dashboard.unrepliedReviews': {
+    AppLang.fr: 'Avis sans réponse',
+    AppLang.en: 'Unreplied reviews',
+    AppLang.wo: 'Avis bu amul tontu',
+  },
+  'dashboard.commissionEst': {
+    AppLang.fr: 'Commission estimée',
+    AppLang.en: 'Est. commission',
+    AppLang.wo: 'Commission estimée',
+  },
+  'promos.kind': {AppLang.fr: 'Type', AppLang.en: 'Kind', AppLang.wo: 'Mel'},
+  'promos.maxUses': {
+    AppLang.fr: 'Utilisations max',
+    AppLang.en: 'Max uses',
+    AppLang.wo: 'Jëfandikoo max',
+  },
+  'promos.maxUsesPerUser': {
+    AppLang.fr: 'Max / client',
+    AppLang.en: 'Max per user',
+    AppLang.wo: 'Max / kiliyaan',
+  },
+  'promos.happyStart': {
+    AppLang.fr: 'Happy hour début',
+    AppLang.en: 'Happy start',
+    AppLang.wo: 'Happy hour tambali',
+  },
+  'promos.happyEnd': {
+    AppLang.fr: 'Happy hour fin',
+    AppLang.en: 'Happy end',
+    AppLang.wo: 'Happy hour jeex',
+  },
+  'stories.addToCart': {
+    AppLang.fr: 'Ajouter au panier',
+    AppLang.en: 'Add to cart',
+    AppLang.wo: 'Yokk ci panier',
+  },
+  'stories.openMeal': {
+    AppLang.fr: 'Voir le plat',
+    AppLang.en: 'View meal',
+    AppLang.wo: 'Gis plat bi',
+  },
+  'stories.mealId': {
+    AppLang.fr: 'ID plat (optionnel)',
+    AppLang.en: 'Meal ID (optional)',
+    AppLang.wo: 'ID plat (optionnel)',
+  },
+  'disputes.attachEvidence': {
+    AppLang.fr: 'Joindre une preuve',
+    AppLang.en: 'Attach evidence',
+    AppLang.wo: 'Yokk preuve',
+  },
+  'disputes.evidenceSent': {
+    AppLang.fr: 'Preuve envoyée',
+    AppLang.en: 'Evidence uploaded',
+    AppLang.wo: 'Preuve yónnee na',
+  },
+  'checkout.multiVendorTitle': {
+    AppLang.fr: 'Plusieurs vendeurs',
+    AppLang.en: 'Multiple sellers',
+    AppLang.wo: 'Jaaykat yu bare',
+  },
+  'checkout.multiVendorHint': {
+    AppLang.fr: 'Votre panier sera scindé en {count} commandes.',
+    AppLang.en: 'Your cart will split into {count} orders.',
+    AppLang.wo: 'Panier bi dina séddale ci {count} commande.',
+  },
+  'checkout.vendorSubtotal': {
+    AppLang.fr: '{vendor} — {amount}',
+    AppLang.en: '{vendor} — {amount}',
+    AppLang.wo: '{vendor} — {amount}',
+  },
+  'checkout.unknownSeller': {
+    AppLang.fr: 'Vendeur',
+    AppLang.en: 'Seller',
+    AppLang.wo: 'Jaaykat',
+  },
+  'checkout.pickupSlot': {
+    AppLang.fr: 'Créneau de retrait',
+    AppLang.en: 'Pickup slot',
+    AppLang.wo: 'Waxtu jël',
+  },
+  'checkout.noSlots': {
+    AppLang.fr: 'Aucun créneau disponible',
+    AppLang.en: 'No slots available',
+    AppLang.wo: 'Amul créneau',
+  },
+  'slots.create': {
+    AppLang.fr: 'Créer un créneau',
+    AppLang.en: 'Create slot',
+    AppLang.wo: 'Sos créneau',
+  },
+  'slots.capacity': {
+    AppLang.fr: 'Capacité',
+    AppLang.en: 'Capacity',
+    AppLang.wo: 'Capacité',
+  },
+  'deliveryReview.title': {
+    AppLang.fr: 'Noter la livraison',
+    AppLang.en: 'Rate delivery',
+    AppLang.wo: 'Noter livraison',
+  },
+  'deliveryReview.seller': {
+    AppLang.fr: 'Vendeur',
+    AppLang.en: 'Seller',
+    AppLang.wo: 'Jaaykat',
+  },
+  'deliveryReview.driver': {
+    AppLang.fr: 'Livreur (optionnel)',
+    AppLang.en: 'Driver (optional)',
+    AppLang.wo: 'Yónneekat (optionnel)',
+  },
+  'deliveryReview.sent': {
+    AppLang.fr: 'Merci pour votre avis',
+    AppLang.en: 'Thanks for your review',
+    AppLang.wo: 'Jërëjëf',
+  },
+  'boost.action': {
+    AppLang.fr: 'Booster',
+    AppLang.en: 'Boost',
+    AppLang.wo: 'Boost',
+  },
+  'boost.done': {
+    AppLang.fr: 'Plat mis en avant',
+    AppLang.en: 'Meal boosted',
+    AppLang.wo: 'Plat boost na',
+  },
+  'favorites.wishlists': {
+    AppLang.fr: 'Mes listes',
+    AppLang.en: 'Wishlists',
+    AppLang.wo: 'Liste yi',
+  },
+
   // Language
   'lang.choose': {AppLang.fr: 'Choisir la langue', AppLang.en: 'Choose language', AppLang.wo: 'Tann làkk'},
 

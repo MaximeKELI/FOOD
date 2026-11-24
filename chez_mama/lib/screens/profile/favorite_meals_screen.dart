@@ -8,6 +8,7 @@ import '../../widgets/empty_state_view.dart';
 import '../../widgets/entrance.dart';
 import '../home/meal_card.dart';
 import '../meal/meal_details_screen.dart';
+import 'wishlists_screen.dart';
 
 class FavoriteMealsScreen extends StatefulWidget {
   const FavoriteMealsScreen({super.key});
@@ -51,7 +52,24 @@ class _FavoriteMealsScreenState extends State<FavoriteMealsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(tr('favorites.title'))),
+      appBar: AppBar(
+        title: Text(tr('favorites.title')),
+        actions: [
+          Semantics(
+            label: tr('menu.wishlists'),
+            button: true,
+            child: IconButton(
+              tooltip: tr('menu.wishlists'),
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const WishlistsScreen()),
+                );
+              },
+              icon: const Icon(Icons.bookmark_rounded),
+            ),
+          ),
+        ],
+      ),
       body: _buildBody(),
     );
   }

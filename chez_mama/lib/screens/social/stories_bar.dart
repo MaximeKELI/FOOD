@@ -3,10 +3,13 @@ import 'package:flutter/material.dart';
 import '../../api/api_client.dart';
 import '../../api/support_api.dart';
 import '../../auth/auth_scope.dart';
+import '../../cart/cart_service.dart';
 import '../../l10n/app_strings.dart';
 import '../../services/app_media_picker.dart';
 import '../../ui/chezmama_theme.dart';
 import '../../widgets/food_network_image.dart';
+import '../meal/meal_details_screen.dart';
+import '../../api/catalog_api.dart';
 
 /// Horizontal stories strip for home / social feed.
 class StoriesBar extends StatefulWidget {
@@ -43,10 +46,38 @@ class _StoriesBarState extends State<StoriesBar> {
   Future<void> _addStory() async {
     final auth = AuthScope.of(context);
     if (!auth.isAuthed) return;
+    final mealCtrl = TextEditingController();
+    final mealIdAsk = await showDialog<int?>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(tr('stories.add')),
+        content: TextField(
+          controller: mealCtrl,
+          decoration: InputDecoration(labelText: tr('stories.mealId')),
+          keyboardType: TextInputType.number,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, null),
+            child: Text(tr('onboarding.skip')),
+          ),
+          FilledButton(
+            onPressed: () {
+              final id = int.tryParse(mealCtrl.text.trim());
+              Navigator.pop(ctx, id);
+            },
+            child: Text(tr('action.save')),
+          ),
+        ],
+      ),
+    );
     final path = await AppMediaPicker.instance.pickPhotoFromGallery();
     if (path == null || !mounted) return;
     try {
-      await SupportApi.instance.createStory(mediaPath: path.path);
+      await SupportApi.instance.createStory(
+        mediaPath: path.path,
+        mealId: mealIdAsk,
+      );
       await _load();
     } catch (e) {
       if (!mounted) return;
@@ -80,6 +111,58 @@ class _StoriesBarState extends State<StoriesBar> {
                   style: const TextStyle(color: Colors.white),
                 ),
               ),
+            if (story.mealId != null) ...[
+              Semantics(
+                label: tr('stories.addToCart'),
+                button: true,
+                child: FilledButton(
+                  onPressed: () async {
+                    try {
+                      final meal =
+                          await CatalogApi.instance.fetchMeal('${story.mealId}');
+                      CartService.instance.addMeal(meal);
+                      if (ctx.mounted) Navigator.pop(ctx);
+                      if (!mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text(tr('stories.addToCart'))),
+                      );
+                    } catch (e) {
+                      if (!ctx.mounted) return;
+                      ScaffoldMessenger.of(ctx).showSnackBar(
+                        SnackBar(content: Text(apiErrorMessage(e))),
+                      );
+                    }
+                  },
+                  child: Text(tr('stories.addToCart')),
+                ),
+              ),
+              TextButton(
+                onPressed: () async {
+                  try {
+                    final meal =
+                        await CatalogApi.instance.fetchMeal('${story.mealId}');
+                    if (!ctx.mounted) return;
+                    Navigator.pop(ctx);
+                    if (!mounted) return;
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => MealDetailsScreen(meal: meal),
+                      ),
+                    );
+                  } catch (e) {
+                    if (!ctx.mounted) return;
+                    ScaffoldMessenger.of(ctx).showSnackBar(
+                      SnackBar(content: Text(apiErrorMessage(e))),
+                    );
+                  }
+                },
+                child: Text(
+                  story.mealName != null && story.mealName!.isNotEmpty
+                      ? story.mealName!
+                      : tr('stories.openMeal'),
+                ),
+              ),
+            ],
             TextButton(
               onPressed: () => Navigator.pop(ctx),
               child: Text(tr('action.close')),

@@ -24,7 +24,10 @@ import '../chat/conversations_screen.dart';
 import '../notifications/notifications_screen.dart';
 import '../profile/favorite_meals_screen.dart';
 import '../profile/delete_account_screen.dart';
+import '../profile/kyc_screen.dart';
 import '../profile/loyalty_screen.dart';
+import '../profile/ops_screen.dart';
+import '../profile/wishlists_screen.dart';
 import '../profile/my_publications_screen.dart';
 import '../profile/my_shop_screen.dart';
 import '../profile/received_orders_screen.dart';
@@ -161,6 +164,12 @@ class _AppShellState extends ConsumerState<AppShell> {
         _go(const MyPublicationsScreen());
       case 'favorites':
         _go(const FavoriteMealsScreen());
+      case 'wishlists':
+        _go(const WishlistsScreen());
+      case 'kyc':
+        _go(const KycScreen());
+      case 'ops':
+        _go(const OpsScreen());
       case 'loyalty':
         _go(const LoyaltyScreen());
       case 'faq':

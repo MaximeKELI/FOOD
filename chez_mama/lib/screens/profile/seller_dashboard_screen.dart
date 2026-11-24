@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../api/api_client.dart';
 import '../../api/orders_api.dart';
+import '../../api/platform_api.dart';
 import '../../l10n/app_strings.dart';
 import '../../ui/chezmama_theme.dart';
 import '../../utils/currency_format.dart';
@@ -18,6 +19,7 @@ class SellerDashboardScreen extends StatefulWidget {
 
 class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
   SellerStats? _stats;
+  SellerDashboardExtra? _extra;
   bool _loading = true;
   String? _error;
 
@@ -33,10 +35,14 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
       _error = null;
     });
     try {
-      final stats = await OrdersApi.instance.fetchStats();
+      final results = await Future.wait([
+        OrdersApi.instance.fetchStats(),
+        PlatformApi.instance.fetchSellerDashboardExtra(),
+      ]);
       if (!mounted) return;
       setState(() {
-        _stats = stats;
+        _stats = results[0] as SellerStats;
+        _extra = results[1] as SellerDashboardExtra;
         _loading = false;
       });
     } catch (e) {
@@ -45,6 +51,50 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
         _error = apiErrorMessage(e);
         _loading = false;
       });
+    }
+  }
+
+  Future<void> _createSlot() async {
+    final capCtrl = TextEditingController(text: '5');
+    final starts = DateTime.now().add(const Duration(hours: 2));
+    final ends = starts.add(const Duration(hours: 1));
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(tr('slots.create')),
+        content: TextField(
+          controller: capCtrl,
+          decoration: InputDecoration(labelText: tr('slots.capacity')),
+          keyboardType: TextInputType.number,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(tr('action.cancel')),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(tr('action.save')),
+          ),
+        ],
+      ),
+    );
+    if (ok != true || !mounted) return;
+    try {
+      await PlatformApi.instance.createPickupSlot(
+        startsAt: starts.toUtc().toIso8601String(),
+        endsAt: ends.toUtc().toIso8601String(),
+        capacity: int.tryParse(capCtrl.text.trim()) ?? 5,
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(tr('slots.create'))),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(apiErrorMessage(e))),
+      );
     }
   }
 
@@ -94,11 +144,61 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
       );
     }
     final s = _stats!;
+    final x = _extra;
     return RefreshIndicator(
       onRefresh: _load,
       child: ListView(
         padding: const EdgeInsets.all(14),
         children: [
+          if (x != null)
+            GridView.count(
+              crossAxisCount: 2,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              mainAxisSpacing: 12,
+              crossAxisSpacing: 12,
+              childAspectRatio: 1.6,
+              children: [
+                _StatCard(
+                  icon: Icons.today_rounded,
+                  label: tr('dashboard.extraToday'),
+                  value: formatFcfa(x.todayRevenue),
+                  color: ChezMamaTheme.brandOrange,
+                ),
+                _StatCard(
+                  icon: Icons.inventory_2_outlined,
+                  label: tr('dashboard.lowStock'),
+                  value: '${x.lowStockMeals}',
+                  color: ChezMamaTheme.brandBrown,
+                ),
+                _StatCard(
+                  icon: Icons.rate_review_outlined,
+                  label: tr('dashboard.unrepliedReviews'),
+                  value: '${x.unrepliedReviews}',
+                  color: ChezMamaTheme.promoRed,
+                ),
+                _StatCard(
+                  icon: Icons.percent_rounded,
+                  label: tr('dashboard.commissionEst'),
+                  value: formatFcfa(x.estimatedCommission),
+                  color: Colors.deepPurple,
+                ),
+              ],
+            ),
+          if (x != null) const SizedBox(height: 12),
+          Align(
+            alignment: Alignment.centerRight,
+            child: Semantics(
+              label: tr('slots.create'),
+              button: true,
+              child: TextButton.icon(
+                onPressed: _createSlot,
+                icon: const Icon(Icons.event_available_rounded),
+                label: Text(tr('slots.create')),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
           GridView.count(
             crossAxisCount: 2,
             shrinkWrap: true,

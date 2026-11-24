@@ -4,6 +4,7 @@ import 'package:latlong2/latlong.dart';
 import '../../cache/meal_cache.dart';
 import '../../api/api_client.dart';
 import '../../api/catalog_api.dart';
+import '../../api/platform_api.dart';
 import '../../auth/auth_scope.dart';
 import '../../l10n/app_strings.dart';
 import '../../models/meal.dart';
@@ -17,6 +18,7 @@ import '../../widgets/scroll_reveal.dart';
 import '../../widgets/shimmer_skeleton.dart';
 import '../../widgets/shell_toolbar_actions.dart';
 import '../meal/meal_details_screen.dart';
+import '../profile/seller_profile_screen.dart';
 import 'hero_carousel.dart';
 import 'meal_card.dart';
 import 'publish_meal_sheet.dart';
@@ -81,11 +83,34 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _specialOnly = false;
   LatLng? _userLoc;
   bool _locating = false;
+  List<Meal> _recommendations = const [];
+  List<OpenNowSeller> _openNow = const [];
+  Set<int> _openSellerIds = {};
+  bool _openNowOnly = false;
 
   @override
   void initState() {
     super.initState();
     _loadMeals();
+    _loadPlatformHome();
+  }
+
+  Future<void> _loadPlatformHome() async {
+    try {
+      final results = await Future.wait([
+        PlatformApi.instance.fetchOpenNowSellers(),
+        PlatformApi.instance.fetchRecommendations(),
+      ]);
+      if (!mounted) return;
+      final open = results[0] as List<OpenNowSeller>;
+      setState(() {
+        _openNow = open;
+        _openSellerIds = open.map((s) => s.id).toSet();
+        _recommendations = results[1] as List<Meal>;
+      });
+    } catch (_) {
+      // Optional sections — ignore failures.
+    }
   }
 
   Future<void> _loadMeals() async {
@@ -208,6 +233,12 @@ class _HomeScreenState extends State<HomeScreen> {
     if (_availableOnly) meals = meals.where((m) => m.isAvailable).toList();
     if (_promoOnly) meals = meals.where((m) => m.hasPromo).toList();
     if (_specialOnly) meals = meals.where((m) => m.isSpecial).toList();
+    if (_openNowOnly) {
+      meals = meals
+          .where((m) =>
+              m.sellerId != null && _openSellerIds.contains(m.sellerId))
+          .toList();
+    }
 
     switch (_sort) {
       case MealSort.recent:
@@ -381,6 +412,83 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
               child: Column(
                 children: [
+                  if (_openNow.isNotEmpty) ...[
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        tr('home.openNowTitle'),
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w900,
+                            ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    SizedBox(
+                      height: 40,
+                      child: ListView.separated(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: _openNow.length,
+                        separatorBuilder: (_, __) => const SizedBox(width: 8),
+                        itemBuilder: (_, i) {
+                          final s = _openNow[i];
+                          return ActionChip(
+                            avatar: const Icon(Icons.storefront_rounded, size: 18),
+                            label: Text(s.shopName.isNotEmpty ? s.shopName : s.name),
+                            onPressed: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => SellerProfileScreen(
+                                    sellerId: s.id,
+                                    sellerName: s.name,
+                                  ),
+                                ),
+                              );
+                            },
+                          );
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+                  if (_recommendations.isNotEmpty) ...[
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        tr('home.forYou'),
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w900,
+                            ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    SizedBox(
+                      height: 220,
+                      child: ListView.separated(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: _recommendations.length,
+                        separatorBuilder: (_, __) => const SizedBox(width: 12),
+                        itemBuilder: (_, i) {
+                          final meal = _recommendations[i];
+                          return SizedBox(
+                            width: 160,
+                            child: MealCard(
+                              meal: meal,
+                              distanceKm: _distanceKm(meal),
+                              onTap: () {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (_) =>
+                                        MealDetailsScreen(meal: meal),
+                                  ),
+                                );
+                              },
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
                   if (widget.isAuthed) ...[
                     ScrollReveal(
                       controller: scroll,
@@ -519,6 +627,19 @@ class _HomeScreenState extends State<HomeScreen> {
                     selected: _specialOnly,
                     onSelected: (v) => setState(() => _specialOnly = v),
                   ),
+                  if (_openSellerIds.isNotEmpty) ...[
+                    const SizedBox(width: 8),
+                    FilterChip(
+                      avatar: Icon(
+                        Icons.schedule_rounded,
+                        size: 16,
+                        color: _openNowOnly ? Colors.white : null,
+                      ),
+                      label: Text(tr('home.filter.openNow')),
+                      selected: _openNowOnly,
+                      onSelected: (v) => setState(() => _openNowOnly = v),
+                    ),
+                  ],
                 ],
               ),
             ),
