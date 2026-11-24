@@ -1,4 +1,18 @@
+from pathlib import Path
+
 import pytest
+
+
+@pytest.fixture(scope="session", autouse=True)
+def _writable_media_root(tmp_path_factory):
+    """Avoid PermissionError when workspace media/ is root-owned (Docker)."""
+    from django.conf import settings
+
+    media = tmp_path_factory.mktemp("media")
+    static = tmp_path_factory.mktemp("staticfiles")
+    settings.MEDIA_ROOT = Path(media)
+    settings.STATIC_ROOT = Path(static)
+    yield
 
 
 @pytest.fixture

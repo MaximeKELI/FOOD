@@ -17,7 +17,7 @@ def coordinates_for_user(user) -> tuple[float, float]:
     from orders.models import Order
 
     order = (
-        Order.objects.filter(user=user)
+        Order.objects.filter(customer=user)
         .exclude(latitude__isnull=True)
         .exclude(longitude__isnull=True)
         .order_by("-created_at")

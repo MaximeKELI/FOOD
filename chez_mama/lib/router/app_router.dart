@@ -59,6 +59,9 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         '/driver',
         '/disputes',
         '/group-order',
+        '/orders',
+        '/cart',
+        '/checkout',
       };
       if (!authSvc.isAuthed && authedOnly.contains(loc) && !loggingIn) {
         return '/login?from=${Uri.encodeComponent(loc)}';

@@ -1,5 +1,3 @@
-import json
-
 import stripe
 from django.conf import settings
 from django.http import HttpResponse
@@ -79,8 +77,17 @@ class PaymentInitiateView(APIView):
         provider_map = {
             Order.Payment.WAVE: PaymentIntent.Provider.WAVE,
             Order.Payment.ORANGE_MONEY: PaymentIntent.Provider.ORANGE_MONEY,
-            Order.Payment.FREE_MONEY: PaymentIntent.Provider.WAVE,
         }
+        if order.payment_method == Order.Payment.FREE_MONEY:
+            return Response(
+                {
+                    "detail": (
+                        "Free Money n'est pas encore intégré. "
+                        "Choisis Wave, Orange Money ou Stripe."
+                    )
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         provider = provider_map.get(order.payment_method)
         if not provider:
             return Response(
@@ -168,6 +175,27 @@ class PaymentStatusView(APIView):
         return Response(PaymentIntentSerializer(intent).data)
 
 
+def _webhook_payment_succeeded(payload: dict) -> bool:
+    """Provider payloads may include an explicit status; default True if absent."""
+    status_raw = (
+        payload.get("status")
+        or payload.get("payment_status")
+        or payload.get("state")
+        or ""
+    )
+    if not status_raw:
+        return True
+    normalized = str(status_raw).strip().lower()
+    return normalized in {
+        "succeeded",
+        "success",
+        "successful",
+        "paid",
+        "completed",
+        "complete",
+    }
+
+
 class StripeWebhookView(APIView):
     permission_classes = [permissions.AllowAny]
 
@@ -176,21 +204,20 @@ class StripeWebhookView(APIView):
         sig = request.headers.get("Stripe-Signature", "")
         secret = settings.STRIPE_WEBHOOK_SECRET
         if not secret:
-            if not settings.DEBUG:
-                return Response(status=403)
-            event_data = json.loads(payload)
-        else:
-            try:
-                event = stripe.Webhook.construct_event(payload, sig, secret)
-            except (ValueError, stripe.error.SignatureVerificationError):
-                return Response({"detail": "Signature invalide."}, status=403)
-            event_data = event
+            return Response(
+                {"detail": "STRIPE_WEBHOOK_SECRET non configuré."},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+        try:
+            event = stripe.Webhook.construct_event(payload, sig, secret)
+        except (ValueError, stripe.error.SignatureVerificationError):
+            return Response({"detail": "Signature invalide."}, status=403)
 
-        event_type = event_data.get("type") if isinstance(event_data, dict) else event_data.type
+        event_type = event["type"] if isinstance(event, dict) else event.type
         data_obj = (
-            event_data.get("data", {}).get("object", {})
-            if isinstance(event_data, dict)
-            else event_data.data.object
+            event.get("data", {}).get("object", {})
+            if isinstance(event, dict)
+            else event.data.object
         )
         if event_type == "payment_intent.succeeded":
             external_id = data_obj.get("id") if isinstance(data_obj, dict) else data_obj.id
@@ -207,8 +234,12 @@ class WaveWebhookView(APIView):
         secret = request.headers.get("X-Wave-Signature", "")
         if not verify_webhook_secret(PaymentIntent.Provider.WAVE, secret):
             return Response({"detail": "Signature invalide."}, status=403)
+        if not _webhook_payment_succeeded(request.data if isinstance(request.data, dict) else {}):
+            return Response({"ok": True, "ignored": True})
         external_id = request.data.get("id") or request.data.get("external_id")
-        intent = PaymentIntent.objects.filter(external_id=external_id).first()
+        intent = PaymentIntent.objects.filter(
+            external_id=external_id, provider=PaymentIntent.Provider.WAVE
+        ).first()
         if intent is None:
             return Response({"detail": "Intent introuvable."}, status=404)
         mark_intent_paid(intent)
@@ -222,10 +253,14 @@ class OrangeWebhookView(APIView):
         secret = request.headers.get("X-Orange-Signature", "")
         if not verify_webhook_secret(PaymentIntent.Provider.ORANGE_MONEY, secret):
             return Response({"detail": "Signature invalide."}, status=403)
+        if not _webhook_payment_succeeded(request.data if isinstance(request.data, dict) else {}):
+            return Response({"ok": True, "ignored": True})
         external_id = request.data.get("transaction_id") or request.data.get(
             "external_id"
         )
-        intent = PaymentIntent.objects.filter(external_id=external_id).first()
+        intent = PaymentIntent.objects.filter(
+            external_id=external_id, provider=PaymentIntent.Provider.ORANGE_MONEY
+        ).first()
         if intent is None:
             return Response({"detail": "Intent introuvable."}, status=404)
         mark_intent_paid(intent)

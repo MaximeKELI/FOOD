@@ -14,8 +14,9 @@ class DriverSerializer(serializers.ModelSerializer):
             "latitude",
             "longitude",
             "is_active",
+            "is_approved",
         )
-        read_only_fields = ("id",)
+        read_only_fields = ("id", "is_approved")
 
 
 class DriverUpdateSerializer(serializers.ModelSerializer):

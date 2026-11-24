@@ -3,6 +3,7 @@ from django.db import transaction
 from django.shortcuts import get_object_or_404
 from drf_spectacular.utils import extend_schema
 from rest_framework import permissions, status
+from rest_framework.exceptions import APIException
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -36,14 +37,17 @@ ALLOWED_DELIVERY_TRANSITIONS = {
 }
 
 
+class DeliveriesDisabled(APIException):
+    status_code = status.HTTP_503_SERVICE_UNAVAILABLE
+    default_detail = "Module livraison non activé."
+    default_code = "deliveries_disabled"
+
+
 class DeliveriesFeatureMixin:
-    def dispatch(self, request, *args, **kwargs):
+    def initial(self, request, *args, **kwargs):
+        super().initial(request, *args, **kwargs)
         if not settings.DELIVERIES_ENABLED:
-            return Response(
-                {"detail": "Module livraison non activé."},
-                status=status.HTTP_503_SERVICE_UNAVAILABLE,
-            )
-        return super().dispatch(request, *args, **kwargs)
+            raise DeliveriesDisabled()
 
 
 def _can_view_delivery(user, delivery):
@@ -55,6 +59,10 @@ def _can_view_delivery(user, delivery):
     if OrderItem.objects.filter(order=order, meal__seller=user).exists():
         return True
     return user.is_staff
+
+
+def _driver_can_work(driver) -> bool:
+    return bool(driver.is_active and driver.is_approved)
 
 
 @extend_schema(tags=["deliveries"])
@@ -96,9 +104,14 @@ class DeliveryPendingListView(DeliveriesFeatureMixin, APIView):
 
     def get(self, request):
         driver, _ = Driver.objects.get_or_create(user=request.user)
-        if not driver.is_active:
+        if not _driver_can_work(driver):
             return Response(
-                {"detail": "Profil chauffeur inactif."},
+                {
+                    "detail": (
+                        "Profil chauffeur inactif ou non approuvé. "
+                        "Contacte un administrateur."
+                    )
+                },
                 status=status.HTTP_403_FORBIDDEN,
             )
         qs = (
@@ -134,9 +147,14 @@ class DeliveryAcceptView(DeliveriesFeatureMixin, APIView):
         driver, _ = Driver.objects.select_for_update().get_or_create(
             user=request.user
         )
-        if not driver.is_active:
+        if not _driver_can_work(driver):
             return Response(
-                {"detail": "Profil chauffeur inactif."},
+                {
+                    "detail": (
+                        "Profil chauffeur inactif ou non approuvé. "
+                        "Contacte un administrateur."
+                    )
+                },
                 status=status.HTTP_403_FORBIDDEN,
             )
         delivery.driver = driver

@@ -1,5 +1,7 @@
 from rest_framework import serializers
 
+from food_api.validators import validate_story_media
+
 from .models import (
     ContentReport,
     Dispute,
@@ -95,6 +97,10 @@ class StoryCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Story
         fields = ("id", "media", "caption")
+
+    def validate_media(self, value):
+        validate_story_media(value)
+        return value
 
 
 class ReferralCodeSerializer(serializers.ModelSerializer):

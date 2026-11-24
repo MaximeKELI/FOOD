@@ -7,6 +7,7 @@ from rest_framework_simplejwt.views import (
 from .views import (
     FollowToggleView,
     GoogleAuthView,
+    LogoutView,
     MeView,
     MyProfileView,
     RegisterView,
@@ -18,6 +19,7 @@ urlpatterns = [
     path("register/", RegisterView.as_view(), name="register"),
     path("google/", GoogleAuthView.as_view(), name="google_auth"),
     path("login/", TokenObtainPairView.as_view(), name="login"),
+    path("logout/", LogoutView.as_view(), name="logout"),
     path("token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
     path("me/", MeView.as_view(), name="me"),
     path("me/profile/", MyProfileView.as_view(), name="my_profile"),

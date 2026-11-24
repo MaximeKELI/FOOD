@@ -391,9 +391,23 @@ class OrderCreateSerializer(serializers.Serializer):
             promo_code=applied_promo,
             points_redeemed=points_redeemed,
         )
+        meal_ids = [item["meal"] for item in items]
+        locked_meals = {
+            m.pk: m
+            for m in Meal.objects.select_for_update().filter(pk__in=meal_ids)
+        }
         for idx, item in enumerate(items):
-            meal = meals[item["meal"]]
+            meal = locked_meals[item["meal"]]
             snapshot, options_extra = item_options[idx]
+            if meal.stock_qty is not None and meal.stock_qty < item["quantity"]:
+                raise serializers.ValidationError(
+                    {
+                        "items": [
+                            f"Stock insuffisant pour {meal.name} "
+                            f"(disponible : {meal.stock_qty})."
+                        ]
+                    }
+                )
             OrderItem.objects.create(
                 order=order,
                 meal=meal,

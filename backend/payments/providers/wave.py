@@ -2,6 +2,8 @@
 
 import uuid
 
+import hmac
+
 import requests
 from decouple import config
 from django.conf import settings
@@ -14,7 +16,9 @@ class WaveProvider(PaymentProvider):
     API_BASE = "https://api.wave.com"
 
     def initiate(self, intent: PaymentIntent) -> InitiateResult:
-        api_key = config("WAVE_API_KEY", default="")
+        api_key = getattr(settings, "WAVE_API_KEY", "") or config(
+            "WAVE_API_KEY", default=""
+        )
         if not api_key:
             raise ValueError("WAVE_API_KEY non configuré.")
 
@@ -49,7 +53,7 @@ class WaveProvider(PaymentProvider):
         )
 
     def verify_webhook(self, header_secret: str) -> bool:
-        expected = config("WAVE_WEBHOOK_SECRET", default="")
-        if not expected:
-            return settings.DEBUG
-        return header_secret == expected
+        expected = getattr(settings, "WAVE_WEBHOOK_SECRET", "") or ""
+        if not expected or not header_secret:
+            return False
+        return hmac.compare_digest(str(header_secret), str(expected))

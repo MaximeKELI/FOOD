@@ -23,6 +23,8 @@ class Driver(models.Model):
     latitude = models.FloatField(null=True, blank=True)
     longitude = models.FloatField(null=True, blank=True)
     is_active = models.BooleanField(default=True)
+    # Staff must approve before the driver can accept jobs.
+    is_approved = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

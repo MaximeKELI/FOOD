@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 
 import '../analytics/event_tracker.dart';
 import '../api/api_client.dart';
+import '../storage/token_storage.dart';
 import 'session_handler.dart';
 
 /// Authenticates against the Django backend and keeps the session in memory.
@@ -141,6 +142,14 @@ class AuthService extends ChangeNotifier {
   }
 
   Future<void> signOut() async {
+    try {
+      final refresh = await TokenStorage.instance.readRefresh();
+      if (refresh != null && refresh.isNotEmpty) {
+        await _client.dio.post('/auth/logout/', data: {'refresh': refresh});
+      }
+    } catch (_) {
+      // Best-effort blacklist; always clear local session.
+    }
     await _client.clearTokens();
     _isAuthed = false;
     _userId = null;

@@ -9,6 +9,7 @@ from drf_spectacular.views import (
     SpectacularSwaggerView,
 )
 
+from food_api.internal import SocketAuthorizeView
 from notifications.views import NotificationClearView, NotificationDeleteOneView
 from weather.views import WeatherNotifyMeView, WeatherSuggestionView
 
@@ -70,6 +71,11 @@ def health(_request):
 urlpatterns = [
     path("", api_root),
     path("health/", health, name="health"),
+    path(
+        "api/internal/socket-authorize/",
+        SocketAuthorizeView.as_view(),
+        name="socket_authorize",
+    ),
     path("admin/", admin.site.urls),
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
     path(

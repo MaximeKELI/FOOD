@@ -100,13 +100,17 @@ services:
     environment:
       PORT: "3001"
       REDIS_URL: redis://redis:6379/1
-      JWT_SECRET: ${JWT_SECRET:-django-insecure-change-me-in-production-please-0a2el3fc}
+      # Must match Django SECRET_KEY (backend/.env.docker).
+      JWT_SECRET: ${JWT_SECRET:-django-insecure-docker-dev-only}
       SOCKET_INTERNAL_SECRET: socket-internal-dev
+      SOCKET_AUTHORIZE_URL: http://django:8000/api/internal/socket-authorize/
       CORS_ORIGIN: "*"
     ports:
-      - "3001:3001"
+      - "127.0.0.1:3001:3001"
     depends_on:
       redis:
+        condition: service_healthy
+      django:
         condition: service_healthy
 
   # Notifications météo toutes les 5 h (jus de fruit si chaud, foutou si froid, etc.)

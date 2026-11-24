@@ -74,6 +74,12 @@ class GoogleAuthView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+        if not idinfo.get("email_verified"):
+            return Response(
+                {"detail": "Email Google non vérifié."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         email = (idinfo.get("email") or "").lower()
         if not email:
             return Response(
@@ -179,6 +185,28 @@ class MyProfileView(generics.RetrieveUpdateAPIView):
     def get_object(self):
         profile, _ = SellerProfile.objects.get_or_create(user=self.request.user)
         return profile
+
+
+@extend_schema(tags=["auth"], summary="Logout and blacklist refresh token")
+class LogoutView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        refresh = request.data.get("refresh")
+        if not refresh:
+            return Response(
+                {"detail": "refresh token requis."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        try:
+            token = RefreshToken(refresh)
+            token.blacklist()
+        except Exception:
+            return Response(
+                {"detail": "Token invalide ou déjà révoqué."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        return Response({"ok": True})
 
 
 @extend_schema(tags=["auth"], summary="Toggle follow on a vendor")

@@ -11,6 +11,9 @@ const REDIS_URL = process.env.REDIS_URL || "redis://127.0.0.1:6379/1";
 const JWT_SECRET = process.env.JWT_SECRET || "change-me";
 const INTERNAL_SECRET = process.env.SOCKET_INTERNAL_SECRET || "socket-internal-dev";
 const CORS_ORIGIN = process.env.CORS_ORIGIN || "*";
+const AUTHORIZE_URL =
+  process.env.SOCKET_AUTHORIZE_URL ||
+  "http://django:8000/api/internal/socket-authorize/";
 
 const app = express();
 app.use(cors({ origin: CORS_ORIGIN === "*" ? true : CORS_ORIGIN.split(",") }));
@@ -29,6 +32,35 @@ async function setupRedis() {
   io.adapter(createAdapter(pub, sub));
 }
 
+async function authorizeRooms(userId, rooms) {
+  if (!rooms.length) return [];
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 4000);
+  try {
+    const res = await fetch(AUTHORIZE_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Internal-Secret": INTERNAL_SECRET,
+      },
+      body: JSON.stringify({ user_id: userId, rooms }),
+      signal: controller.signal,
+    });
+    if (!res.ok) return [];
+    const data = await res.json();
+    return Array.isArray(data.allowed) ? data.allowed : [];
+  } catch (err) {
+    console.error("Room authorize failed", err.message || err);
+    return [];
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+function inConversationRoom(socket, conversationId) {
+  return socket.rooms.has(`conversation:${conversationId}`);
+}
+
 io.use((socket, next) => {
   const token =
     socket.handshake.auth?.token ||
@@ -38,7 +70,10 @@ io.use((socket, next) => {
   }
   try {
     const payload = jwt.verify(token, JWT_SECRET, { algorithms: ["HS256"] });
-    socket.userId = payload.user_id || payload.sub || payload.id;
+    socket.userId = String(payload.user_id || payload.sub || payload.id || "");
+    if (!socket.userId) {
+      return next(new Error("Token sans user_id"));
+    }
     return next();
   } catch (err) {
     return next(new Error("Token invalide"));
@@ -47,37 +82,32 @@ io.use((socket, next) => {
 
 io.on("connection", (socket) => {
   const uid = socket.userId;
-  if (uid) {
-    socket.join(`user:${uid}`);
-  }
+  socket.join(`user:${uid}`);
 
-  socket.on("join", (rooms) => {
-    const list = Array.isArray(rooms) ? rooms : [rooms];
-    for (const room of list) {
-      if (typeof room === "string" && room.length < 80) {
-        socket.join(room);
-      }
+  socket.on("join", async (rooms) => {
+    const list = (Array.isArray(rooms) ? rooms : [rooms]).filter(
+      (r) => typeof r === "string" && r.length > 0 && r.length < 80
+    );
+    if (!list.length) return;
+    const allowed = await authorizeRooms(uid, list);
+    for (const room of allowed) {
+      socket.join(room);
     }
   });
 
-  socket.on("chat:message", (payload) => {
-    const conversationId = payload?.conversation_id;
-    if (!conversationId) return;
-    io.to(`conversation:${conversationId}`).emit("chat:message", {
-      ...payload,
-      sender_id: uid,
-    });
+  socket.on("leave", (rooms) => {
+    const list = Array.isArray(rooms) ? rooms : [rooms];
+    for (const room of list) {
+      if (typeof room === "string") socket.leave(room);
+    }
   });
 
-  socket.on("delivery:location", (payload) => {
-    const deliveryId = payload?.delivery_id;
-    if (!deliveryId) return;
-    io.to(`delivery:${deliveryId}`).emit("delivery:location", payload);
-  });
+  // Messages and GPS are server-emitted only (via /internal/emit).
+  // Typing/read are allowed only if the socket already joined the conversation.
 
   socket.on("chat:typing", (payload) => {
     const conversationId = payload?.conversation_id;
-    if (!conversationId) return;
+    if (!conversationId || !inConversationRoom(socket, conversationId)) return;
     socket.to(`conversation:${conversationId}`).emit("chat:typing", {
       conversation_id: conversationId,
       user_id: uid,
@@ -87,7 +117,7 @@ io.on("connection", (socket) => {
 
   socket.on("chat:read", (payload) => {
     const conversationId = payload?.conversation_id;
-    if (!conversationId) return;
+    if (!conversationId || !inConversationRoom(socket, conversationId)) return;
     io.to(`conversation:${conversationId}`).emit("chat:read", {
       conversation_id: conversationId,
       message_id: payload?.message_id || null,
@@ -105,6 +135,9 @@ app.post("/internal/emit", (req, res) => {
   const { event, room, data } = req.body || {};
   if (!event || !room) {
     return res.status(400).json({ detail: "event and room required" });
+  }
+  if (typeof event !== "string" || typeof room !== "string") {
+    return res.status(400).json({ detail: "invalid event/room" });
   }
   io.to(room).emit(event, data || {});
   return res.json({ ok: true });

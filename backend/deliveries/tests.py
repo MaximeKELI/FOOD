@@ -68,6 +68,27 @@ class DeliveriesEnabledTests(TestCase):
         self.assertEqual(res.status_code, 200)
         self.assertEqual(res.data["status"], "available")
 
+    def test_unapproved_driver_cannot_list_pending(self):
+        Driver.objects.create(
+            user=self.driver_user,
+            status=Driver.Status.AVAILABLE,
+            is_approved=False,
+        )
+        self.client.force_authenticate(user=self.driver_user)
+        res = self.client.get("/api/deliveries/pending/")
+        self.assertEqual(res.status_code, 403)
+
+    def test_approved_driver_can_list_pending(self):
+        Driver.objects.create(
+            user=self.driver_user,
+            status=Driver.Status.AVAILABLE,
+            is_approved=True,
+            is_active=True,
+        )
+        self.client.force_authenticate(user=self.driver_user)
+        res = self.client.get("/api/deliveries/pending/")
+        self.assertEqual(res.status_code, 200)
+
     def test_delivery_location_emits_for_assigned_driver(self):
         order = Order.objects.create(
             customer=self.customer,
@@ -76,7 +97,11 @@ class DeliveriesEnabledTests(TestCase):
             longitude=-17.45,
             total=5000,
         )
-        driver = Driver.objects.create(user=self.driver_user, status=Driver.Status.AVAILABLE)
+        driver = Driver.objects.create(
+            user=self.driver_user,
+            status=Driver.Status.AVAILABLE,
+            is_approved=True,
+        )
         delivery = Delivery.objects.create(order=order, driver=driver)
         self.client.force_authenticate(user=self.driver_user)
         with self.settings(SOCKET_EMIT_URL=""):

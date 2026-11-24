@@ -3,12 +3,15 @@ from pathlib import Path
 
 import dj_database_url
 from decouple import Csv, config
+from django.core.exceptions import ImproperlyConfigured
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+_INSECURE_SECRET_DEFAULT = "django-insecure-change-me-in-production-please-0a2el3fc"
+
 SECRET_KEY = config(
     "SECRET_KEY",
-    default="django-insecure-change-me-in-production-please-0a2el3fc",
+    default=_INSECURE_SECRET_DEFAULT,
 )
 
 DEBUG = config("DEBUG", default=True, cast=bool)
@@ -29,6 +32,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     # Third party
     "rest_framework",
+    "rest_framework_simplejwt.token_blacklist",
     "corsheaders",
     "storages",
     "drf_spectacular",
@@ -158,6 +162,9 @@ DELIVERIES_ENABLED = config("DELIVERIES_ENABLED", default=True, cast=bool)
 STRIPE_SECRET_KEY = config("STRIPE_SECRET_KEY", default="")
 STRIPE_WEBHOOK_SECRET = config("STRIPE_WEBHOOK_SECRET", default="")
 STRIPE_PUBLISHABLE_KEY = config("STRIPE_PUBLISHABLE_KEY", default="")
+WAVE_API_KEY = config("WAVE_API_KEY", default="")
+WAVE_WEBHOOK_SECRET = config("WAVE_WEBHOOK_SECRET", default="")
+ORANGE_MONEY_WEBHOOK_SECRET = config("ORANGE_MONEY_WEBHOOK_SECRET", default="")
 
 GOOGLE_OAUTH_CLIENT_ID = config("GOOGLE_OAUTH_CLIENT_ID", default="")
 
@@ -209,10 +216,13 @@ SPECTACULAR_SETTINGS = {
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(hours=1),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
+    "ROTATE_REFRESH_TOKENS": True,
+    "BLACKLIST_AFTER_ROTATION": True,
     "AUTH_HEADER_TYPES": ("Bearer",),
 }
 
-CORS_ALLOW_ALL_ORIGINS = config("CORS_ALLOW_ALL", default=True, cast=bool)
+# Local Docker sets CORS_ALLOW_ALL=True explicitly; production must set False.
+CORS_ALLOW_ALL_ORIGINS = config("CORS_ALLOW_ALL", default=False, cast=bool)
 CORS_ALLOWED_ORIGINS = config(
     "CORS_ALLOWED_ORIGINS",
     default="http://localhost:8080,http://127.0.0.1:8080",
@@ -220,6 +230,21 @@ CORS_ALLOWED_ORIGINS = config(
 )
 
 if not DEBUG:
+    if (
+        not SECRET_KEY
+        or SECRET_KEY == _INSECURE_SECRET_DEFAULT
+        or SECRET_KEY.startswith("django-insecure")
+        or SECRET_KEY in {"change-me-long-random", "change-me-with-a-long-random-string"}
+    ):
+        raise ImproperlyConfigured(
+            "SECRET_KEY must be a strong unique value when DEBUG=False."
+        )
+    if CORS_ALLOW_ALL_ORIGINS:
+        raise ImproperlyConfigured(
+            "CORS_ALLOW_ALL must be False when DEBUG=False. "
+            "Set CORS_ALLOWED_ORIGINS to an explicit allowlist."
+        )
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
     SECURE_SSL_REDIRECT = config("SECURE_SSL_REDIRECT", default=False, cast=bool)
     SESSION_COOKIE_SECURE = config("SESSION_COOKIE_SECURE", default=True, cast=bool)
     CSRF_COOKIE_SECURE = config("CSRF_COOKIE_SECURE", default=True, cast=bool)

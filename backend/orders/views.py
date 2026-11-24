@@ -239,6 +239,31 @@ class OrderStatusUpdateView(APIView):
                 {"detail": "Statut invalide."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+        # Multi-vendor: a single seller may only mark PREPARING; final states need staff.
+        other_sellers = (
+            OrderItem.objects.filter(order=order, meal__isnull=False)
+            .exclude(meal__seller=request.user)
+            .exists()
+        )
+        if (
+            other_sellers
+            and not request.user.is_staff
+            and new_status
+            in (
+                Order.Status.ON_THE_WAY,
+                Order.Status.DELIVERED,
+                Order.Status.CANCELLED,
+            )
+        ):
+            return Response(
+                {
+                    "detail": (
+                        "Commande multi-vendeurs : tu peux passer en préparation. "
+                        "La finalisation / annulation vendeur nécessite un admin."
+                    )
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         allowed = ALLOWED_STATUS_TRANSITIONS.get(order.status, set())
         if new_status != order.status and new_status not in allowed:
             return Response(

@@ -2,6 +2,8 @@
 
 import uuid
 
+import hmac
+
 import requests
 from decouple import config
 from django.conf import settings
@@ -56,7 +58,7 @@ class OrangeMoneyProvider(PaymentProvider):
         )
 
     def verify_webhook(self, header_secret: str) -> bool:
-        expected = config("ORANGE_MONEY_WEBHOOK_SECRET", default="")
-        if not expected:
-            return settings.DEBUG
-        return header_secret == expected
+        expected = getattr(settings, "ORANGE_MONEY_WEBHOOK_SECRET", "") or ""
+        if not expected or not header_secret:
+            return False
+        return hmac.compare_digest(str(header_secret), str(expected))
