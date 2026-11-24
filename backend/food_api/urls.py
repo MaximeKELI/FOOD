@@ -47,6 +47,7 @@ def api_root(_request):
 
 
 def health(_request):
+    from django.conf import settings
     from django.db import connection
 
     try:
@@ -59,12 +60,26 @@ def health(_request):
         weather_ok = True
     except Exception:
         weather_ok = False
+
+    redis_ok = None
+    redis_url = getattr(settings, "REDIS_URL", "") or ""
+    if redis_url:
+        try:
+            import redis
+
+            redis.Redis.from_url(redis_url).ping()
+            redis_ok = True
+        except Exception:
+            redis_ok = False
+
+    core_ok = db_ok and weather_ok and (redis_ok is not False)
     payload = {
-        "status": "ok" if db_ok and weather_ok else "degraded",
+        "status": "ok" if core_ok else "degraded",
         "database": db_ok,
         "weather_api": weather_ok,
+        "redis": redis_ok,
     }
-    status_code = 200 if db_ok and weather_ok else 503
+    status_code = 200 if core_ok else 503
     return JsonResponse(payload, status=status_code)
 
 

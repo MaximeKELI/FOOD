@@ -1,6 +1,7 @@
 from drf_spectacular.utils import extend_schema
 from rest_framework import permissions, status
 from rest_framework.response import Response
+from rest_framework.throttling import AnonRateThrottle, UserRateThrottle
 from rest_framework.views import APIView
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
@@ -13,11 +14,20 @@ from .serializers import (
 from .services import record_content_engagement, record_event
 
 
+class AnalyticsThrottle(UserRateThrottle):
+    scope = "analytics"
+
+
+class AnalyticsAnonThrottle(AnonRateThrottle):
+    scope = "analytics"
+
+
 class AnalyticsEventView(APIView):
     """Record a single analytics event (click, screen view, etc.)."""
 
     authentication_classes = [JWTAuthentication]
     permission_classes = [permissions.AllowAny]
+    throttle_classes = [AnalyticsAnonThrottle, AnalyticsThrottle]
 
     @extend_schema(
         request=AnalyticsEventInputSerializer,
@@ -41,6 +51,7 @@ class AnalyticsBatchView(APIView):
 
     authentication_classes = [JWTAuthentication]
     permission_classes = [permissions.AllowAny]
+    throttle_classes = [AnalyticsAnonThrottle, AnalyticsThrottle]
 
     @extend_schema(
         request=AnalyticsBatchSerializer,
@@ -72,6 +83,7 @@ class ContentEngagementView(APIView):
 
     authentication_classes = [JWTAuthentication]
     permission_classes = [permissions.AllowAny]
+    throttle_classes = [AnalyticsAnonThrottle, AnalyticsThrottle]
 
     @extend_schema(
         request=ContentEngagementInputSerializer,
@@ -93,6 +105,7 @@ class ContentEngagementView(APIView):
 class ContentEngagementBatchView(APIView):
     authentication_classes = [JWTAuthentication]
     permission_classes = [permissions.AllowAny]
+    throttle_classes = [AnalyticsAnonThrottle, AnalyticsThrottle]
 
     @extend_schema(
         request=ContentEngagementBatchSerializer,

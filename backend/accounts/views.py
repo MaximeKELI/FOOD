@@ -10,6 +10,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.views import TokenObtainPairView
 
 from .models import Follow, SellerProfile
 from .serializers import (
@@ -20,6 +21,7 @@ from .serializers import (
     UserSerializer,
     UserUpdateSerializer,
 )
+from .throttles import AuthRateThrottle
 
 User = get_user_model()
 
@@ -33,6 +35,7 @@ def tokens_for(user):
 class RegisterView(generics.GenericAPIView):
     serializer_class = RegisterSerializer
     permission_classes = [AllowAny]
+    throttle_classes = [AuthRateThrottle]
 
     def post(self, request):
         serializer = self.get_serializer(data=request.data)
@@ -47,9 +50,16 @@ class RegisterView(generics.GenericAPIView):
         )
 
 
+@extend_schema(tags=["auth"], summary="Email/password login (throttled)")
+class ThrottledTokenObtainPairView(TokenObtainPairView):
+    permission_classes = [AllowAny]
+    throttle_classes = [AuthRateThrottle]
+
+
 @extend_schema(tags=["auth"], summary="Sign in or register with Google ID token")
 class GoogleAuthView(APIView):
     permission_classes = [AllowAny]
+    throttle_classes = [AuthRateThrottle]
 
     def post(self, request):
         token = request.data.get("id_token")
