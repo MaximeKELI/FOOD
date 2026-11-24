@@ -44,7 +44,17 @@ class CatalogApi {
       },
     );
     final results = (res.data['results'] as List?) ?? const [];
-    return results.map((e) => _mealFromJson(e as Map<String, dynamic>)).toList();
+    return results.map((e) => mealFromApiJson(e as Map<String, dynamic>)).toList();
+  }
+
+  Future<Meal> fetchMeal(String id) async {
+    final res = await _dio.get('/catalog/meals/$id/');
+    return mealFromApiJson(res.data as Map<String, dynamic>);
+  }
+
+  Future<Map<String, dynamic>> fetchMealShare(String id) async {
+    final res = await _dio.get('/catalog/meals/$id/share/');
+    return Map<String, dynamic>.from(res.data as Map);
   }
 
   Future<void> deleteMeal(String id) async {
@@ -63,7 +73,7 @@ class CatalogApi {
       if (isSpecial != null) 'is_special': isSpecial,
     });
     final res = await _dio.patch('/catalog/meals/$id/', data: form);
-    return _mealFromJson(res.data as Map<String, dynamic>);
+    return mealFromApiJson(res.data as Map<String, dynamic>);
   }
 
   Future<bool> toggleFavorite(String mealId) async {
@@ -74,7 +84,7 @@ class CatalogApi {
   Future<List<Meal>> fetchFavorites() async {
     final res = await _dio.get('/catalog/favorites/');
     final results = (res.data['results'] as List?) ?? const [];
-    return results.map((e) => _mealFromJson(e as Map<String, dynamic>)).toList();
+    return results.map((e) => mealFromApiJson(e as Map<String, dynamic>)).toList();
   }
 
   Future<List<Meal>> fetchRecent() async {
@@ -82,7 +92,7 @@ class CatalogApi {
     final results = res.data is Map
         ? ((res.data['results'] as List?) ?? const [])
         : ((res.data as List?) ?? const []);
-    return results.map((e) => _mealFromJson(e as Map<String, dynamic>)).toList();
+    return results.map((e) => mealFromApiJson(e as Map<String, dynamic>)).toList();
   }
 
   Future<List<MealCombo>> fetchCombos({int? sellerId}) async {
@@ -158,10 +168,10 @@ class CatalogApi {
       ));
     }
     final res = await _dio.post('/catalog/meals/', data: form);
-    return _mealFromJson(res.data as Map<String, dynamic>);
+    return mealFromApiJson(res.data as Map<String, dynamic>);
   }
 
-  Meal _mealFromJson(Map<String, dynamic> json) {
+  Meal mealFromApiJson(Map<String, dynamic> json) {
     final image = (json['image'] as String?) ?? '';
     final galleryRaw = (json['gallery'] as List?) ?? const [];
     final gallery = galleryRaw.map((e) {

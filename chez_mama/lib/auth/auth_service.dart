@@ -17,6 +17,8 @@ class AuthService extends ChangeNotifier {
   int _loyaltyPoints = 0;
   int _mealsCount = 0;
   bool _isSeller = false;
+  bool _isStaff = false;
+  bool _isSuperuser = false;
 
   bool get ready => _ready;
   bool get isAuthed => _isAuthed;
@@ -26,6 +28,8 @@ class AuthService extends ChangeNotifier {
   int get loyaltyPoints => _loyaltyPoints;
   int get mealsCount => _mealsCount;
   bool get isSeller => _isSeller;
+  bool get isStaff => _isStaff;
+  bool get isSuperuser => _isSuperuser;
 
   final _client = ApiClient.instance;
 
@@ -42,6 +46,8 @@ class AuthService extends ChangeNotifier {
     _loyaltyPoints = 0;
     _mealsCount = 0;
     _isSeller = false;
+    _isStaff = false;
+    _isSuperuser = false;
     notifyListeners();
     SessionHandler.instance.onSessionExpired();
   }
@@ -80,6 +86,8 @@ class AuthService extends ChangeNotifier {
     _loyaltyPoints = data['loyalty_points'] as int? ?? 0;
     _mealsCount = data['meals_count'] as int? ?? 0;
     _isSeller = _vendorFromPayload(data);
+    _isStaff = data['is_staff'] as bool? ?? false;
+    _isSuperuser = data['is_superuser'] as bool? ?? false;
   }
 
   Future<void> refreshMe() async {
@@ -158,6 +166,8 @@ class AuthService extends ChangeNotifier {
     _loyaltyPoints = 0;
     _mealsCount = 0;
     _isSeller = false;
+    _isStaff = false;
+    _isSuperuser = false;
     notifyListeners();
   }
 

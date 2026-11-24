@@ -79,34 +79,49 @@ class SellerPromo {
   SellerPromo({
     required this.id,
     required this.code,
+    required this.kind,
     required this.percent,
     required this.amount,
     required this.minTotal,
+    this.maxUses,
+    this.maxUsesPerUser,
     required this.active,
     this.startsAt,
     this.endsAt,
+    this.happyStart,
+    this.happyEnd,
     required this.createdAt,
   });
 
   final int id;
   final String code;
+  final String kind;
   final int percent;
   final int amount;
   final int minTotal;
+  final int? maxUses;
+  final int? maxUsesPerUser;
   final bool active;
   final String? startsAt;
   final String? endsAt;
+  final String? happyStart;
+  final String? happyEnd;
   final String createdAt;
 
   factory SellerPromo.fromJson(Map<String, dynamic> json) => SellerPromo(
         id: json['id'] as int,
         code: json['code'] as String? ?? '',
+        kind: json['kind'] as String? ?? 'percent',
         percent: json['percent'] as int? ?? 0,
         amount: json['amount'] as int? ?? 0,
         minTotal: json['min_total'] as int? ?? 0,
+        maxUses: json['max_uses'] as int?,
+        maxUsesPerUser: json['max_uses_per_user'] as int?,
         active: json['active'] as bool? ?? true,
         startsAt: json['starts_at'] as String?,
         endsAt: json['ends_at'] as String?,
+        happyStart: json['happy_start'] as String?,
+        happyEnd: json['happy_end'] as String?,
         createdAt: json['created_at'] as String? ?? '',
       );
 }
@@ -392,17 +407,27 @@ class OrdersApi {
 
   Future<SellerPromo> createPromo({
     required String code,
+    String kind = 'percent',
     int percent = 0,
     int amount = 0,
     int minTotal = 0,
+    int? maxUses,
+    int? maxUsesPerUser,
     bool active = true,
+    String? happyStart,
+    String? happyEnd,
   }) async {
     final res = await _dio.post('/promos/', data: {
       'code': code,
+      'kind': kind,
       'percent': percent,
       'amount': amount,
       'min_total': minTotal,
+      if (maxUses != null) 'max_uses': maxUses,
+      if (maxUsesPerUser != null) 'max_uses_per_user': maxUsesPerUser,
       'active': active,
+      if (happyStart != null && happyStart.isNotEmpty) 'happy_start': happyStart,
+      if (happyEnd != null && happyEnd.isNotEmpty) 'happy_end': happyEnd,
     });
     return SellerPromo.fromJson(res.data as Map<String, dynamic>);
   }
@@ -410,17 +435,27 @@ class OrdersApi {
   Future<SellerPromo> updatePromo(
     int id, {
     String? code,
+    String? kind,
     int? percent,
     int? amount,
     int? minTotal,
+    int? maxUses,
+    int? maxUsesPerUser,
     bool? active,
+    String? happyStart,
+    String? happyEnd,
   }) async {
     final res = await _dio.patch('/promos/$id/', data: {
       if (code != null) 'code': code,
+      if (kind != null) 'kind': kind,
       if (percent != null) 'percent': percent,
       if (amount != null) 'amount': amount,
       if (minTotal != null) 'min_total': minTotal,
+      if (maxUses != null) 'max_uses': maxUses,
+      if (maxUsesPerUser != null) 'max_uses_per_user': maxUsesPerUser,
       if (active != null) 'active': active,
+      if (happyStart != null) 'happy_start': happyStart,
+      if (happyEnd != null) 'happy_end': happyEnd,
     });
     return SellerPromo.fromJson(res.data as Map<String, dynamic>);
   }
