@@ -572,15 +572,21 @@ class PromoCodeSerializer(serializers.ModelSerializer):
         fields = (
             "id",
             "code",
+            "kind",
             "percent",
             "amount",
             "min_total",
+            "max_uses",
+            "max_uses_per_user",
+            "uses_count",
             "active",
             "starts_at",
             "ends_at",
+            "happy_start",
+            "happy_end",
             "created_at",
         )
-        read_only_fields = ("created_at",)
+        read_only_fields = ("created_at", "uses_count")
 
     def create(self, validated_data):
         validated_data["seller"] = self.context["request"].user

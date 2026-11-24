@@ -1,4 +1,6 @@
 from django.conf import settings
+from django.contrib.postgres.indexes import GinIndex
+from django.contrib.postgres.search import SearchVectorField
 from django.db import models
 
 
@@ -47,6 +49,8 @@ class Meal(models.Model):
     prep_time_minutes = models.PositiveSmallIntegerField(null=True, blank=True)
     # Dietary / filter tags: ["halal", "vegetarien", "epice", ...]
     tags = models.JSONField(default=list, blank=True)
+    # PostgreSQL full-text search vector (maintained in save / migration).
+    search_vector = SearchVectorField(null=True, blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -68,10 +72,21 @@ class Meal(models.Model):
             models.Index(fields=["seller", "-created_at"]),
             models.Index(fields=["category", "is_available"]),
             models.Index(fields=["is_special", "is_available"]),
+            GinIndex(fields=["search_vector"]),
         ]
 
     def __str__(self):
         return self.name
+
+    def update_search_vector(self):
+        from django.contrib.postgres.search import SearchVector
+
+        Meal.objects.filter(pk=self.pk).update(
+            search_vector=(
+                SearchVector("name", weight="A")
+                + SearchVector("subtitle", weight="B")
+            )
+        )
 
 
 class MealImage(models.Model):

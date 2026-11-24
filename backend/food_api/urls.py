@@ -128,6 +128,7 @@ urlpatterns = [
     path("api/deliveries/", include("deliveries.urls")),
     path("api/", include("support.urls")),
     path("api/", include("analytics.urls")),
+    path("api/platform/", include("platform.urls")),
     path(
         "api/weather/suggestion/",
         WeatherSuggestionView.as_view(),

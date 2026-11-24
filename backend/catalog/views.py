@@ -82,12 +82,29 @@ class MealListCreateView(generics.ListCreateAPIView):
         params = self.request.query_params
         q = (params.get("q") or "").strip()
         if q:
-            qs = qs.filter(
-                Q(name__icontains=q)
-                | Q(subtitle__icontains=q)
-                | Q(seller__display_name__icontains=q)
-                | Q(category__name__icontains=q)
-            )
+            try:
+                from django.contrib.postgres.search import (
+                    SearchQuery,
+                    SearchRank,
+                    SearchVector,
+                )
+
+                vector = SearchVector("name", weight="A") + SearchVector(
+                    "subtitle", weight="B"
+                )
+                query = SearchQuery(q)
+                qs = (
+                    qs.annotate(rank=SearchRank(vector, query))
+                    .filter(Q(search_vector=query) | Q(rank__gt=0.05))
+                    .order_by("-rank", "-created_at")
+                )
+            except Exception:
+                qs = qs.filter(
+                    Q(name__icontains=q)
+                    | Q(subtitle__icontains=q)
+                    | Q(seller__display_name__icontains=q)
+                    | Q(category__name__icontains=q)
+                )
         category = params.get("category")
         if category:
             qs = qs.filter(category__name=category)

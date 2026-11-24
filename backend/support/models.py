@@ -126,6 +126,14 @@ class Story(models.Model):
     )
     media = models.FileField(upload_to="stories/")
     caption = models.CharField(max_length=200, blank=True)
+    # Optional shoppable meal linked from the story.
+    meal = models.ForeignKey(
+        "catalog.Meal",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="stories",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     expires_at = models.DateTimeField()
 

@@ -151,6 +151,11 @@ class OrderStatusEvent(models.Model):
 class PromoCode(models.Model):
     """A discount code, optionally restricted to one seller."""
 
+    class Kind(models.TextChoices):
+        STANDARD = "standard", "Standard"
+        BOGO = "bogo", "2e à -50%"
+        HAPPY_HOUR = "happy_hour", "Happy hour"
+
     code = models.CharField(max_length=40, unique=True)
     seller = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -159,27 +164,57 @@ class PromoCode(models.Model):
         null=True,
         blank=True,
     )
+    kind = models.CharField(
+        max_length=20, choices=Kind.choices, default=Kind.STANDARD
+    )
     percent = models.PositiveSmallIntegerField(default=0)  # 0..100
     amount = models.PositiveIntegerField(default=0)  # flat FCFA discount
     min_total = models.PositiveIntegerField(default=0)
+    max_uses = models.PositiveIntegerField(
+        null=True, blank=True, help_text="Global use cap (null = unlimited)"
+    )
+    max_uses_per_user = models.PositiveIntegerField(null=True, blank=True)
+    uses_count = models.PositiveIntegerField(default=0)
     active = models.BooleanField(default=True)
     starts_at = models.DateTimeField(null=True, blank=True)
     ends_at = models.DateTimeField(null=True, blank=True)
+    # Happy-hour local window "HH:MM"
+    happy_start = models.CharField(max_length=5, blank=True)
+    happy_end = models.CharField(max_length=5, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def discount_for(self, subtotal):
+        from datetime import datetime
+
         from django.utils import timezone
 
         if not self.active or subtotal < self.min_total:
+            return 0
+        if self.max_uses is not None and self.uses_count >= self.max_uses:
             return 0
         now = timezone.now()
         if self.starts_at and now < self.starts_at:
             return 0
         if self.ends_at and now > self.ends_at:
             return 0
+        if self.kind == self.Kind.HAPPY_HOUR and self.happy_start and self.happy_end:
+            try:
+                t0 = datetime.strptime(self.happy_start, "%H:%M").time()
+                t1 = datetime.strptime(self.happy_end, "%H:%M").time()
+                local = timezone.localtime().time()
+                if t0 <= t1:
+                    if not (t0 <= local <= t1):
+                        return 0
+                elif not (local >= t0 or local <= t1):
+                    return 0
+            except ValueError:
+                return 0
         value = self.amount
         if self.percent:
             value += subtotal * self.percent // 100
+        if self.kind == self.Kind.BOGO:
+            # Approximate: 25% off cart (2nd item half price on pairs).
+            value = max(value, subtotal // 4)
         return min(value, subtotal)
 
     def __str__(self):
