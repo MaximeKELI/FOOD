@@ -121,7 +121,7 @@ def validate_fulfillment(fulfillment, sellers, address, phone, lat, lng):
         raise serializers.ValidationError(errors)
 
 
-def resolve_promo(code, subtotal, sellers, seller_subtotals=None):
+def resolve_promo(code, subtotal, sellers, seller_subtotals=None, user=None):
     """Returns (discount, promo_code_str) or raises ValidationError."""
     code = (code or "").strip()
     if not code:
@@ -135,6 +135,18 @@ def resolve_promo(code, subtotal, sellers, seller_subtotals=None):
         raise serializers.ValidationError(
             {"promo_code": "Ce code promo n'est plus actif."}
         )
+    if promo.max_uses is not None and promo.uses_count >= promo.max_uses:
+        raise serializers.ValidationError(
+            {"promo_code": "Ce code promo a atteint sa limite d'utilisation."}
+        )
+    if user is not None and promo.max_uses_per_user:
+        used = Order.objects.filter(
+            customer=user, promo_code__iexact=promo.code
+        ).count()
+        if used >= promo.max_uses_per_user:
+            raise serializers.ValidationError(
+                {"promo_code": "Vous avez déjà utilisé ce code promo."}
+            )
     if promo.seller_id:
         seller_ids = {s.id for s in sellers}
         if promo.seller_id not in seller_ids:
@@ -158,3 +170,11 @@ def resolve_promo(code, subtotal, sellers, seller_subtotals=None):
             }
         )
     return discount, promo.code
+
+
+def bump_promo_use(code):
+    if not code:
+        return
+    PromoCode.objects.filter(code__iexact=code).update(
+        uses_count=F("uses_count") + 1
+    )
