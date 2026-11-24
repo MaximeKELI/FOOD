@@ -1180,10 +1180,30 @@ const Map<String, Map<AppLang, String>> _strings = {
     AppLang.en: 'Open now',
     AppLang.wo: 'Ubbi léegi',
   },
+  'home.openNowHint': {
+    AppLang.fr: 'Commande chez qui cuisine déjà.',
+    AppLang.en: 'Order from kitchens already cooking.',
+    AppLang.wo: 'Jënd ci ñu toog di tog.',
+  },
   'home.forYou': {
     AppLang.fr: 'Pour vous',
     AppLang.en: 'For you',
     AppLang.wo: 'Ngir yaw',
+  },
+  'home.forYouHint': {
+    AppLang.fr: 'Choisis selon tes envies du moment.',
+    AppLang.en: 'Picks matched to what you crave.',
+    AppLang.wo: 'Ñam yi nga bëgg léegi.',
+  },
+  'home.exploreCta': {
+    AppLang.fr: 'Voir les plats',
+    AppLang.en: 'Browse dishes',
+    AppLang.wo: 'Gis ñam yi',
+  },
+  'home.localSeller': {
+    AppLang.fr: 'Vendeur local',
+    AppLang.en: 'Local seller',
+    AppLang.wo: 'Jaaykat local',
   },
   'home.filter.openNow': {
     AppLang.fr: 'Ouverts',

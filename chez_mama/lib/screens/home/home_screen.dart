@@ -308,7 +308,7 @@ class _HomeScreenState extends State<HomeScreen> {
           : null,
       body: RefreshIndicator(
         onRefresh: _loadMeals,
-        edgeOffset: 220,
+        edgeOffset: 280,
         child: CustomScrollView(
         controller: scroll,
         slivers: [
