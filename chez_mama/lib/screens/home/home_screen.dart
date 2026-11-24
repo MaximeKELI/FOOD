@@ -9,11 +9,9 @@ import '../../auth/auth_scope.dart';
 import '../../l10n/app_strings.dart';
 import '../../models/meal.dart';
 import '../../services/app_location_service.dart';
-import '../../ui/african_pattern_painter.dart';
 import '../../ui/chezmama_theme.dart';
 import '../../utils/haptic_utils.dart';
 import '../../widgets/empty_state_view.dart';
-import '../../widgets/luxe.dart';
 import '../../widgets/scroll_reveal.dart';
 import '../../widgets/shimmer_skeleton.dart';
 import '../../widgets/shell_toolbar_actions.dart';
@@ -318,19 +316,28 @@ class _HomeScreenState extends State<HomeScreen> {
             pinned: true,
             stretch: true,
             onStretchTrigger: () async => hapticLight(),
-            expandedHeight: 232,
+            expandedHeight: MediaQuery.sizeOf(context).height * 0.46,
             automaticallyImplyLeading: false,
             backgroundColor: Theme.of(context).scaffoldBackgroundColor,
             actions: [
-              ShellToolbarActions(
-                isSeller: widget.isSeller,
-                isAuthed: widget.isAuthed,
-                onNotifications: widget.onNotifications,
-                onMessages: widget.onMessages,
-                onReceivedOrders: widget.onReceivedOrders,
-                onMenuSelected: widget.onMenuSelected,
-                onPickLanguage: widget.onPickLanguage,
-                onLogin: widget.onLogin,
+              Padding(
+                padding: const EdgeInsets.only(right: 4),
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.28),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: ShellToolbarActions(
+                    isSeller: widget.isSeller,
+                    isAuthed: widget.isAuthed,
+                    onNotifications: widget.onNotifications,
+                    onMessages: widget.onMessages,
+                    onReceivedOrders: widget.onReceivedOrders,
+                    onMenuSelected: widget.onMenuSelected,
+                    onPickLanguage: widget.onPickLanguage,
+                    onLogin: widget.onLogin,
+                  ),
+                ),
               ),
             ],
             flexibleSpace: FlexibleSpaceBar(
@@ -339,44 +346,39 @@ class _HomeScreenState extends State<HomeScreen> {
                 StretchMode.zoomBackground,
                 StretchMode.fadeTitle,
               ],
-              background: Stack(
-                fit: StackFit.expand,
-                children: [
-                  DecoratedBox(
-                    decoration: BoxDecoration(
-                      gradient: ChezMamaTheme.headerGradient(context),
-                    ),
-                  ),
-                  Positioned.fill(
-                    child: CustomPaint(
-                      painter: AfricanPatternPainter(
-                        a: ChezMamaTheme.brandOrange,
-                        b: ChezMamaTheme.brandAmber,
-                        c: ChezMamaTheme.brandBrown,
-                      ),
-                    ),
-                  ),
-                  const Positioned.fill(child: FloatingMotes(count: 14)),
-                  Positioned(
-                    left: 16,
-                    right: 16,
-                    bottom: 52,
-                    child: const HeroCarousel(height: 118),
-                  ),
-                ],
+              background: HeroCarousel(
+                onExplore: () {
+                  scroll.animateTo(
+                    MediaQuery.sizeOf(context).height * 0.38,
+                    duration: ChezMamaTheme.dMed,
+                    curve: ChezMamaTheme.easeLuxe,
+                  );
+                },
               ),
             ),
             bottom: PreferredSize(
-              preferredSize: const Size.fromHeight(58),
+              preferredSize: const Size.fromHeight(64),
               child: Container(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-                alignment: Alignment.centerLeft,
+                width: double.infinity,
+                padding: const EdgeInsets.fromLTRB(14, 0, 14, 10),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Theme.of(context)
+                          .scaffoldBackgroundColor
+                          .withValues(alpha: 0),
+                      Theme.of(context).scaffoldBackgroundColor,
+                    ],
+                  ),
+                ),
                 child: SizedBox(
                   height: 44,
                   child: ListView.separated(
                     scrollDirection: Axis.horizontal,
                     itemCount: _categories.length,
-                    separatorBuilder: (_, __) => const SizedBox(width: 10),
+                    separatorBuilder: (_, __) => const SizedBox(width: 8),
                     itemBuilder: (context, i) {
                       final c = _categories[i];
                       final selected = c == activeCategory;
@@ -385,11 +387,13 @@ class _HomeScreenState extends State<HomeScreen> {
                           c == _allCategory ? tr('home.allCategory') : c,
                         ),
                         selected: selected,
+                        selectedColor:
+                            ChezMamaTheme.brandOrange.withValues(alpha: 0.18),
                         labelStyle: TextStyle(
                           fontWeight:
-                              selected ? FontWeight.w700 : FontWeight.w600,
+                              selected ? FontWeight.w800 : FontWeight.w600,
                           color: selected
-                              ? ChezMamaTheme.brandBrown
+                              ? ChezMamaTheme.brandOrange
                               : ChezMamaTheme.mutedInk(context),
                         ),
                         onSelected: (_) {
@@ -417,14 +421,26 @@ class _HomeScreenState extends State<HomeScreen> {
                       alignment: Alignment.centerLeft,
                       child: Text(
                         tr('home.openNowTitle'),
-                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.w900,
+                        style: ChezMamaTheme.sectionTitle(
+                          Theme.of(context),
+                          context,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        tr('home.openNowHint'),
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: ChezMamaTheme.mutedInk(context),
+                              fontWeight: FontWeight.w600,
                             ),
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 10),
                     SizedBox(
-                      height: 40,
+                      height: 44,
                       child: ListView.separated(
                         scrollDirection: Axis.horizontal,
                         itemCount: _openNow.length,
@@ -432,8 +448,16 @@ class _HomeScreenState extends State<HomeScreen> {
                         itemBuilder: (_, i) {
                           final s = _openNow[i];
                           return ActionChip(
-                            avatar: const Icon(Icons.storefront_rounded, size: 18),
-                            label: Text(s.shopName.isNotEmpty ? s.shopName : s.name),
+                            avatar: const _PulseDot(),
+                            label: Text(
+                              s.shopName.isNotEmpty ? s.shopName : s.name,
+                            ),
+                            backgroundColor:
+                                ChezMamaTheme.openGreen.withValues(alpha: 0.1),
+                            side: BorderSide(
+                              color: ChezMamaTheme.openGreen
+                                  .withValues(alpha: 0.25),
+                            ),
                             onPressed: () {
                               Navigator.of(context).push(
                                 MaterialPageRoute(
@@ -448,21 +472,33 @@ class _HomeScreenState extends State<HomeScreen> {
                         },
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 16),
                   ],
                   if (_recommendations.isNotEmpty) ...[
                     Align(
                       alignment: Alignment.centerLeft,
                       child: Text(
                         tr('home.forYou'),
-                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.w900,
+                        style: ChezMamaTheme.sectionTitle(
+                          Theme.of(context),
+                          context,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        tr('home.forYouHint'),
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: ChezMamaTheme.mutedInk(context),
+                              fontWeight: FontWeight.w600,
                             ),
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 10),
                     SizedBox(
-                      height: 220,
+                      height: 248,
                       child: ListView.separated(
                         scrollDirection: Axis.horizontal,
                         itemCount: _recommendations.length,
@@ -470,9 +506,10 @@ class _HomeScreenState extends State<HomeScreen> {
                         itemBuilder: (_, i) {
                           final meal = _recommendations[i];
                           return SizedBox(
-                            width: 160,
+                            width: 168,
                             child: MealCard(
                               meal: meal,
+                              compact: true,
                               distanceKm: _distanceKm(meal),
                               onTap: () {
                                 Navigator.of(context).push(
@@ -487,7 +524,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         },
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 16),
                   ],
                   if (widget.isAuthed) ...[
                     ScrollReveal(

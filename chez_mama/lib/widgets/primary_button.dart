@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../ui/chezmama_theme.dart';
+
 class PrimaryButton extends StatefulWidget {
   const PrimaryButton({
     super.key,
@@ -43,25 +45,65 @@ class _PrimaryButtonState extends State<PrimaryButton>
 
   @override
   Widget build(BuildContext context) {
+    final enabled = widget.onPressed != null;
     return Semantics(
       button: true,
       label: widget.label,
-      enabled: widget.onPressed != null,
+      enabled: enabled,
       child: AnimatedBuilder(
         animation: _c,
         builder: (context, child) {
-          final s = 1 + (0.06 * Curves.elasticOut.transform(_c.value));
+          final s = 1 + (0.05 * Curves.elasticOut.transform(_c.value));
           return Transform.scale(scale: s, child: child);
         },
-        child: FilledButton.icon(
-          onPressed: widget.onPressed == null
-              ? null
-              : () {
-                  _bounce();
-                  widget.onPressed!();
-                },
-          icon: Icon(widget.icon ?? Icons.add_shopping_cart_rounded, size: 20),
-          label: Text(widget.label),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: enabled
+                ? () {
+                    _bounce();
+                    widget.onPressed!();
+                  }
+                : null,
+            borderRadius: BorderRadius.circular(ChezMamaTheme.rButton),
+            child: Ink(
+              height: 52,
+              decoration: BoxDecoration(
+                gradient: enabled ? ChezMamaTheme.brandGradient : null,
+                color: enabled
+                    ? null
+                    : ChezMamaTheme.brandOrange.withValues(alpha: 0.35),
+                borderRadius: BorderRadius.circular(ChezMamaTheme.rButton),
+                boxShadow: enabled
+                    ? ChezMamaTheme.glowShadow(
+                        ChezMamaTheme.brandOrange,
+                        opacity: 0.35,
+                        blur: 20,
+                        offset: const Offset(0, 8),
+                      )
+                    : null,
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    widget.icon ?? Icons.add_shopping_cart_rounded,
+                    size: 20,
+                    color: Colors.white,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    widget.label,
+                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.2,
+                        ),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ),
       ),
     );

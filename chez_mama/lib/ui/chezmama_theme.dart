@@ -1,35 +1,35 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-/// Centralised design system for the Food app.
+/// Design system tuned for food appetite & conversion.
 ///
-/// Everything visual flows from here: a single set of brand colours, a small
-/// scale of corner radii, and fully configured component themes so individual
-/// screens stay clean and consistent in both light and dark mode.
+/// Research cues baked in:
+/// - Warm paprika / saffron (appetite + adoption vs cool blues)
+/// - Large food imagery surfaces (UberEats image→sales effect)
+/// - Clear hierarchy: brand → desire → action
 class ChezMamaTheme {
-  // ---- Brand palette ------------------------------------------------------
-  static const Color brandOrange = Color(0xFFFF7A18);
-  static const Color brandAmber = Color(0xFFFFC24C);
-  static const Color brandBrown = Color(0xFF6E3B1F);
-  static const Color promoRed = Color(0xFFD7263D);
-  static const Color soldOutGray = Color(0xFF8A8A8A);
-  static const Color favorite = Color(0xFFE84545);
+  // ---- Brand palette (Sahel dusk — appetite-forward, not purple/cream cliché)
+  static const Color brandOrange = Color(0xFFE85D04); // paprika flame
+  static const Color brandAmber = Color(0xFFF4A261); // millet / saffron
+  static const Color brandBrown = Color(0xFF5C2E15); // roasted cocoa
+  static const Color promoRed = Color(0xFFC1121F);
+  static const Color soldOutGray = Color(0xFF7A736C);
+  static const Color favorite = Color(0xFFE63946);
+  static const Color openGreen = Color(0xFF2D6A4F); // trust / open-now
+  static const Color mangoMist = Color(0xFFFFF4E8);
+  static const Color spiceWash = Color(0xFFFFE8D0);
 
-  // ---- Luxe palette (gold / champagne / espresso) -------------------------
-  /// Deep metallic gold used for premium accents & shimmer highlights.
-  static const Color gold = Color(0xFFE7B84B);
-  static const Color goldLight = Color(0xFFF6E1A1);
-  static const Color champagne = Color(0xFFF7E9C9);
-  static const Color espresso = Color(0xFF2A1810);
-  static const Color onyx = Color(0xFF120D0A);
+  static const Color gold = Color(0xFFE9B44C);
+  static const Color goldLight = Color(0xFFF8E3A8);
+  static const Color champagne = Color(0xFFF6E7C8);
+  static const Color espresso = Color(0xFF241510);
+  static const Color onyx = Color(0xFF120C09);
 
-  // ---- Motion tokens ------------------------------------------------------
   static const Duration dFast = Duration(milliseconds: 220);
   static const Duration dMed = Duration(milliseconds: 420);
   static const Duration dSlow = Duration(milliseconds: 820);
   static const Curve easeLuxe = Curves.easeOutCubic;
 
-  /// Sweeping metallic gold gradient (shimmer, gilded text/borders).
   static const LinearGradient goldGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
@@ -37,7 +37,6 @@ class ChezMamaTheme {
     stops: [0.0, 0.30, 0.5, 0.70, 1.0],
   );
 
-  /// Rich radial glow used behind hero elements & the animated logo.
   static RadialGradient haloGradient(BuildContext c) {
     return RadialGradient(
       colors: [
@@ -49,7 +48,6 @@ class ChezMamaTheme {
     );
   }
 
-  /// Deep cinematic multi-stop background (splash / premium headers).
   static LinearGradient cinematicGradient(BuildContext c) {
     return LinearGradient(
       begin: Alignment.topLeft,
@@ -57,16 +55,15 @@ class ChezMamaTheme {
       colors: _isDark(c)
           ? const [onyx, espresso, Color(0xFF3A2416), onyx]
           : const [
-              Color(0xFFFFF3E0),
-              Color(0xFFFFE0B8),
-              Color(0xFFFFD59A),
-              Color(0xFFFFF3E0),
+              Color(0xFFFFE8D0),
+              Color(0xFFFFD4A8),
+              Color(0xFFFFB86B),
+              Color(0xFFFFF4E8),
             ],
       stops: const [0.0, 0.38, 0.66, 1.0],
     );
   }
 
-  /// Frosted-glass decoration (use inside a ClipRRect + BackdropFilter).
   static BoxDecoration glassDecoration(
     BuildContext c, {
     double radius = rCard,
@@ -95,7 +92,6 @@ class ChezMamaTheme {
     );
   }
 
-  /// Brand-tinted glow shadow for premium CTAs and floating elements.
   static List<BoxShadow> glowShadow(
     Color color, {
     double opacity = 0.45,
@@ -113,7 +109,6 @@ class ChezMamaTheme {
     ];
   }
 
-  // ---- Spacing scale ------------------------------------------------------
   static const double spaceXs = 6;
   static const double spaceSm = 10;
   static const double spaceMd = 14;
@@ -121,63 +116,54 @@ class ChezMamaTheme {
   static const double spaceXl = 24;
   static const double navClearance = 110;
 
-  // Light surfaces
-  static const Color ink = Color(0xFF1B1B1F);
-  static const Color surface = Color(0xFFFFFBF6); // warm off-white background
-  static const Color surface2 = Color(0xFFFFF2E2); // peach tint blocks
-  static const Color card = Color(0xFFFFFFFF);
+  static const Color ink = Color(0xFF1C1210);
+  static const Color surface = mangoMist;
+  static const Color surface2 = spiceWash;
+  static const Color card = Color(0xFFFFFBF7);
 
-  // Dark surfaces
-  static const Color darkBg = Color(0xFF161310);
-  static const Color darkSurface = Color(0xFF221E1A);
-  static const Color darkCard = Color(0xFF2A2520);
-  static const Color darkSurface2 = Color(0xFF332B22);
-  static const Color darkInk = Color(0xFFF3EDE6);
+  static const Color darkBg = Color(0xFF14100E);
+  static const Color darkSurface = Color(0xFF1F1915);
+  static const Color darkCard = Color(0xFF2A221C);
+  static const Color darkSurface2 = Color(0xFF332A22);
+  static const Color darkInk = Color(0xFFF6EFE6);
 
-  // ---- Radius scale -------------------------------------------------------
-  static const double rField = 14;
-  static const double rButton = 16;
-  static const double rCard = 18;
-  static const double rSheet = 26;
+  static const double rField = 16;
+  static const double rButton = 18;
+  static const double rCard = 20;
+  static const double rSheet = 28;
   static const double rChip = 999;
 
-  // ---- Theme-aware helpers (use inside widgets) ---------------------------
   static bool _isDark(BuildContext c) =>
       Theme.of(c).brightness == Brightness.dark;
 
-  /// Elevated surface colour (cards, nav bar, sheets).
   static Color cardColor(BuildContext c) => _isDark(c) ? darkCard : card;
 
-  /// Subtle tinted block (price boxes, progress cards, inputs).
   static Color subtleSurface(BuildContext c) =>
       _isDark(c) ? darkSurface2 : surface2;
 
-  /// Primary text colour.
   static Color inkColor(BuildContext c) => _isDark(c) ? darkInk : ink;
 
-  /// Muted text colour.
   static Color mutedInk(BuildContext c) =>
       (_isDark(c) ? darkInk : ink).withValues(alpha: 0.62);
 
-  /// Warm gradient used behind auth / splash / home header.
   static LinearGradient headerGradient(BuildContext c) {
     return LinearGradient(
-      begin: Alignment.topLeft,
-      end: Alignment.bottomRight,
+      begin: Alignment.topCenter,
+      end: Alignment.bottomCenter,
       colors: _isDark(c)
           ? const [Color(0xFF2A1C10), darkBg]
-          : const [Color(0xFFFFE3C3), surface],
+          : const [Color(0xFFFFD9B0), mangoMist],
     );
   }
 
-  /// Brand gradient for CTAs, badges, splash accents.
+  /// Flame CTA gradient — warm hues linked to appetite / urgency.
   static const LinearGradient brandGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [brandOrange, brandAmber],
+    colors: [Color(0xFFDC2F02), brandOrange, brandAmber],
+    stops: [0.0, 0.45, 1.0],
   );
 
-  /// Standard elevated card decoration.
   static BoxDecoration cardDecoration(
     BuildContext c, {
     double radius = rCard,
@@ -193,7 +179,6 @@ class ChezMamaTheme {
     );
   }
 
-  /// Tinted block decoration (price boxes, summaries).
   static BoxDecoration subtleDecoration(BuildContext c, {double radius = rCard}) {
     return BoxDecoration(
       color: subtleSurface(c),
@@ -201,7 +186,6 @@ class ChezMamaTheme {
     );
   }
 
-  /// Price display style.
   static TextStyle? priceStyle(BuildContext c, ThemeData t, {bool promo = false}) {
     return t.textTheme.titleSmall?.copyWith(
       fontWeight: FontWeight.w900,
@@ -210,16 +194,26 @@ class ChezMamaTheme {
     );
   }
 
-  /// Section title inside sheets/forms.
   static TextStyle? sectionTitle(ThemeData t, BuildContext c) {
-    return t.textTheme.titleSmall?.copyWith(
-      fontWeight: FontWeight.w800,
+    return t.textTheme.titleMedium?.copyWith(
+      fontFamily: GoogleFonts.fraunces().fontFamily,
+      fontWeight: FontWeight.w700,
       color: inkColor(c),
-      letterSpacing: -0.1,
+      letterSpacing: -0.2,
+      height: 1.15,
     );
   }
 
-  // ---- Themes -------------------------------------------------------------
+  static TextStyle? displayStyle(ThemeData t, BuildContext c) {
+    return t.textTheme.headlineMedium?.copyWith(
+      fontFamily: GoogleFonts.fraunces().fontFamily,
+      fontWeight: FontWeight.w700,
+      color: inkColor(c),
+      letterSpacing: -0.6,
+      height: 1.05,
+    );
+  }
+
   static ThemeData light() => _build(Brightness.light);
   static ThemeData dark() => _build(Brightness.dark);
 
@@ -241,13 +235,29 @@ class ChezMamaTheme {
       onSurface: inkC,
     );
 
+    final body = GoogleFonts.manropeTextTheme(
+      isDark ? ThemeData.dark().textTheme : ThemeData.light().textTheme,
+    );
+    final display = GoogleFonts.frauncesTextTheme(body);
+    final textTheme = body.copyWith(
+      displayLarge: display.displayLarge?.copyWith(fontWeight: FontWeight.w700),
+      displayMedium:
+          display.displayMedium?.copyWith(fontWeight: FontWeight.w700),
+      displaySmall: display.displaySmall?.copyWith(fontWeight: FontWeight.w700),
+      headlineLarge:
+          display.headlineLarge?.copyWith(fontWeight: FontWeight.w700),
+      headlineMedium:
+          display.headlineMedium?.copyWith(fontWeight: FontWeight.w700),
+      headlineSmall:
+          display.headlineSmall?.copyWith(fontWeight: FontWeight.w700),
+      titleLarge: display.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+    );
+
     final base = ThemeData(
       useMaterial3: true,
       colorScheme: colorScheme,
       scaffoldBackgroundColor: bg,
-      textTheme: GoogleFonts.poppinsTextTheme(
-        isDark ? ThemeData.dark().textTheme : ThemeData.light().textTheme,
-      ),
+      textTheme: textTheme,
     );
 
     final muted = inkC.withValues(alpha: 0.62);
@@ -279,8 +289,8 @@ class ChezMamaTheme {
         elevation: 0,
         scrolledUnderElevation: 0,
         centerTitle: false,
-        titleTextStyle: base.textTheme.titleLarge?.copyWith(
-          fontWeight: FontWeight.w800,
+        titleTextStyle: textTheme.titleLarge?.copyWith(
+          fontWeight: FontWeight.w700,
           letterSpacing: -0.3,
           color: inkC,
         ),
@@ -303,17 +313,17 @@ class ChezMamaTheme {
         ),
         side: BorderSide(color: inkC.withValues(alpha: 0.08)),
         labelStyle: base.textTheme.labelLarge?.copyWith(
-          fontWeight: FontWeight.w600,
+          fontWeight: FontWeight.w700,
           color: inkC,
         ),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: isDark ? darkSurface2 : surface2,
+        fillColor: isDark ? darkSurface2 : Colors.white.withValues(alpha: 0.92),
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        hintStyle: TextStyle(color: muted, fontWeight: FontWeight.w500),
+        hintStyle: TextStyle(color: muted, fontWeight: FontWeight.w600),
         labelStyle: TextStyle(color: muted, fontWeight: FontWeight.w600),
         prefixIconColor: muted,
         border: OutlineInputBorder(
@@ -340,10 +350,11 @@ class ChezMamaTheme {
           disabledBackgroundColor: brandOrange.withValues(alpha: 0.4),
           disabledForegroundColor: Colors.white70,
           elevation: 0,
-          minimumSize: const Size(0, 50),
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          minimumSize: const Size(0, 52),
+          padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 14),
           textStyle: base.textTheme.labelLarge?.copyWith(
-            fontWeight: FontWeight.w700,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 0.2,
           ),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(rButton),
@@ -375,10 +386,10 @@ class ChezMamaTheme {
       floatingActionButtonTheme: const FloatingActionButtonThemeData(
         backgroundColor: brandOrange,
         foregroundColor: Colors.white,
-        elevation: 2,
-        highlightElevation: 4,
+        elevation: 3,
+        highlightElevation: 6,
         extendedTextStyle: TextStyle(
-          fontWeight: FontWeight.w700,
+          fontWeight: FontWeight.w800,
           fontSize: 15,
         ),
       ),
@@ -433,8 +444,8 @@ class ChezMamaTheme {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(rCard),
         ),
-        titleTextStyle: base.textTheme.titleLarge?.copyWith(
-          fontWeight: FontWeight.w800,
+        titleTextStyle: textTheme.titleLarge?.copyWith(
+          fontWeight: FontWeight.w700,
           color: inkC,
         ),
       ),
@@ -469,7 +480,7 @@ class ChezMamaTheme {
         elevation: 0,
         type: BottomNavigationBarType.fixed,
         selectedLabelStyle: base.textTheme.labelSmall?.copyWith(
-          fontWeight: FontWeight.w700,
+          fontWeight: FontWeight.w800,
         ),
         unselectedLabelStyle: base.textTheme.labelSmall?.copyWith(
           fontWeight: FontWeight.w600,
@@ -481,7 +492,7 @@ class ChezMamaTheme {
         labelTextStyle: WidgetStateProperty.resolveWith((states) {
           final selected = states.contains(WidgetState.selected);
           return base.textTheme.labelSmall?.copyWith(
-            fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
+            fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
             color: selected ? brandOrange : inkC.withValues(alpha: 0.55),
           );
         }),
@@ -502,20 +513,19 @@ class ChezMamaTheme {
   static List<BoxShadow> softShadow({double opacity = 0.12}) {
     return [
       BoxShadow(
-        color: Colors.black.withValues(alpha: opacity),
-        blurRadius: 18,
-        offset: const Offset(0, 10),
+        color: const Color(0xFF5C2E15).withValues(alpha: opacity * 0.55),
+        blurRadius: 22,
+        offset: const Offset(0, 12),
       ),
       BoxShadow(
-        color: Colors.black.withValues(alpha: opacity * 0.6),
+        color: Colors.black.withValues(alpha: opacity * 0.35),
         blurRadius: 6,
-        offset: const Offset(0, 3),
+        offset: const Offset(0, 2),
       ),
     ];
   }
 }
 
-/// Semantic brand tokens accessible via `Theme.of(context).extension<ChezMamaTokens>()`.
 class ChezMamaTokens extends ThemeExtension<ChezMamaTokens> {
   const ChezMamaTokens({
     required this.promoRed,
@@ -547,7 +557,6 @@ class ChezMamaTokens extends ThemeExtension<ChezMamaTokens> {
   }
 }
 
-/// App-wide page transition: a soft fade combined with a gentle upward slide.
 class _FadeUpTransitionsBuilder extends PageTransitionsBuilder {
   const _FadeUpTransitionsBuilder();
 
