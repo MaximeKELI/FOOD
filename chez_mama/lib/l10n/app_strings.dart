@@ -74,11 +74,15 @@ String orderStatusLabel(String key) {
 
 const Map<String, Map<AppLang, String>> _strings = {
   // App
-  'app.name': {AppLang.fr: 'Food', AppLang.en: 'Food', AppLang.wo: 'Food'},
+  'app.name': {
+    AppLang.fr: 'Chez Mama',
+    AppLang.en: 'Chez Mama',
+    AppLang.wo: 'Chez Mama',
+  },
   'app.tagline': {
-    AppLang.fr: 'Du chaud. Du local. Du bon.',
-    AppLang.en: 'Hot. Local. Good.',
-    AppLang.wo: 'Tàng. Local. Baax.',
+    AppLang.fr: 'Le goût du coin, livré chaud.',
+    AppLang.en: 'Neighborhood flavor, served hot.',
+    AppLang.wo: 'Goxu réew, yónnee tàng.',
   },
   'app.offlineBanner': {
     AppLang.fr: 'Hors ligne — certaines actions sont limitées',
