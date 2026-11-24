@@ -48,7 +48,7 @@ INSTALLED_APPS = [
     "weather",
     "analytics",
     "support",
-    "platform",
+    "ops",
 ]
 
 MIDDLEWARE = [

@@ -9,6 +9,7 @@ from catalog.models import Meal, MealOptionChoice
 
 from .models import Order, OrderItem, OrderStatusEvent, PromoCode
 from .services import (
+    bump_promo_use,
     compute_delivery_fee,
     resolve_promo,
     seller_delivery_fee,
@@ -281,6 +282,29 @@ class OrderCreateSerializer(serializers.Serializer):
             raise serializers.ValidationError({"items": errors})
 
         customer = self.context["request"].user
+        from ops.models import PlatformSettings
+
+        cfg = PlatformSettings.get()
+        if not cfg.new_orders_enabled:
+            raise serializers.ValidationError(
+                {"detail": "Les nouvelles commandes sont temporairement suspendues."}
+            )
+        payment_method = attrs.get("payment_method", Order.Payment.CASH)
+        if not cfg.payments_enabled:
+            raise serializers.ValidationError(
+                {"detail": "Les paiements sont temporairement suspendus."}
+            )
+        if payment_method == Order.Payment.CASH and not cfg.cash_enabled:
+            raise serializers.ValidationError(
+                {"payment_method": "Paiement cash indisponible pour le moment."}
+            )
+        if (
+            payment_method != Order.Payment.CASH
+            and not cfg.digital_payments_enabled
+        ):
+            raise serializers.ValidationError(
+                {"payment_method": "Paiements digitaux indisponibles pour le moment."}
+            )
         fulfillment = attrs.get("fulfillment", Order.Fulfillment.DELIVERY)
         address = attrs.get("address", "") or ""
         phone = attrs.get("phone", "") or ""
@@ -336,7 +360,11 @@ class OrderCreateSerializer(serializers.Serializer):
 
         promo_code = attrs.get("promo_code", "")
         discount, applied_code = resolve_promo(
-            promo_code, subtotal, sellers, seller_subtotals
+            promo_code,
+            subtotal,
+            sellers,
+            seller_subtotals,
+            user=customer,
         )
 
         points_to_redeem = attrs.get("points_to_redeem") or 0
@@ -530,6 +558,9 @@ class OrderCreateSerializer(serializers.Serializer):
             )
             locked.save(update_fields=["loyalty_points"])
 
+        if applied_promo:
+            bump_promo_use(applied_promo)
+
         return created_orders
 
 
@@ -558,7 +589,11 @@ class PromoValidateSerializer(serializers.Serializer):
         seller_subtotals = subtotal_by_seller(items, meals)
         subtotal = sum(seller_subtotals.values())
         discount, code = resolve_promo(
-            attrs["promo_code"], subtotal, sellers, seller_subtotals
+            attrs["promo_code"],
+            subtotal,
+            sellers,
+            seller_subtotals,
+            user=customer,
         )
         attrs["discount"] = discount
         attrs["promo_code"] = code

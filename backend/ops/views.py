@@ -320,8 +320,10 @@ class RecommendationsView(APIView):
             scored.extend(list(qs_fav))
             scored.extend(list(qs.filter(pk__in=recent_ids)[:5]))
         scored.extend(list(qs.filter(pk__in=boosted_ids)[:8]))
+        from django.db.models import Avg
+
         top_rated = (
-            qs.annotate(avg=Sum("reviews__rating"), n=Count("reviews"))
+            qs.annotate(avg=Avg("reviews__rating"), n=Count("reviews"))
             .filter(n__gte=1)
             .order_by("-avg")[:10]
         )

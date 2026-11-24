@@ -126,6 +126,31 @@ class MealListCreateView(generics.ListCreateAPIView):
         return MealSerializer
 
 
+class MealShareView(APIView):
+    """Public share payload for deep links / OG-style meta."""
+
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request, pk):
+        meal = get_object_or_404(
+            Meal.objects.select_related("seller", "category"), pk=pk
+        )
+        image = request.build_absolute_uri(meal.image.url) if meal.image else ""
+        return Response(
+            {
+                "id": meal.id,
+                "name": meal.name,
+                "subtitle": meal.subtitle,
+                "price": meal.effective_price,
+                "image": image,
+                "seller_id": meal.seller_id,
+                "seller_name": meal.seller.name,
+                "share_path": f"/meal/{meal.id}",
+                "deep_link": f"food://meal/{meal.id}",
+            }
+        )
+
+
 class MealDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = MealSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly, IsOwnerOrReadOnly]
@@ -133,6 +158,14 @@ class MealDetailView(generics.RetrieveUpdateDestroyAPIView):
 
     def get_queryset(self):
         return _meal_queryset(self.request)
+
+    def perform_update(self, serializer):
+        meal = serializer.save()
+        meal.update_search_vector()
+
+    def perform_create(self, serializer):
+        meal = serializer.save()
+        meal.update_search_vector()
 
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()

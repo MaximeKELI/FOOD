@@ -36,6 +36,7 @@ def api_root(_request):
                 "referral": "/api/referral/",
                 "disputes": "/api/disputes/",
                 "group_orders": "/api/group-orders/",
+                "platform": "/api/platform/",
                 "docs": "/api/docs/",
                 "redoc": "/api/redoc/",
                 "schema": "/api/schema/",
@@ -128,7 +129,7 @@ urlpatterns = [
     path("api/deliveries/", include("deliveries.urls")),
     path("api/", include("support.urls")),
     path("api/", include("analytics.urls")),
-    path("api/platform/", include("platform.urls")),
+    path("api/platform/", include("ops.urls")),
     path(
         "api/weather/suggestion/",
         WeatherSuggestionView.as_view(),

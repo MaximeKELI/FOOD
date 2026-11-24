@@ -9,6 +9,7 @@ from .views import (
     MealListCreateView,
     MealOptionDetailView,
     MealOptionsView,
+    MealShareView,
     MyFavoriteMealsView,
     RecentlyViewedMealsView,
     ReviewListCreateView,
@@ -23,6 +24,7 @@ urlpatterns = [
     path("combos/", MealComboListCreateView.as_view(), name="combos"),
     path("combos/<int:pk>/", MealComboDetailView.as_view(), name="combo_detail"),
     path("meals/<int:pk>/", MealDetailView.as_view(), name="meal_detail"),
+    path("meals/<int:pk>/share/", MealShareView.as_view(), name="meal_share"),
     path(
         "meals/<int:meal_id>/reviews/",
         ReviewListCreateView.as_view(),
