@@ -78,6 +78,7 @@ class ContentReportSerializer(serializers.ModelSerializer):
 
 class StorySerializer(serializers.ModelSerializer):
     author_name = serializers.CharField(source="author.name", read_only=True)
+    meal_name = serializers.CharField(source="meal.name", read_only=True, default=None)
 
     class Meta:
         model = Story
@@ -87,6 +88,8 @@ class StorySerializer(serializers.ModelSerializer):
             "author_name",
             "media",
             "caption",
+            "meal",
+            "meal_name",
             "created_at",
             "expires_at",
         )
@@ -96,7 +99,7 @@ class StorySerializer(serializers.ModelSerializer):
 class StoryCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Story
-        fields = ("id", "media", "caption")
+        fields = ("id", "media", "caption", "meal")
 
     def validate_media(self, value):
         validate_story_media(value)
