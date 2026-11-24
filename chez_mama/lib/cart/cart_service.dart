@@ -11,6 +11,8 @@ class CartItem {
     required this.name,
     required this.unitPrice,
     required this.image,
+    this.sellerId,
+    this.sellerName = '',
     this.quantity = 1,
     this.note = '',
     this.optionIds = const [],
@@ -21,6 +23,8 @@ class CartItem {
   final String name;
   final int unitPrice;
   final String image;
+  final int? sellerId;
+  final String sellerName;
   int quantity;
   final String note;
   /// Selected MealOptionChoice ids sent to the API.
@@ -38,6 +42,8 @@ class CartItem {
         'name': name,
         'unitPrice': unitPrice,
         'image': image,
+        if (sellerId != null) 'sellerId': sellerId,
+        'sellerName': sellerName,
         'quantity': quantity,
         'note': note,
         'optionIds': optionIds,
@@ -49,6 +55,8 @@ class CartItem {
         name: json['name'] as String? ?? '',
         unitPrice: json['unitPrice'] as int? ?? 0,
         image: json['image'] as String? ?? '',
+        sellerId: json['sellerId'] as int?,
+        sellerName: json['sellerName'] as String? ?? '',
         quantity: json['quantity'] as int? ?? 1,
         note: json['note'] as String? ?? '',
         optionIds: ((json['optionIds'] as List?) ?? const [])
@@ -116,6 +124,8 @@ class CartService extends ChangeNotifier {
       name: meal.name,
       unitPrice: meal.effectivePrice.round(),
       image: meal.image,
+      sellerId: meal.sellerId,
+      sellerName: meal.sellerName,
       optionIds: List<int>.from(optionIds),
       optionsExtra: optionsExtra,
       note: note,
@@ -203,4 +213,20 @@ class CartService extends ChangeNotifier {
   }
 
   List<int> get mealIds => _items.map((i) => i.mealId).toList();
+
+  /// Subtotals grouped by seller (multi-vendor checkout recap).
+  Map<String, int> subtotalsBySeller() {
+    final map = <String, int>{};
+    for (final i in _items) {
+      final key = i.sellerName.isNotEmpty
+          ? i.sellerName
+          : (i.sellerId != null ? 'Vendeur #${i.sellerId}' : tr('checkout.unknownSeller'));
+      map[key] = (map[key] ?? 0) + i.lineTotal;
+    }
+    return map;
+  }
+
+  /// Unique seller ids in cart (non-null only).
+  Set<int> get sellerIds =>
+      _items.map((i) => i.sellerId).whereType<int>().toSet();
 }
