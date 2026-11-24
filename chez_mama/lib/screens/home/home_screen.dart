@@ -757,6 +757,55 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
+class _PulseDot extends StatefulWidget {
+  const _PulseDot();
+
+  @override
+  State<_PulseDot> createState() => _PulseDotState();
+}
+
+class _PulseDotState extends State<_PulseDot>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _c = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 1200),
+  )..repeat(reverse: true);
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _c,
+      builder: (_, __) {
+        final s = 0.75 + (_c.value * 0.35);
+        return Transform.scale(
+          scale: s,
+          child: Container(
+            width: 10,
+            height: 10,
+            decoration: BoxDecoration(
+              color: ChezMamaTheme.openGreen,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: ChezMamaTheme.openGreen
+                      .withValues(alpha: 0.35 + _c.value * 0.35),
+                  blurRadius: 8,
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
 class _SortMenu extends StatelessWidget {
   const _SortMenu({required this.value, required this.onSelected});
   final MealSort value;
