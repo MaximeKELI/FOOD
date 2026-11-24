@@ -70,13 +70,21 @@ class UserSerializer(serializers.ModelSerializer):
             "phone",
             "loyalty_points",
             "badges",
+            "is_staff",
+            "is_superuser",
             "is_vendor",
             "seller_profile",
             "followers_count",
             "meals_count",
             "followed_by_me",
         )
-        read_only_fields = ("email", "loyalty_points", "badges")
+        read_only_fields = (
+            "email",
+            "loyalty_points",
+            "badges",
+            "is_staff",
+            "is_superuser",
+        )
 
     def get_is_vendor(self, obj):
         return user_is_vendor(obj)
