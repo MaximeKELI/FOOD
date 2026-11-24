@@ -267,3 +267,17 @@ LOGGING = {
         "level": config("LOG_LEVEL", default="INFO"),
     },
 }
+
+# Optional error tracking — set SENTRY_DSN to enable.
+SENTRY_DSN = config("SENTRY_DSN", default="")
+if SENTRY_DSN:
+    import sentry_sdk
+    from sentry_sdk.integrations.django import DjangoIntegration
+
+    sentry_sdk.init(
+        dsn=SENTRY_DSN,
+        integrations=[DjangoIntegration()],
+        traces_sample_rate=float(config("SENTRY_TRACES_SAMPLE_RATE", default="0.05")),
+        send_default_pii=False,
+        environment=config("SENTRY_ENVIRONMENT", default="production" if not DEBUG else "development"),
+    )

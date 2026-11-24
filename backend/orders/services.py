@@ -49,6 +49,11 @@ def subtotal_by_seller(items_data, meals):
     return totals
 
 
+def seller_delivery_fee(profile, seller_subtotal, lat, lng):
+    """Public alias used by order split checkout."""
+    return _seller_fee(profile, seller_subtotal, lat, lng)
+
+
 def _seller_fee(profile, seller_subtotal, lat, lng):
     if profile is None:
         return 0

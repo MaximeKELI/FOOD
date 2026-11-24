@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 
 import 'analytics/event_tracker.dart';
 import 'api/api_client.dart';
@@ -26,7 +27,7 @@ import 'widgets/offline_banner_host.dart';
 
 late final AuthService _authService;
 
-void main() async {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   if (!kIsWeb) {
     Stripe.merchantIdentifier = 'merchant.com.chez_mama';
@@ -34,11 +35,29 @@ void main() async {
   await ApiConfig.init();
   ApiClient.instance.updateBaseUrl();
   _authService = AuthService();
-  runApp(
-    ProviderScope(
-      overrides: [authServiceProvider.overrideWithValue(_authService)],
-      child: const ChezMamaApp(),
-    ),
+
+  const sentryDsn = String.fromEnvironment('SENTRY_DSN', defaultValue: '');
+  final app = ProviderScope(
+    overrides: [authServiceProvider.overrideWithValue(_authService)],
+    child: const ChezMamaApp(),
+  );
+
+  if (sentryDsn.isEmpty) {
+    runApp(app);
+    return;
+  }
+
+  await SentryFlutter.init(
+    (options) {
+      options.dsn = sentryDsn;
+      options.environment = const String.fromEnvironment(
+        'SENTRY_ENVIRONMENT',
+        defaultValue: 'development',
+      );
+      options.tracesSampleRate = 0.05;
+      options.sendDefaultPii = false;
+    },
+    appRunner: () => runApp(app),
   );
 }
 

@@ -284,7 +284,7 @@ class _CheckoutSheetState extends State<CheckoutSheet> {
           location: _loc,
         ),
       )..remove('session_id');
-      final order = await OrdersApi.instance.createOrder(
+      final checkout = await OrdersApi.instance.createOrder(
         fulfillment: _fulfillment,
         paymentMethod: _payment,
         address: _address.text.trim(),
@@ -298,16 +298,23 @@ class _CheckoutSheetState extends State<CheckoutSheet> {
         pointsToRedeem: int.tryParse(_points.text.trim()),
         deviceContext: deviceContext,
       );
+      final order = checkout.primary;
       await EventTracker.instance.track(
         'order',
         screen: 'checkout',
-        meta: 'order_id=${order.id}',
+        meta: 'order_ids=${checkout.orders.map((o) => o.id).join(",")}'
+            ';split=${checkout.split}',
       );
       var paid = !_isDigitalPayment(_payment);
       if (_payment == 'stripe') {
         try {
-          final intentId = await StripePaymentService.instance.payOrder(order.id);
-          paid = await _waitForPayment(intentId);
+          var allOk = true;
+          for (final o in checkout.orders) {
+            final intentId =
+                await StripePaymentService.instance.payOrder(o.id);
+            allOk = await _waitForPayment(intentId) && allOk;
+          }
+          paid = allOk;
         } catch (e) {
           if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
@@ -316,18 +323,27 @@ class _CheckoutSheetState extends State<CheckoutSheet> {
           return;
         }
       } else if (_isDigitalPayment(_payment)) {
-        final intent = await PaymentsApi.instance.initiate(order.id);
-        PaymentPendingService.instance.track(
-          intentId: intent.id,
-          orderId: order.id,
-        );
-        if (intent.checkoutUrl.isNotEmpty) {
-          final uri = Uri.parse(intent.checkoutUrl);
-          if (await canLaunchUrl(uri)) {
-            await launchUrl(uri, mode: LaunchMode.externalApplication);
-            paid = await _waitForPayment(intent.id);
+        // Pay each split order sequentially (one checkout URL at a time).
+        var allOk = true;
+        for (final o in checkout.orders) {
+          final intent = await PaymentsApi.instance.initiate(o.id);
+          PaymentPendingService.instance.track(
+            intentId: intent.id,
+            orderId: o.id,
+          );
+          if (intent.checkoutUrl.isEmpty) {
+            allOk = false;
+            continue;
           }
+          final uri = Uri.parse(intent.checkoutUrl);
+          if (!await canLaunchUrl(uri)) {
+            allOk = false;
+            continue;
+          }
+          await launchUrl(uri, mode: LaunchMode.externalApplication);
+          allOk = await _waitForPayment(intent.id) && allOk;
         }
+        paid = allOk;
       }
       if (paid || _payment == 'cash') {
         _cart.clear();
@@ -337,20 +353,24 @@ class _CheckoutSheetState extends State<CheckoutSheet> {
       if (!mounted) return;
       AuthScope.of(context).refreshMe();
       Navigator.of(context).pop();
-      final extra = order.discount > 0
+      final totalAll = checkout.totalAll;
+      final discountAll =
+          checkout.orders.fold<int>(0, (s, o) => s + o.discount);
+      final extra = discountAll > 0
           ? trf('checkout.discountExtra', {
-              'amount': formatFcfa(order.discount),
+              'amount': formatFcfa(discountAll),
             })
           : '';
+      final ids = checkout.orders.map((o) => o.id).join(', #');
       final message = paid
           ? trf('checkout.orderConfirmed', {
-              'id': order.id,
-              'total': formatFcfa(order.total),
+              'id': ids,
+              'total': formatFcfa(totalAll),
               'extra': extra,
             })
           : trf('checkout.orderPendingPay', {
-              'id': order.id,
-              'total': formatFcfa(order.total),
+              'id': ids,
+              'total': formatFcfa(totalAll),
               'extra': extra,
             });
       ScaffoldMessenger.of(context).showSnackBar(

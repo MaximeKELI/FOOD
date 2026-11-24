@@ -10,9 +10,21 @@ from rest_framework.views import APIView
 from orders.models import Order
 
 from .models import PaymentIntent
-from .providers import get_provider, initiate_payment, verify_webhook_secret
+from .providers import (
+    confirm_provider_paid,
+    get_provider,
+    initiate_payment,
+    verify_webhook_secret,
+)
 from .serializers import PaymentIntentSerializer, StripeCreateSerializer
 from .services import mark_intent_paid
+
+
+def _confirm_and_mark(intent: PaymentIntent) -> bool:
+    """Mark paid only after the provider confirms success."""
+    if not confirm_provider_paid(intent):
+        return False
+    return mark_intent_paid(intent)
 
 
 def _payment_return_html(intent_id: str, *, error: bool = False) -> HttpResponse:
@@ -222,8 +234,11 @@ class StripeWebhookView(APIView):
         if event_type == "payment_intent.succeeded":
             external_id = data_obj.get("id") if isinstance(data_obj, dict) else data_obj.id
             intent = PaymentIntent.objects.filter(external_id=external_id).first()
-            if intent:
-                mark_intent_paid(intent)
+            if intent and not _confirm_and_mark(intent):
+                return Response(
+                    {"detail": "Paiement non confirmé auprès de Stripe."},
+                    status=status.HTTP_409_CONFLICT,
+                )
         return Response({"ok": True})
 
 
@@ -242,7 +257,11 @@ class WaveWebhookView(APIView):
         ).first()
         if intent is None:
             return Response({"detail": "Intent introuvable."}, status=404)
-        mark_intent_paid(intent)
+        if not _confirm_and_mark(intent):
+            return Response(
+                {"detail": "Paiement non confirmé auprès de Wave."},
+                status=status.HTTP_409_CONFLICT,
+            )
         return Response({"ok": True})
 
 
@@ -263,7 +282,11 @@ class OrangeWebhookView(APIView):
         ).first()
         if intent is None:
             return Response({"detail": "Intent introuvable."}, status=404)
-        mark_intent_paid(intent)
+        if not _confirm_and_mark(intent):
+            return Response(
+                {"detail": "Paiement non confirmé auprès d'Orange Money."},
+                status=status.HTTP_409_CONFLICT,
+            )
         return Response({"ok": True})
 
 

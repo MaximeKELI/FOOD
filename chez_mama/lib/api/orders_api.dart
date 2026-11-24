@@ -228,13 +228,25 @@ const List<String> kOrderStatusKeys = [
   'cancelled',
 ];
 
+class CheckoutResult {
+  CheckoutResult({required this.orders, required this.split});
+
+  final List<OrderView> orders;
+  final bool split;
+
+  OrderView get primary => orders.first;
+
+  int get totalAll => orders.fold(0, (sum, o) => sum + o.total);
+}
+
 class OrdersApi {
   OrdersApi._();
   static final OrdersApi instance = OrdersApi._();
 
   final _dio = ApiClient.instance.dio;
 
-  Future<OrderView> createOrder({
+  /// Creates one or more orders (multi-vendor carts are split server-side).
+  Future<CheckoutResult> createOrder({
     required String fulfillment,
     required String paymentMethod,
     required String address,
@@ -264,7 +276,17 @@ class OrdersApi {
         'points_to_redeem': pointsToRedeem,
       if (deviceContext != null) 'device_context': deviceContext,
     });
-    return OrderView.fromJson(res.data as Map<String, dynamic>);
+    final data = res.data as Map<String, dynamic>;
+    final rawOrders = (data['orders'] as List?) ?? const [];
+    final orders = rawOrders.isNotEmpty
+        ? rawOrders
+            .map((e) => OrderView.fromJson(e as Map<String, dynamic>))
+            .toList()
+        : [OrderView.fromJson(data)];
+    return CheckoutResult(
+      orders: orders,
+      split: data['split'] == true || orders.length > 1,
+    );
   }
 
   /// Previews the delivery fee for the given meals + customer location.

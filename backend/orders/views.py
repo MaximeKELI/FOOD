@@ -79,11 +79,24 @@ class OrderListCreateView(generics.ListCreateAPIView):
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        order = serializer.save()
-        return Response(
-            OrderSerializer(order, context=self.get_serializer_context()).data,
-            status=status.HTTP_201_CREATED,
-        )
+        orders = serializer.save()
+        # Always return a list: multi-vendor carts are split 1 order / seller.
+        if not isinstance(orders, list):
+            orders = [orders]
+        payload = {
+            "orders": OrderSerializer(
+                orders, many=True, context=self.get_serializer_context()
+            ).data,
+            "count": len(orders),
+            "split": len(orders) > 1,
+        }
+        # Backward-compatible primary order fields for older clients.
+        if orders:
+            primary = OrderSerializer(
+                orders[0], context=self.get_serializer_context()
+            ).data
+            payload.update(primary)
+        return Response(payload, status=status.HTTP_201_CREATED)
 
 
 class OrderDetailView(generics.RetrieveAPIView):

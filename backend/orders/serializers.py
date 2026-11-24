@@ -9,9 +9,9 @@ from catalog.models import Meal, MealOptionChoice
 
 from .models import Order, OrderItem, OrderStatusEvent, PromoCode
 from .services import (
-    _seller_fee,
     compute_delivery_fee,
     resolve_promo,
+    seller_delivery_fee,
     sellers_from_meals,
     subtotal_by_seller,
     validate_fulfillment,
@@ -345,6 +345,7 @@ class OrderCreateSerializer(serializers.Serializer):
 
         attrs["_meals"] = meals
         attrs["_sellers"] = sellers
+        attrs["_seller_subtotals"] = seller_subtotals
         attrs["_subtotal"] = subtotal
         attrs["_delivery_fee"] = delivery_fee
         attrs["_discount"] = discount
@@ -353,76 +354,174 @@ class OrderCreateSerializer(serializers.Serializer):
         attrs["_points_redeemed"] = points_to_redeem
         return attrs
 
+    def _discount_for_seller(self, applied_promo, seller_id, seller_subtotal, seller_subtotals):
+        if not applied_promo:
+            return 0
+        promo = PromoCode.objects.filter(code__iexact=applied_promo).first()
+        if promo is None:
+            return 0
+        if promo.seller_id:
+            if promo.seller_id != seller_id:
+                return 0
+            return promo.discount_for(seller_subtotal)
+        # Platform-wide promo: allocate by seller subtotal share.
+        total = sum(seller_subtotals.values()) or 1
+        full = promo.discount_for(total)
+        return int(round(full * (seller_subtotal / total)))
+
     @transaction.atomic
     def create(self, validated_data):
+        """Create one Order per seller (multi-vendor carts are split)."""
         from django.contrib.auth import get_user_model
         from notifications.models import Notification, notify
+
+        from deliveries.services import create_delivery_for_order
 
         User = get_user_model()
         items = validated_data.pop("items")
         meals = validated_data.pop("_meals")
         sellers = validated_data.pop("_sellers")
-        subtotal = validated_data.pop("_subtotal")
-        delivery_fee = validated_data.pop("_delivery_fee")
-        discount = validated_data.pop("_discount")
+        seller_subtotals = validated_data.pop("_seller_subtotals")
+        validated_data.pop("_subtotal", None)
+        validated_data.pop("_delivery_fee", None)
+        validated_data.pop("_discount", None)
         applied_promo = validated_data.pop("_applied_promo")
         item_options = validated_data.pop("_item_options")
         points_redeemed = validated_data.pop("_points_redeemed")
         validated_data.pop("points_to_redeem", None)
+        device_context = validated_data.pop("device_context", None)
 
         customer = self.context["request"].user
         fulfillment = validated_data.get(
             "fulfillment", Order.Fulfillment.DELIVERY
         )
-        order = Order.objects.create(
-            customer=customer,
-            fulfillment=fulfillment,
-            payment_method=validated_data.get("payment_method", Order.Payment.CASH),
-            payment_status=_initial_payment_status(
-                validated_data.get("payment_method", Order.Payment.CASH)
-            ),
-            address=validated_data.get("address", ""),
-            phone=validated_data.get("phone", ""),
-            note=validated_data.get("note", ""),
-            latitude=validated_data.get("latitude"),
-            longitude=validated_data.get("longitude"),
-            scheduled_for=validated_data.get("scheduled_for"),
-            subtotal=subtotal,
-            delivery_fee=delivery_fee,
-            discount=discount,
-            promo_code=applied_promo,
-            points_redeemed=points_redeemed,
-        )
+        payment_method = validated_data.get("payment_method", Order.Payment.CASH)
+        lat = validated_data.get("latitude")
+        lng = validated_data.get("longitude")
+
+        groups = defaultdict(list)
+        for idx, item in enumerate(items):
+            meal = meals[item["meal"]]
+            groups[meal.seller_id].append((idx, item))
+
+        # Allocate loyalty points by subtotal share (largest remainder).
+        points_by_seller = {sid: 0 for sid in groups}
+        if points_redeemed and seller_subtotals:
+            total_sub = sum(seller_subtotals.get(sid, 0) for sid in groups) or 1
+            allocated = 0
+            shares = []
+            for sid in groups:
+                raw = points_redeemed * (seller_subtotals.get(sid, 0) / total_sub)
+                base = int(raw)
+                points_by_seller[sid] = base
+                allocated += base
+                shares.append((raw - base, sid))
+            leftover = points_redeemed - allocated
+            for _, sid in sorted(shares, reverse=True):
+                if leftover <= 0:
+                    break
+                points_by_seller[sid] += 1
+                leftover -= 1
+
         meal_ids = [item["meal"] for item in items]
         locked_meals = {
             m.pk: m
             for m in Meal.objects.select_for_update().filter(pk__in=meal_ids)
         }
-        for idx, item in enumerate(items):
-            meal = locked_meals[item["meal"]]
-            snapshot, options_extra = item_options[idx]
-            if meal.stock_qty is not None and meal.stock_qty < item["quantity"]:
-                raise serializers.ValidationError(
-                    {
-                        "items": [
-                            f"Stock insuffisant pour {meal.name} "
-                            f"(disponible : {meal.stock_qty})."
-                        ]
-                    }
-                )
-            OrderItem.objects.create(
-                order=order,
-                meal=meal,
-                meal_name=meal.name,
-                unit_price=meal.effective_price,
-                quantity=item["quantity"],
-                note=item.get("note", ""),
-                options=snapshot,
-                options_extra=options_extra,
+
+        sellers_by_id = {s.id: s for s in sellers}
+        created_orders = []
+
+        for seller_id, group_items in groups.items():
+            seller = sellers_by_id.get(seller_id)
+            subtotal_s = seller_subtotals.get(seller_id, 0)
+            profile = getattr(seller, "seller_profile", None) if seller else None
+            delivery_s = 0
+            if fulfillment == Order.Fulfillment.DELIVERY:
+                delivery_s = seller_delivery_fee(profile, subtotal_s, lat, lng)
+            discount_s = self._discount_for_seller(
+                applied_promo, seller_id, subtotal_s, seller_subtotals
             )
-            if meal.stock_qty is not None:
-                meal.stock_qty = max(0, meal.stock_qty - item["quantity"])
-                meal.save(update_fields=["stock_qty"])
+            points_s = points_by_seller.get(seller_id, 0)
+
+            order = Order.objects.create(
+                customer=customer,
+                fulfillment=fulfillment,
+                payment_method=payment_method,
+                payment_status=_initial_payment_status(payment_method),
+                address=validated_data.get("address", ""),
+                phone=validated_data.get("phone", ""),
+                note=validated_data.get("note", ""),
+                latitude=lat,
+                longitude=lng,
+                scheduled_for=validated_data.get("scheduled_for"),
+                subtotal=subtotal_s,
+                delivery_fee=delivery_s,
+                discount=discount_s,
+                promo_code=applied_promo if discount_s else "",
+                points_redeemed=points_s,
+            )
+
+            for idx, item in group_items:
+                meal = locked_meals[item["meal"]]
+                snapshot, options_extra = item_options[idx]
+                if meal.stock_qty is not None and meal.stock_qty < item["quantity"]:
+                    raise serializers.ValidationError(
+                        {
+                            "items": [
+                                f"Stock insuffisant pour {meal.name} "
+                                f"(disponible : {meal.stock_qty})."
+                            ]
+                        }
+                    )
+                OrderItem.objects.create(
+                    order=order,
+                    meal=meal,
+                    meal_name=meal.name,
+                    unit_price=meal.effective_price,
+                    quantity=item["quantity"],
+                    note=item.get("note", ""),
+                    options=snapshot,
+                    options_extra=options_extra,
+                )
+                if meal.stock_qty is not None:
+                    meal.stock_qty = max(0, meal.stock_qty - item["quantity"])
+                    meal.save(update_fields=["stock_qty"])
+
+            order.recompute_total()
+            order.save()
+            OrderStatusEvent.objects.create(
+                order=order,
+                status=Order.Status.PENDING,
+                note="Commande créée",
+                actor=customer,
+            )
+            if seller is not None:
+                notify(
+                    seller,
+                    Notification.Kind.ORDER,
+                    "Nouvelle commande",
+                    f"{customer.name} a passé une commande (#{order.id}).",
+                    related_id=order.id,
+                    link="received_order",
+                )
+            create_delivery_for_order(order)
+
+            if device_context:
+                from analytics.services import record_order_context
+
+                ctx_data = dict(device_context)
+                if order.latitude is not None:
+                    ctx_data.setdefault("latitude", order.latitude)
+                if order.longitude is not None:
+                    ctx_data.setdefault("longitude", order.longitude)
+                record_order_context(
+                    order=order,
+                    data=ctx_data,
+                    request=self.context["request"],
+                )
+
+            created_orders.append(order)
 
         if points_redeemed:
             locked = User.objects.select_for_update().get(pk=customer.pk)
@@ -431,43 +530,7 @@ class OrderCreateSerializer(serializers.Serializer):
             )
             locked.save(update_fields=["loyalty_points"])
 
-        order.recompute_total()
-        order.save()
-        OrderStatusEvent.objects.create(
-            order=order,
-            status=Order.Status.PENDING,
-            note="Commande créée",
-            actor=customer,
-        )
-        for seller in sellers:
-            notify(
-                seller,
-                Notification.Kind.ORDER,
-                "Nouvelle commande",
-                f"{customer.name} a passé une commande (#{order.id}).",
-                related_id=order.id,
-                link="received_order",
-            )
-        from deliveries.services import create_delivery_for_order
-
-        create_delivery_for_order(order)
-
-        device_context = validated_data.get("device_context")
-        if device_context:
-            from analytics.services import record_order_context
-
-            ctx_data = dict(device_context)
-            if order.latitude is not None:
-                ctx_data.setdefault("latitude", order.latitude)
-            if order.longitude is not None:
-                ctx_data.setdefault("longitude", order.longitude)
-            record_order_context(
-                order=order,
-                data=ctx_data,
-                request=self.context["request"],
-            )
-
-        return order
+        return created_orders
 
 
 class PromoValidateSerializer(serializers.Serializer):

@@ -30,8 +30,22 @@ class StripeProvider(PaymentProvider):
 
     def verify_webhook(self, header_secret: str) -> bool:
         expected = config("STRIPE_WEBHOOK_SECRET", default="") or settings.STRIPE_WEBHOOK_SECRET
-        if not expected:
-            from django.conf import settings as dj_settings
+        if not expected or not header_secret:
+            return False
+        import hmac
 
-            return dj_settings.DEBUG
-        return header_secret == expected
+        return hmac.compare_digest(str(header_secret), str(expected))
+
+    def confirm_paid(self, intent: PaymentIntent) -> bool:
+        secret = config("STRIPE_SECRET_KEY", default="") or settings.STRIPE_SECRET_KEY
+        if not secret or not intent.external_id:
+            return False
+        stripe.api_key = secret
+        try:
+            pi = stripe.PaymentIntent.retrieve(intent.external_id)
+        except Exception:
+            return False
+        status = getattr(pi, "status", None) or (
+            pi.get("status") if isinstance(pi, dict) else None
+        )
+        return status == "succeeded"

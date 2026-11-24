@@ -24,6 +24,13 @@ class PaymentProvider(ABC):
     def verify_webhook(self, header_secret: str) -> bool:
         raise NotImplementedError
 
+    def confirm_paid(self, intent: PaymentIntent) -> bool:
+        """
+        Ask the provider whether this intent is actually paid.
+        Default: False (subclasses must implement for live money).
+        """
+        return False
+
 
 def callback_base() -> str:
     return config("PAYMENT_CALLBACK_BASE_URL", default="http://127.0.0.1:8000").rstrip(

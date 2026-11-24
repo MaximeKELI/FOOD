@@ -26,3 +26,8 @@ def initiate_payment(intent: PaymentIntent) -> InitiateResult:
 
 def verify_webhook_secret(provider: str, header_secret: str) -> bool:
     return get_provider(provider).verify_webhook(header_secret)
+
+
+def confirm_provider_paid(intent) -> bool:
+    """True when the upstream provider reports the payment as successful."""
+    return get_provider(intent.provider).confirm_paid(intent)

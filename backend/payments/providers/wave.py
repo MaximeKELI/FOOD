@@ -57,3 +57,28 @@ class WaveProvider(PaymentProvider):
         if not expected or not header_secret:
             return False
         return hmac.compare_digest(str(header_secret), str(expected))
+
+    def confirm_paid(self, intent: PaymentIntent) -> bool:
+        api_key = getattr(settings, "WAVE_API_KEY", "") or config(
+            "WAVE_API_KEY", default=""
+        )
+        if not api_key or not intent.external_id:
+            return False
+        try:
+            response = requests.get(
+                f"{self.API_BASE}/v1/checkout/sessions/{intent.external_id}",
+                headers={"Authorization": f"Bearer {api_key}"},
+                timeout=20,
+            )
+        except requests.RequestException:
+            return False
+        if response.status_code >= 400:
+            return False
+        data = response.json() if response.content else {}
+        status = str(
+            data.get("payment_status")
+            or data.get("checkout_status")
+            or data.get("status")
+            or ""
+        ).lower()
+        return status in {"succeeded", "successful", "paid", "complete", "completed"}

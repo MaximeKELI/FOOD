@@ -62,3 +62,31 @@ class OrangeMoneyProvider(PaymentProvider):
         if not expected or not header_secret:
             return False
         return hmac.compare_digest(str(header_secret), str(expected))
+
+    def confirm_paid(self, intent: PaymentIntent) -> bool:
+        """
+        Orange Money APIs vary by market. When ORANGE_MONEY_STATUS_URL is set,
+        we GET it with the external id; otherwise we refuse silent confirm and
+        rely on an explicit success status already checked by the webhook layer.
+        """
+        status_url = config("ORANGE_MONEY_STATUS_URL", default="").rstrip("/")
+        if not status_url or not intent.external_id:
+            # No remote verify configured: allow only if webhook already asserted success.
+            return bool(intent.external_id)
+        auth_user = config("ORANGE_MONEY_CLIENT_ID", default="")
+        auth_pass = config("ORANGE_MONEY_CLIENT_SECRET", default="")
+        try:
+            response = requests.get(
+                f"{status_url}/{intent.external_id}",
+                auth=(auth_user, auth_pass) if auth_user else None,
+                timeout=20,
+            )
+        except requests.RequestException:
+            return False
+        if response.status_code >= 400:
+            return False
+        data = response.json() if response.content else {}
+        status = str(
+            data.get("status") or data.get("payment_status") or data.get("state") or ""
+        ).lower()
+        return status in {"succeeded", "successful", "paid", "complete", "completed", "success"}
