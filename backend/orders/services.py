@@ -2,6 +2,7 @@
 
 from math import asin, cos, radians, sin, sqrt
 
+from django.db.models import F
 from rest_framework import serializers
 
 from catalog.models import Meal
