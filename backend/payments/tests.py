@@ -136,8 +136,9 @@ class PaymentReturnTests(TestCase):
 
 
 class WaveWebhookTests(TestCase):
-    @override_settings(DEBUG=True)
-    def test_wave_webhook_marks_paid(self):
+    @override_settings(WAVE_WEBHOOK_SECRET="dev-webhook-secret")
+    @patch("payments.views.confirm_provider_paid", return_value=True)
+    def test_wave_webhook_marks_paid(self, _confirm):
         customer = User.objects.create_user(email="wh@test.app", password="secret12")
         order = Order.objects.create(
             customer=customer,
@@ -153,16 +154,41 @@ class WaveWebhookTests(TestCase):
             status=PaymentIntent.Status.PROCESSING,
         )
         client = APIClient()
-        with self.settings(WAVE_WEBHOOK_SECRET="dev-webhook-secret"):
-            res = client.post(
-                "/api/payments/webhook/wave/",
-                {"id": "wave_sess_99"},
-                format="json",
-                HTTP_X_WAVE_SIGNATURE="dev-webhook-secret",
-            )
+        res = client.post(
+            "/api/payments/webhook/wave/",
+            {"id": "wave_sess_99", "status": "succeeded"},
+            format="json",
+            HTTP_X_WAVE_SIGNATURE="dev-webhook-secret",
+        )
         self.assertEqual(res.status_code, 200)
         intent.refresh_from_db()
         self.assertEqual(intent.status, PaymentIntent.Status.PAID)
+
+    @override_settings(WAVE_WEBHOOK_SECRET="dev-webhook-secret")
+    @patch("payments.views.confirm_provider_paid", return_value=False)
+    def test_wave_webhook_rejects_unconfirmed(self, _confirm):
+        customer = User.objects.create_user(email="wh2@test.app", password="secret12")
+        order = Order.objects.create(
+            customer=customer,
+            payment_method=Order.Payment.WAVE,
+            payment_status=Order.PaymentStatus.PROCESSING,
+            total=2000,
+        )
+        PaymentIntent.objects.create(
+            order=order,
+            provider=PaymentIntent.Provider.WAVE,
+            amount=2000,
+            external_id="wave_sess_unconfirmed",
+            status=PaymentIntent.Status.PROCESSING,
+        )
+        client = APIClient()
+        res = client.post(
+            "/api/payments/webhook/wave/",
+            {"id": "wave_sess_unconfirmed", "status": "succeeded"},
+            format="json",
+            HTTP_X_WAVE_SIGNATURE="dev-webhook-secret",
+        )
+        self.assertEqual(res.status_code, 409)
 
 
 class OpenAPITests(TestCase):
