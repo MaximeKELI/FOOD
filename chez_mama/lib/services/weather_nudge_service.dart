@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io' show Platform;
 
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
@@ -32,22 +33,47 @@ class WeatherNudgeService {
       FlutterLocalNotificationsPlugin();
 
   bool _ready = false;
+  bool _notificationsEnabled = false;
   Timer? _testTimer;
 
   Future<void> init() async {
     if (_ready) return;
-    const android = AndroidInitializationSettings('@mipmap/ic_launcher');
-    const ios = DarwinInitializationSettings();
-    await _notifications.initialize(
-      settings: const InitializationSettings(android: android, iOS: ios),
-    );
-    final androidPlugin =
-        _notifications.resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>();
-    await androidPlugin?.requestNotificationsPermission();
-    _ready = true;
-    if (kDebugMode) {
-      debugPrint('WeatherNudge: interval ${intervalMs ~/ 1000}s');
+    try {
+      // Windows needs app identity (GUID / AUMID); skip local notifs there.
+      if (!kIsWeb && Platform.isWindows) {
+        _ready = true;
+        if (kDebugMode) {
+          debugPrint('WeatherNudge: local notifications skipped on Windows');
+        }
+        return;
+      }
+
+      const android = AndroidInitializationSettings('@mipmap/ic_launcher');
+      const ios = DarwinInitializationSettings();
+      const linux = LinuxInitializationSettings(
+        defaultActionName: 'Open notification',
+      );
+      await _notifications.initialize(
+        settings: const InitializationSettings(
+          android: android,
+          iOS: ios,
+          macOS: ios,
+          linux: linux,
+        ),
+      );
+      final androidPlugin =
+          _notifications.resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin>();
+      await androidPlugin?.requestNotificationsPermission();
+      _notificationsEnabled = true;
+      _ready = true;
+      if (kDebugMode) {
+        debugPrint('WeatherNudge: interval ${intervalMs ~/ 1000}s');
+      }
+    } catch (e) {
+      _ready = true;
+      _notificationsEnabled = false;
+      debugPrint('WeatherNudge init skipped: $e');
     }
   }
 
@@ -67,7 +93,12 @@ class WeatherNudgeService {
   }
 
   Future<void> maybeNotify({AuthService? auth}) async {
-    if (!_ready) await init();
+    try {
+      if (!_ready) await init();
+    } catch (e) {
+      debugPrint('WeatherNudge init error: $e');
+      return;
+    }
 
     final prefs = await SharedPreferences.getInstance();
     final last = prefs.getInt(_prefsKey) ?? 0;
@@ -137,6 +168,7 @@ class WeatherNudgeService {
   }
 
   Future<void> _showLocal(String title, String body) async {
+    if (!_notificationsEnabled) return;
     const android = AndroidNotificationDetails(
       'weather_nudges',
       'Météo Chez Mama',
@@ -145,11 +177,17 @@ class WeatherNudgeService {
       priority: Priority.high,
     );
     const ios = DarwinNotificationDetails();
+    const linux = LinuxNotificationDetails();
     await _notifications.show(
       id: DateTime.now().millisecondsSinceEpoch.remainder(100000),
       title: title,
       body: body,
-      notificationDetails: const NotificationDetails(android: android, iOS: ios),
+      notificationDetails: const NotificationDetails(
+        android: android,
+        iOS: ios,
+        macOS: ios,
+        linux: linux,
+      ),
     );
   }
 }

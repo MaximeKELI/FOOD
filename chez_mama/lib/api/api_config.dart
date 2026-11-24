@@ -4,8 +4,8 @@ import 'package:flutter/foundation.dart';
 
 /// Central configuration for the backend API base URL.
 ///
-/// Default: remote Heroku backend ([remoteBaseUrl]).
-/// Local Docker: `--dart-define=USE_LOCAL_API=true`
+/// Default: probe local Docker (`http://127.0.0.1:8000`), then optional remote.
+/// Force local: `--dart-define=USE_LOCAL_API=true`
 /// Custom URL: `--dart-define=API_BASE_URL=https://api.example.com`
 /// Physical phone (USB, local): `adb reverse tcp:8000` + `USE_LOCAL_API=true`
 /// Physical phone (Wi‑Fi, local): `--dart-define=USE_LOCAL_API=true --dart-define=API_LAN_HOST=192.168.x.x`
@@ -18,14 +18,15 @@ class ApiConfig {
 
   static const int port = 8000;
 
-  /// Deployed backend on Heroku (used by default).
+  /// Optional deployed backend (used only when local is unreachable).
+  /// Override with `--dart-define=API_BASE_URL=...` for production.
   static const String remoteBaseUrl =
       'https://allcoders-5eced76bab42.herokuapp.com';
 
   /// Set via `--dart-define=API_BASE_URL=https://your-api.com`
   static const String envBaseUrl = String.fromEnvironment('API_BASE_URL');
 
-  /// Local Docker backend — `--dart-define=USE_LOCAL_API=true`
+  /// Local Docker backend only — `--dart-define=USE_LOCAL_API=true`
   static const bool useLocalApi = bool.fromEnvironment(
     'USE_LOCAL_API',
     defaultValue: false,
@@ -40,6 +41,9 @@ class ApiConfig {
     if (envBaseUrl.isNotEmpty) {
       _resolvedBaseUrl = envBaseUrl.replaceAll(RegExp(r'/+$'), '');
       _initialized = true;
+      if (kDebugMode) {
+        debugPrint('[ApiConfig] Using API_BASE_URL=$_resolvedBaseUrl');
+      }
       return;
     }
     if (overrideBaseUrl != null && overrideBaseUrl!.isNotEmpty) {
@@ -48,16 +52,8 @@ class ApiConfig {
       return;
     }
 
-    if (!useLocalApi) {
-      _resolvedBaseUrl = remoteBaseUrl.replaceAll(RegExp(r'/+$'), '');
-      _initialized = true;
-      if (kDebugMode) {
-        debugPrint('[ApiConfig] Using remote API at $_resolvedBaseUrl');
-      }
-      return;
-    }
-
     final candidates = await _connectionCandidates();
+
     for (final url in candidates) {
       if (await _probeHealth(url)) {
         _resolvedBaseUrl = url;
@@ -69,13 +65,11 @@ class ApiConfig {
       }
     }
 
-    if (await _probeHealth(remoteBaseUrl)) {
+    if (!useLocalApi && await _probeHealth(remoteBaseUrl)) {
       _resolvedBaseUrl = remoteBaseUrl.replaceAll(RegExp(r'/+$'), '');
       _initialized = true;
       if (kDebugMode) {
-        debugPrint(
-          '[ApiConfig] Local API unreachable; using remote at $_resolvedBaseUrl',
-        );
+        debugPrint('[ApiConfig] Using remote API at $_resolvedBaseUrl');
       }
       return;
     }
@@ -84,7 +78,8 @@ class ApiConfig {
     _initialized = true;
     if (kDebugMode) {
       debugPrint(
-        '[ApiConfig] No /health/ probe succeeded; defaulting to $_resolvedBaseUrl',
+        '[ApiConfig] No /health/ probe succeeded; defaulting to $_resolvedBaseUrl '
+        '(start Docker: docker compose up -d)',
       );
     }
   }

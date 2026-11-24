@@ -33,77 +33,99 @@ class EmptyStateView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final t = Theme.of(context);
-    final animationSize = compact ? 120.0 : 160.0;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final t = Theme.of(context);
+        final boundedH = constraints.hasBoundedHeight;
+        final tight = compact ||
+            (boundedH && constraints.maxHeight < 320) ||
+            (constraints.hasBoundedWidth && constraints.maxWidth < 340);
+        final animationSize = tight ? 96.0 : (compact ? 120.0 : 160.0);
+        final pad = tight ? ChezMamaTheme.spaceMd : ChezMamaTheme.spaceXl;
 
-    final content = Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        if (lottieAsset != null)
-          SizedBox(
-            width: animationSize,
-            height: animationSize,
-            child: Lottie.asset(
-              lottieAsset!,
-              fit: BoxFit.contain,
-              repeat: true,
-              errorBuilder: (_, __, ___) => _IconFallback(icon: icon, compact: compact),
+        final content = Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (lottieAsset != null)
+              SizedBox(
+                width: animationSize,
+                height: animationSize,
+                child: Lottie.asset(
+                  lottieAsset!,
+                  fit: BoxFit.contain,
+                  repeat: true,
+                  errorBuilder: (_, __, ___) =>
+                      _IconFallback(icon: icon, compact: tight),
+                ),
+              )
+            else
+              _IconFallback(icon: icon, compact: tight),
+            SizedBox(
+              height: tight ? ChezMamaTheme.spaceSm : ChezMamaTheme.spaceLg,
             ),
-          )
-        else
-          _IconFallback(icon: icon, compact: compact),
-        SizedBox(height: compact ? ChezMamaTheme.spaceSm : ChezMamaTheme.spaceLg),
-        Text(
-          title,
-          style: (compact ? t.textTheme.titleMedium : t.textTheme.titleLarge)?.copyWith(
-            fontWeight: FontWeight.w900,
-            letterSpacing: -0.2,
-          ),
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: 6),
-        Text(
-          subtitle,
-          style: t.textTheme.bodyMedium?.copyWith(
-            color: ChezMamaTheme.mutedInk(context),
-          ),
-          textAlign: TextAlign.center,
-        ),
-        if (onAction != null || onSecondaryAction != null) ...[
-          SizedBox(height: compact ? ChezMamaTheme.spaceMd : ChezMamaTheme.spaceLg),
-          if (onAction != null)
-            FilledButton.icon(
-              onPressed: onAction,
-              icon: const Icon(Icons.refresh_rounded, size: 18),
-              label: Text(actionLabel ?? ''),
+            Text(
+              title,
+              style: (tight ? t.textTheme.titleMedium : t.textTheme.titleLarge)
+                  ?.copyWith(
+                fontWeight: FontWeight.w900,
+                letterSpacing: -0.2,
+              ),
+              textAlign: TextAlign.center,
             ),
-          if (onSecondaryAction != null) ...[
-            const SizedBox(height: 8),
-            OutlinedButton(
-              onPressed: onSecondaryAction,
-              child: Text(secondaryActionLabel ?? ''),
+            const SizedBox(height: 6),
+            Text(
+              subtitle,
+              style: t.textTheme.bodyMedium?.copyWith(
+                color: ChezMamaTheme.mutedInk(context),
+              ),
+              textAlign: TextAlign.center,
             ),
+            if (onAction != null || onSecondaryAction != null) ...[
+              SizedBox(
+                height: tight ? ChezMamaTheme.spaceMd : ChezMamaTheme.spaceLg,
+              ),
+              if (onAction != null)
+                FilledButton.icon(
+                  onPressed: onAction,
+                  icon: const Icon(Icons.refresh_rounded, size: 18),
+                  label: Text(actionLabel ?? ''),
+                ),
+              if (onSecondaryAction != null) ...[
+                const SizedBox(height: 8),
+                OutlinedButton(
+                  onPressed: onSecondaryAction,
+                  child: Text(secondaryActionLabel ?? ''),
+                ),
+              ],
+            ],
           ],
-        ],
-      ],
-    );
+        );
 
-    if (!wrapInCard) {
-      return Padding(
-        padding: EdgeInsets.all(compact ? ChezMamaTheme.spaceMd : ChezMamaTheme.spaceXl),
-        child: content,
-      );
-    }
+        final body = boundedH
+            ? SingleChildScrollView(
+                physics: const ClampingScrollPhysics(),
+                child: content,
+              )
+            : content;
 
-    return Center(
-      child: Padding(
-        padding: EdgeInsets.all(compact ? ChezMamaTheme.spaceMd : ChezMamaTheme.spaceXl),
-        child: FoodCard(
-          padding: EdgeInsets.all(compact ? ChezMamaTheme.spaceMd : ChezMamaTheme.spaceXl),
-          shadowOpacity: 0.08,
-          child: content,
-        ),
-      ),
+        if (!wrapInCard) {
+          return Padding(
+            padding: EdgeInsets.all(pad),
+            child: body,
+          );
+        }
+
+        return Center(
+          child: Padding(
+            padding: EdgeInsets.all(pad),
+            child: FoodCard(
+              padding: EdgeInsets.all(pad),
+              shadowOpacity: 0.08,
+              child: body,
+            ),
+          ),
+        );
+      },
     );
   }
 }

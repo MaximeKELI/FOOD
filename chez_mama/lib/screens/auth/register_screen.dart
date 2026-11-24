@@ -291,33 +291,26 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ),
                   if (widget.isSeller) ...[
                   const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _DropdownField(
-                          label: tr('register.country'),
-                          icon: Icons.public_rounded,
-                          value: country.text,
-                          items: countries,
-                          onChanged: (value) {
-                            setState(() {
-                              country.text = value;
-                              city.text = citiesByCountry[value]?.first ?? 'Autre';
-                            });
-                          },
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _DropdownField(
-                          label: tr('register.city'),
-                          icon: Icons.location_city_rounded,
-                          value: city.text,
-                          items: _cityOptions,
-                          onChanged: (value) => setState(() => city.text = value),
-                        ),
-                      ),
-                    ],
+                  _ResponsivePair(
+                    first: _DropdownField(
+                      label: tr('register.country'),
+                      icon: Icons.public_rounded,
+                      value: country.text,
+                      items: countries,
+                      onChanged: (value) {
+                        setState(() {
+                          country.text = value;
+                          city.text = citiesByCountry[value]?.first ?? 'Autre';
+                        });
+                      },
+                    ),
+                    second: _DropdownField(
+                      label: tr('register.city'),
+                      icon: Icons.location_city_rounded,
+                      value: city.text,
+                      items: _cityOptions,
+                      onChanged: (value) => setState(() => city.text = value),
+                    ),
                   ),
                   const SizedBox(height: 12),
                   TextField(
@@ -329,30 +322,23 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: birthYear,
-                          keyboardType: TextInputType.number,
-                          textInputAction: TextInputAction.next,
-                          decoration: InputDecoration(
-                            labelText: tr('register.birthYear'),
-                            prefixIcon: const Icon(Icons.cake_rounded),
-                          ),
-                        ),
+                  _ResponsivePair(
+                    first: TextField(
+                      controller: birthYear,
+                      keyboardType: TextInputType.number,
+                      textInputAction: TextInputAction.next,
+                      decoration: InputDecoration(
+                        labelText: tr('register.birthYear'),
+                        prefixIcon: const Icon(Icons.cake_rounded),
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _DropdownField(
-                          label: tr('register.gender'),
-                          icon: Icons.person_rounded,
-                          value: gender.text,
-                          items: genders,
-                          onChanged: (value) => setState(() => gender.text = value),
-                        ),
-                      ),
-                    ],
+                    ),
+                    second: _DropdownField(
+                      label: tr('register.gender'),
+                      icon: Icons.person_rounded,
+                      value: gender.text,
+                      items: genders,
+                      onChanged: (value) => setState(() => gender.text = value),
+                    ),
                   ),
                   ],
                   const SizedBox(height: 18),
@@ -373,53 +359,39 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _DropdownField(
-                          label: tr('register.type'),
-                          icon: Icons.category_rounded,
-                          value: shopCategory.text,
-                          items: shopCategories,
-                          onChanged: (value) =>
-                              setState(() => shopCategory.text = value),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _DropdownField(
-                          label: tr('register.cuisine'),
-                          icon: Icons.restaurant_menu_rounded,
-                          value: cuisine.text,
-                          items: cuisines,
-                          onChanged: (value) => setState(() => cuisine.text = value),
-                        ),
-                      ),
-                    ],
+                  _ResponsivePair(
+                    first: _DropdownField(
+                      label: tr('register.type'),
+                      icon: Icons.category_rounded,
+                      value: shopCategory.text,
+                      items: shopCategories,
+                      onChanged: (value) =>
+                          setState(() => shopCategory.text = value),
+                    ),
+                    second: _DropdownField(
+                      label: tr('register.cuisine'),
+                      icon: Icons.restaurant_menu_rounded,
+                      value: cuisine.text,
+                      items: cuisines,
+                      onChanged: (value) => setState(() => cuisine.text = value),
+                    ),
                   ),
                   const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _DropdownField(
-                          label: tr('register.opening'),
-                          icon: Icons.schedule_rounded,
-                          value: opensAt.text,
-                          items: hours,
-                          onChanged: (value) => setState(() => opensAt.text = value),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _DropdownField(
-                          label: tr('register.closing'),
-                          icon: Icons.schedule_rounded,
-                          value: closesAt.text,
-                          items: hours,
-                          onChanged: (value) => setState(() => closesAt.text = value),
-                        ),
-                      ),
-                    ],
+                  _ResponsivePair(
+                    first: _DropdownField(
+                      label: tr('register.opening'),
+                      icon: Icons.schedule_rounded,
+                      value: opensAt.text,
+                      items: hours,
+                      onChanged: (value) => setState(() => opensAt.text = value),
+                    ),
+                    second: _DropdownField(
+                      label: tr('register.closing'),
+                      icon: Icons.schedule_rounded,
+                      value: closesAt.text,
+                      items: hours,
+                      onChanged: (value) => setState(() => closesAt.text = value),
+                    ),
                   ),
                   const SizedBox(height: 12),
                   _DropdownField(
@@ -509,6 +481,38 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 }
 
+class _ResponsivePair extends StatelessWidget {
+  const _ResponsivePair({required this.first, required this.second});
+
+  final Widget first;
+  final Widget second;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth < 360) {
+          return Column(
+            children: [
+              first,
+              const SizedBox(height: 12),
+              second,
+            ],
+          );
+        }
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(child: first),
+            const SizedBox(width: 12),
+            Expanded(child: second),
+          ],
+        );
+      },
+    );
+  }
+}
+
 class _DropdownField extends StatelessWidget {
   const _DropdownField({
     required this.label,
@@ -528,6 +532,7 @@ class _DropdownField extends StatelessWidget {
   Widget build(BuildContext context) {
     final resolvedValue = items.contains(value) ? value : items.first;
     return DropdownButtonFormField<String>(
+      // ignore: deprecated_member_use — controlled field updated via setState
       value: resolvedValue,
       isExpanded: true,
       decoration: InputDecoration(

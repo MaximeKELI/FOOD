@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -78,7 +80,11 @@ class _ChezMamaAppState extends ConsumerState<ChezMamaApp> {
     ThemeController.instance.load();
     LocaleController.instance.load();
     PushService.instance.init();
-    WeatherNudgeService.instance.init();
+    unawaited(
+      WeatherNudgeService.instance.init().catchError((Object e) {
+        debugPrint('WeatherNudge bootstrap: $e');
+      }),
+    );
     CartService.instance.init();
     ConnectivityService.instance.init();
     DeepLinkService.instance.init();
@@ -89,11 +95,11 @@ class _ChezMamaAppState extends ConsumerState<ChezMamaApp> {
     _lifecycle = AppLifecycleListener(
       onResume: () {
         PaymentPendingService.instance.onAppResume();
-        WeatherNudgeService.instance.maybeNotify(auth: _authService);
+        unawaited(WeatherNudgeService.instance.maybeNotify(auth: _authService));
         ApiReachabilityService.instance.check();
       },
     );
-    WeatherNudgeService.instance.maybeNotify(auth: _authService);
+    unawaited(WeatherNudgeService.instance.maybeNotify(auth: _authService));
     WeatherNudgeService.instance.startPeriodicChecks(auth: _authService);
   }
 

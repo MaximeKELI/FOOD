@@ -251,8 +251,9 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                             const SizedBox(height: 12),
                           ],
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
+                          Wrap(
+                            alignment: WrapAlignment.center,
+                            crossAxisAlignment: WrapCrossAlignment.center,
                             children: [
                               Text(
                                 '${tr('auth.noAccount')} ',
@@ -261,7 +262,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                 ),
                               ),
                               TextButton(
-                                onPressed: () => _openRegister(RegisterMode.client),
+                                onPressed: () =>
+                                    _openRegister(RegisterMode.client),
                                 child: Text(tr('auth.createAccount')),
                               ),
                             ],
