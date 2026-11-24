@@ -88,6 +88,8 @@ class StoryView {
     required this.authorName,
     required this.mediaUrl,
     required this.caption,
+    this.mealId,
+    this.mealName,
     required this.createdAt,
     required this.expiresAt,
   });
@@ -97,6 +99,8 @@ class StoryView {
   final String authorName;
   final String mediaUrl;
   final String caption;
+  final int? mealId;
+  final String? mealName;
   final String createdAt;
   final String expiresAt;
 
@@ -106,6 +110,8 @@ class StoryView {
         authorName: json['author_name'] as String? ?? '',
         mediaUrl: ApiConfig.resolveMediaUrl(json['media'] as String? ?? ''),
         caption: json['caption'] as String? ?? '',
+        mealId: json['meal'] as int?,
+        mealName: json['meal_name'] as String?,
         createdAt: json['created_at'] as String? ?? '',
         expiresAt: json['expires_at'] as String? ?? '',
       );
@@ -357,10 +363,12 @@ class SupportApi {
   Future<StoryView> createStory({
     required String mediaPath,
     String caption = '',
+    int? mealId,
   }) async {
     final form = FormData.fromMap({
       'caption': caption,
       'media': await MultipartFile.fromFile(mediaPath),
+      if (mealId != null) 'meal': mealId,
     });
     final res = await _dio.post('/stories/', data: form);
     return StoryView.fromJson(res.data as Map<String, dynamic>);
