@@ -582,40 +582,51 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       ),
                     ),
-                  TextField(
-                controller: _searchCtrl,
-                onChanged: (v) {
-                  setState(() => _query = v);
-                  if (v.trim().length >= 2) _loadMeals();
-                },
-                textInputAction: TextInputAction.search,
-                onSubmitted: (_) => _loadMeals(),
-                decoration: InputDecoration(
-                  hintText: tr('home.search'),
-                  prefixIcon: const Icon(Icons.search_rounded),
-                  suffixIcon: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        tooltip: tr('home.voiceSearch'),
-                        onPressed: _startVoiceSearch,
-                        icon: Icon(
-                          _listening ? Icons.mic_rounded : Icons.mic_none_rounded,
-                          color: _listening ? ChezMamaTheme.brandOrange : null,
+                  DecoratedBox(
+                    decoration: BoxDecoration(
+                      borderRadius:
+                          BorderRadius.circular(ChezMamaTheme.rField),
+                      boxShadow: ChezMamaTheme.softShadow(opacity: 0.08),
+                    ),
+                    child: TextField(
+                      controller: _searchCtrl,
+                      onChanged: (v) {
+                        setState(() => _query = v);
+                        if (v.trim().length >= 2) _loadMeals();
+                      },
+                      textInputAction: TextInputAction.search,
+                      onSubmitted: (_) => _loadMeals(),
+                      decoration: InputDecoration(
+                        hintText: tr('home.search'),
+                        prefixIcon: const Icon(Icons.search_rounded),
+                        suffixIcon: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              tooltip: tr('home.voiceSearch'),
+                              onPressed: _startVoiceSearch,
+                              icon: Icon(
+                                _listening
+                                    ? Icons.mic_rounded
+                                    : Icons.mic_none_rounded,
+                                color: _listening
+                                    ? ChezMamaTheme.brandOrange
+                                    : null,
+                              ),
+                            ),
+                            if (_query.isNotEmpty)
+                              IconButton(
+                                icon: const Icon(Icons.close_rounded),
+                                onPressed: () {
+                                  _searchCtrl.clear();
+                                  setState(() => _query = '');
+                                  _loadMeals();
+                                },
+                              ),
+                          ],
                         ),
                       ),
-                      if (_query.isNotEmpty)
-                        IconButton(
-                          icon: const Icon(Icons.close_rounded),
-                          onPressed: () {
-                            _searchCtrl.clear();
-                            setState(() => _query = '');
-                            _loadMeals();
-                          },
-                        ),
-                    ],
-                  ),
-                ),
+                    ),
                   ),
                 ],
               ),
@@ -840,7 +851,7 @@ class _HomeSkeleton extends StatelessWidget {
               padding: EdgeInsets.only(bottom: i == 3 ? 0 : 14),
               child: Column(
                 children: const [
-                  SkeletonBox(width: double.infinity, height: 150, radius: 18),
+                  SkeletonBox(width: double.infinity, height: 220, radius: 20),
                   SizedBox(height: 12),
                   Row(
                     children: [

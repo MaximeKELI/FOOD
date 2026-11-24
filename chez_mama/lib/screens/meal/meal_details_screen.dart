@@ -143,7 +143,7 @@ class _MealDetailsScreenState extends State<MealDetailsScreen>
         slivers: [
           SliverAppBar(
             pinned: true,
-            expandedHeight: 290,
+            expandedHeight: 360,
             backgroundColor: Theme.of(context).scaffoldBackgroundColor,
             foregroundColor: ChezMamaTheme.inkColor(context),
             actions: [
