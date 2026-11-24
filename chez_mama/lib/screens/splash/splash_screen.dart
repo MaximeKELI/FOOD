@@ -107,19 +107,21 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                       tr('app.name'),
                       style: Theme.of(context)
                           .textTheme
-                          .headlineMedium
+                          .displaySmall
                           ?.copyWith(
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: -0.4,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: -1.0,
+                            height: 1.0,
                           ),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 10),
                     Text(
                       tr('app.tagline'),
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
                             color: ChezMamaTheme.mutedInk(context),
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: 0.3,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.2,
                           ),
                     ),
                     const SizedBox(height: 30),

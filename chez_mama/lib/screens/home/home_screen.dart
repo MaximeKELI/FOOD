@@ -321,25 +321,27 @@ class _HomeScreenState extends State<HomeScreen> {
             backgroundColor: Theme.of(context).scaffoldBackgroundColor,
             actions: [
               Padding(
-                padding: const EdgeInsets.only(right: 4),
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.28),
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                  child: ShellToolbarActions(
-                    isSeller: widget.isSeller,
-                    isAuthed: widget.isAuthed,
-                    onNotifications: widget.onNotifications,
-                    onMessages: widget.onMessages,
-                    onReceivedOrders: widget.onReceivedOrders,
-                    onMenuSelected: widget.onMenuSelected,
-                    onPickLanguage: widget.onPickLanguage,
-                    onLogin: widget.onLogin,
+                padding: const EdgeInsets.only(right: 6),
+                child: IconTheme(
+                  data: const IconThemeData(color: Colors.white),
+                  child: DefaultTextStyle.merge(
+                    style: const TextStyle(color: Colors.white),
+                    child: ShellToolbarActions(
+                      isSeller: widget.isSeller,
+                      isAuthed: widget.isAuthed,
+                      onNotifications: widget.onNotifications,
+                      onMessages: widget.onMessages,
+                      onReceivedOrders: widget.onReceivedOrders,
+                      onMenuSelected: widget.onMenuSelected,
+                      onPickLanguage: widget.onPickLanguage,
+                      onLogin: widget.onLogin,
+                    ),
                   ),
                 ),
               ),
             ],
+            foregroundColor: Colors.white,
+            iconTheme: const IconThemeData(color: Colors.white),
             flexibleSpace: FlexibleSpaceBar(
               collapseMode: CollapseMode.parallax,
               stretchModes: const [

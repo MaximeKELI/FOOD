@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../l10n/app_strings.dart';
 import '../../onboarding/onboarding_controller.dart';
 import '../../ui/chezmama_theme.dart';
-import '../../widgets/brand_logo.dart';
+import '../../widgets/primary_button.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -19,17 +19,17 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   static const _slides = [
     _Slide(
-      icon: Icons.restaurant_menu_rounded,
+      asset: 'assets/images/food_hero_thieboudienne.png',
       titleKey: 'onboarding.slide1Title',
       bodyKey: 'onboarding.slide1Body',
     ),
     _Slide(
-      icon: Icons.delivery_dining_rounded,
+      asset: 'assets/images/food_hero_yassa.png',
       titleKey: 'onboarding.slide2Title',
       bodyKey: 'onboarding.slide2Body',
     ),
     _Slide(
-      icon: Icons.storefront_rounded,
+      asset: 'assets/images/food_hero_mafe.png',
       titleKey: 'onboarding.slide3Title',
       bodyKey: 'onboarding.slide3Body',
     ),
@@ -50,115 +50,147 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context);
+    final slide = _slides[_index];
+
     return Scaffold(
-      body: SafeArea(
-        child: Column(
-          children: [
-            Align(
-              alignment: Alignment.centerRight,
-              child: TextButton(
-                onPressed: _finish,
-                child: Text(tr('onboarding.skip')),
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          AnimatedSwitcher(
+            duration: ChezMamaTheme.dMed,
+            child: Image.asset(
+              slide.asset,
+              key: ValueKey(slide.asset),
+              fit: BoxFit.cover,
+              width: double.infinity,
+              height: double.infinity,
+              errorBuilder: (_, __, ___) => Container(
+                color: ChezMamaTheme.brandBrown,
               ),
             ),
-            const BrandLogo(size: 72, radius: 20, showShadow: true),
-            const SizedBox(height: ChezMamaTheme.spaceLg),
-            Expanded(
-              child: PageView.builder(
-                controller: _page,
-                itemCount: _slides.length,
-                onPageChanged: (i) => setState(() => _index = i),
-                itemBuilder: (context, i) {
-                  final slide = _slides[i];
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: ChezMamaTheme.spaceXl,
+          ),
+          DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.black.withValues(alpha: 0.25),
+                  Colors.black.withValues(alpha: 0.15),
+                  Colors.black.withValues(alpha: 0.78),
+                ],
+                stops: const [0.0, 0.4, 1.0],
+              ),
+            ),
+          ),
+          SafeArea(
+            child: Column(
+              children: [
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton(
+                    onPressed: _finish,
+                    child: Text(
+                      tr('onboarding.skip'),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Container(
-                          width: 96,
-                          height: 96,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            gradient: ChezMamaTheme.brandGradient,
-                          ),
-                          child: Icon(slide.icon, size: 44, color: Colors.white),
-                        ),
-                        const SizedBox(height: ChezMamaTheme.spaceXl),
-                        Text(
-                          tr(slide.titleKey),
-                          textAlign: TextAlign.center,
-                          style: t.textTheme.headlineSmall?.copyWith(
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: -0.3,
-                          ),
-                        ),
-                        const SizedBox(height: ChezMamaTheme.spaceMd),
-                        Text(
-                          tr(slide.bodyKey),
-                          textAlign: TextAlign.center,
-                          style: t.textTheme.bodyLarge?.copyWith(
-                            color: ChezMamaTheme.mutedInk(context),
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                },
-              ),
-            ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: List.generate(_slides.length, (i) {
-                final active = i == _index;
-                return AnimatedContainer(
-                  duration: const Duration(milliseconds: 240),
-                  margin: const EdgeInsets.symmetric(horizontal: 4),
-                  width: active ? 20 : 8,
-                  height: 8,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(999),
-                    color: active
-                        ? ChezMamaTheme.brandOrange
-                        : ChezMamaTheme.brandBrown.withValues(alpha: 0.25),
-                  ),
-                );
-              }),
-            ),
-            const SizedBox(height: ChezMamaTheme.spaceLg),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(
-                ChezMamaTheme.spaceXl,
-                0,
-                ChezMamaTheme.spaceXl,
-                ChezMamaTheme.spaceLg,
-              ),
-              child: SizedBox(
-                width: double.infinity,
-                child: FilledButton(
-                  onPressed: () {
-                    if (_index < _slides.length - 1) {
-                      _page.nextPage(
-                        duration: const Duration(milliseconds: 320),
-                        curve: Curves.easeOutCubic,
-                      );
-                    } else {
-                      _finish();
-                    }
-                  },
-                  child: Text(
-                    _index < _slides.length - 1
-                        ? tr('onboarding.next')
-                        : tr('onboarding.start'),
                   ),
                 ),
-              ),
+                const Spacer(),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        tr('app.name'),
+                        style: t.textTheme.headlineMedium?.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: -0.8,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      SizedBox(
+                        height: MediaQuery.sizeOf(context).height * 0.22,
+                        child: PageView.builder(
+                          controller: _page,
+                          itemCount: _slides.length,
+                          onPageChanged: (i) => setState(() => _index = i),
+                          itemBuilder: (context, i) {
+                            final s = _slides[i];
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  tr(s.titleKey),
+                                  style: t.textTheme.headlineSmall?.copyWith(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w800,
+                                    height: 1.15,
+                                  ),
+                                ),
+                                const SizedBox(height: 10),
+                                Text(
+                                  tr(s.bodyKey),
+                                  style: t.textTheme.bodyLarge?.copyWith(
+                                    color: Colors.white.withValues(alpha: 0.9),
+                                    fontWeight: FontWeight.w600,
+                                    height: 1.35,
+                                  ),
+                                ),
+                              ],
+                            );
+                          },
+                        ),
+                      ),
+                      Row(
+                        children: List.generate(_slides.length, (i) {
+                          final active = i == _index;
+                          return AnimatedContainer(
+                            duration: ChezMamaTheme.dFast,
+                            margin: const EdgeInsets.only(right: 6),
+                            width: active ? 22 : 8,
+                            height: 8,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(999),
+                              color: active
+                                  ? Colors.white
+                                  : Colors.white.withValues(alpha: 0.35),
+                            ),
+                          );
+                        }),
+                      ),
+                      const SizedBox(height: 20),
+                      PrimaryButton(
+                        label: _index < _slides.length - 1
+                            ? tr('onboarding.next')
+                            : tr('onboarding.start'),
+                        icon: _index < _slides.length - 1
+                            ? Icons.arrow_forward_rounded
+                            : Icons.restaurant_rounded,
+                        onPressed: () {
+                          if (_index < _slides.length - 1) {
+                            _page.nextPage(
+                              duration: ChezMamaTheme.dMed,
+                              curve: ChezMamaTheme.easeLuxe,
+                            );
+                          } else {
+                            _finish();
+                          }
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -166,11 +198,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
 class _Slide {
   const _Slide({
-    required this.icon,
+    required this.asset,
     required this.titleKey,
     required this.bodyKey,
   });
-  final IconData icon;
+  final String asset;
   final String titleKey;
   final String bodyKey;
 }
