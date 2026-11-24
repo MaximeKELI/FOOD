@@ -1,3 +1,4 @@
+from collections import defaultdict
 from datetime import datetime
 
 from django.db import transaction
@@ -8,6 +9,7 @@ from catalog.models import Meal, MealOptionChoice
 
 from .models import Order, OrderItem, OrderStatusEvent, PromoCode
 from .services import (
+    _seller_fee,
     compute_delivery_fee,
     resolve_promo,
     sellers_from_meals,
