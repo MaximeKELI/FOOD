@@ -162,8 +162,9 @@ class SellerLocationListView(generics.ListAPIView):
     get=extend_schema(tags=["auth"], summary="Current user profile"),
     put=extend_schema(tags=["auth"], summary="Update current user"),
     patch=extend_schema(tags=["auth"], summary="Partial update current user"),
+    delete=extend_schema(tags=["auth"], summary="GDPR soft-delete current user"),
 )
-class MeView(generics.RetrieveUpdateAPIView):
+class MeView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [IsAuthenticated]
 
     def get_object(self):
@@ -182,6 +183,36 @@ class MeView(generics.RetrieveUpdateAPIView):
         self.perform_update(serializer)
         return Response(UserSerializer(instance, context={"request": request}).data)
 
+    def destroy(self, request, *args, **kwargs):
+        """Soft-delete / anonymize the account (RGPD)."""
+        user = self.get_object()
+        refresh = request.data.get("refresh") if hasattr(request, "data") else None
+        if refresh:
+            try:
+                RefreshToken(refresh).blacklist()
+            except Exception:
+                pass
+        uid = user.id
+        user.is_active = False
+        user.email = f"deleted_{uid}@deleted.local"
+        user.display_name = "Compte supprimé"
+        user.first_name = ""
+        user.last_name = ""
+        user.phone = ""
+        user.set_unusable_password()
+        user.save(
+            update_fields=[
+                "is_active",
+                "email",
+                "display_name",
+                "first_name",
+                "last_name",
+                "phone",
+                "password",
+            ]
+        )
+        return Response({"ok": True, "anonymized": True}, status=status.HTTP_200_OK)
+
 
 @extend_schema_view(
     get=extend_schema(tags=["auth"], summary="Seller shop profile"),
@@ -195,6 +226,23 @@ class MyProfileView(generics.RetrieveUpdateAPIView):
     def get_object(self):
         profile, _ = SellerProfile.objects.get_or_create(user=self.request.user)
         return profile
+
+    def update(self, request, *args, **kwargs):
+        from .permissions import seller_kyc_approved
+
+        wants_orders = request.data.get("accepts_orders")
+        if wants_orders in (True, "true", "True", "1", 1):
+            if not seller_kyc_approved(request.user):
+                return Response(
+                    {
+                        "detail": (
+                            "KYC vendeur requis : dépose et fais valider "
+                            "tes documents avant d'accepter des commandes."
+                        )
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+        return super().update(request, *args, **kwargs)
 
 
 @extend_schema(tags=["auth"], summary="Logout and blacklist refresh token")

@@ -6,6 +6,7 @@ from .views import (
     DeliveryDetailView,
     DeliveryLocationView,
     DeliveryPendingListView,
+    DeliveryRequestView,
     DeliveryStatusView,
     DriverMeView,
 )
@@ -17,6 +18,11 @@ urlpatterns = [
         "by-order/<int:order_id>/",
         DeliveryByOrderView.as_view(),
         name="delivery_by_order",
+    ),
+    path(
+        "by-order/<int:order_id>/request/",
+        DeliveryRequestView.as_view(),
+        name="delivery_request",
     ),
     path("<int:pk>/", DeliveryDetailView.as_view(), name="delivery_detail"),
     path(

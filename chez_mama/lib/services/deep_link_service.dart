@@ -6,6 +6,7 @@ import '../navigation/root_navigator.dart';
 import '../payments/payment_pending_service.dart';
 import '../screens/meal/meal_details_screen.dart';
 import '../screens/orders/order_detail_screen.dart';
+import '../screens/cart/group_order_screen.dart';
 import '../screens/profile/seller_profile_screen.dart';
 
 /// Handles `food://` deep links (payment return, meal/seller/order routes).
@@ -35,6 +36,23 @@ class DeepLinkService {
     final ctx = rootNavigatorKey.currentContext;
     if (ctx == null) return;
 
+  if (uri.host == 'group-order' || path.startsWith('/group-order')) {
+      final code = uri.pathSegments.length > 1
+          ? uri.pathSegments[1]
+          : (uri.pathSegments.isNotEmpty && uri.pathSegments.first != 'group-order'
+              ? uri.pathSegments.first
+              : uri.queryParameters['code']);
+      final trimmed = code?.trim();
+      if (trimmed != null && trimmed.isNotEmpty) {
+        Navigator.of(ctx).push(
+          MaterialPageRoute(
+            builder: (_) => GroupOrderScreen(initialCode: trimmed),
+          ),
+        );
+      }
+      return;
+    }
+
     final segments = _pathSegments(uri);
     if (segments.isEmpty) return;
 
@@ -43,6 +61,16 @@ class DeepLinkService {
     final id = int.tryParse(idRaw ?? '');
 
     switch (kind) {
+      case 'group-order':
+        final code = idRaw ?? uri.queryParameters['code'];
+        if (code != null && code.trim().isNotEmpty) {
+          Navigator.of(ctx).push(
+            MaterialPageRoute(
+              builder: (_) => GroupOrderScreen(initialCode: code.trim()),
+            ),
+          );
+        }
+        return;
       case 'meal':
         if (id == null) return;
         _openMeal(ctx, id);

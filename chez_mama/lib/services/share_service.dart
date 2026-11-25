@@ -1,5 +1,6 @@
 import 'package:share_plus/share_plus.dart';
 
+import '../l10n/app_strings.dart';
 import '../models/meal.dart';
 
 class ShareService {
@@ -22,6 +23,17 @@ class ShareService {
       ShareParams(
         text: '$name sur Food\nfood://seller/$sellerId',
         subject: name,
+      ),
+    );
+  }
+
+  Future<void> shareGroupOrder(String code) {
+    final link = 'food://group-order/$code';
+    return SharePlus.instance.share(
+      ShareParams(
+        text: '${tr('groupOrder.shareText')}\n'
+            '${trf('groupOrder.codeLine', {'code': code})}\n$link',
+        subject: tr('groupOrder.title'),
       ),
     );
   }

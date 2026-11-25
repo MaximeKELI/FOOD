@@ -9,6 +9,7 @@ class DriverProfile {
     this.latitude,
     this.longitude,
     required this.isActive,
+    required this.isApproved,
   });
 
   final int id;
@@ -18,6 +19,7 @@ class DriverProfile {
   final double? latitude;
   final double? longitude;
   final bool isActive;
+  final bool isApproved;
 
   factory DriverProfile.fromJson(Map<String, dynamic> json) => DriverProfile(
         id: json['id'] as int,
@@ -27,6 +29,7 @@ class DriverProfile {
         latitude: (json['latitude'] as num?)?.toDouble(),
         longitude: (json['longitude'] as num?)?.toDouble(),
         isActive: json['is_active'] as bool? ?? false,
+        isApproved: json['is_approved'] as bool? ?? true,
       );
 }
 
@@ -127,6 +130,11 @@ class DeliveriesApi {
     } catch (_) {
       return null;
     }
+  }
+
+  Future<DeliveryView> requestDriver(int orderId) async {
+    final res = await _dio.post('/deliveries/by-order/$orderId/request/');
+    return DeliveryView.fromJson(res.data as Map<String, dynamic>);
   }
 
   Future<DeliveryView> updateLocation(

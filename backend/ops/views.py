@@ -83,6 +83,20 @@ class MealBoostCreateView(APIView):
         meal = get_object_or_404(Meal, pk=request.data.get("meal"), seller=request.user)
         hours = int(request.data.get("hours", 24))
         hours = max(1, min(hours, 168))
+        price = hours * 100
+        paid_amount = int(request.data.get("paid_amount", 0) or 0)
+        if paid_amount < price:
+            return Response(
+                {
+                    "detail": (
+                        f"Boost {hours}h = {price} FCFA. "
+                        "Envoie paid_amount >= prix après confirmation."
+                    ),
+                    "price": price,
+                    "hours": hours,
+                },
+                status=400,
+            )
         now = timezone.now()
         boost = MealBoost.objects.create(
             meal=meal,
@@ -90,7 +104,7 @@ class MealBoostCreateView(APIView):
             starts_at=now,
             expires_at=now + timezone.timedelta(hours=hours),
             score=100 + hours,
-            paid_amount=int(request.data.get("paid_amount", hours * 100)),
+            paid_amount=paid_amount,
         )
         meal.is_special = True
         meal.save(update_fields=["is_special"])

@@ -53,6 +53,8 @@ class _CheckoutSheetState extends State<CheckoutSheet> {
   List<PickupSlot> _pickupSlots = [];
   PickupSlot? _selectedSlot;
   bool _loadingSlots = false;
+  PlatformSettings? _settings;
+  bool _loadingSettings = true;
 
   @override
   void initState() {
@@ -60,7 +62,57 @@ class _CheckoutSheetState extends State<CheckoutSheet> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _refreshQuote();
       _loadAddresses();
+      _loadSettings();
     });
+  }
+
+  Future<void> _loadSettings() async {
+    try {
+      final settings = await PlatformApi.instance.fetchSettings();
+      if (!mounted) return;
+      setState(() {
+        _settings = settings;
+        _loadingSettings = false;
+        _ensurePaymentSelection();
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _loadingSettings = false);
+    }
+  }
+
+  List<String> _visiblePaymentMethods() {
+    final s = _settings;
+    if (s == null) return List<String>.from(kPaymentMethodKeys);
+    if (!s.paymentsEnabled) return const [];
+    return kPaymentMethodKeys.where((key) {
+      if (key == 'cash') return s.cashEnabled;
+      return s.digitalPaymentsEnabled;
+    }).toList();
+  }
+
+  void _ensurePaymentSelection() {
+    final visible = _visiblePaymentMethods();
+    if (visible.isEmpty) return;
+    if (!visible.contains(_payment)) {
+      _payment = visible.first;
+    }
+  }
+
+  bool get _checkoutBlocked {
+    final s = _settings;
+    if (s == null) return false;
+    if (!s.paymentsEnabled) return true;
+    if (!s.newOrdersEnabled) return true;
+    return false;
+  }
+
+  String? get _checkoutBlockMessage {
+    final s = _settings;
+    if (s == null) return null;
+    if (!s.paymentsEnabled) return tr('checkout.paymentsDisabled');
+    if (!s.newOrdersEnabled) return tr('checkout.ordersPaused');
+    return null;
   }
 
   @override
@@ -279,6 +331,15 @@ class _CheckoutSheetState extends State<CheckoutSheet> {
   }
 
   Future<void> _submit() async {
+    if (_checkoutBlocked) {
+      final msg = _checkoutBlockMessage;
+      if (msg != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(msg)),
+        );
+      }
+      return;
+    }
     if (!AuthScope.of(context).isAuthed) {
       Navigator.of(context).pop();
       Navigator.of(context).push(
@@ -329,7 +390,6 @@ class _CheckoutSheetState extends State<CheckoutSheet> {
         pointsToRedeem: int.tryParse(_points.text.trim()),
         deviceContext: deviceContext,
       );
-      final order = checkout.primary;
       await EventTracker.instance.track(
         'order',
         screen: 'checkout',
@@ -702,10 +762,25 @@ class _CheckoutSheetState extends State<CheckoutSheet> {
                       icon: Icons.payments_rounded,
                     ),
                     const SizedBox(height: 4),
+                    if (_loadingSettings)
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 8),
+                        child: LinearProgressIndicator(),
+                      )
+                    else if (_checkoutBlockMessage != null) ...[
+                      Text(
+                        _checkoutBlockMessage!,
+                        style: t.textTheme.bodySmall?.copyWith(
+                          color: ChezMamaTheme.promoRed,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                    ],
                     Wrap(
                       spacing: 8,
                       runSpacing: 8,
-                      children: kPaymentMethodKeys.map((key) {
+                      children: _visiblePaymentMethods().map((key) {
                         final selected = _payment == key;
                         return ChoiceChip(
                           label: Text(paymentMethodLabel(key)),
@@ -822,7 +897,8 @@ class _CheckoutSheetState extends State<CheckoutSheet> {
                   width: double.infinity,
                   height: 50,
                   child: FilledButton.icon(
-                    onPressed: _submitting ? null : _submit,
+                    onPressed:
+                        (_submitting || _checkoutBlocked) ? null : _submit,
                     icon: _submitting
                         ? const SizedBox(
                             width: 18,

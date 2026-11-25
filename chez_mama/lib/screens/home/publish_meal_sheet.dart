@@ -20,6 +20,8 @@ class _PublishMealSheetState extends State<PublishMealSheet> {
   final _subtitle = TextEditingController();
   final _price = TextEditingController();
   final _promoPrice = TextEditingController();
+  final _stockQty = TextEditingController();
+  final _prepMinutes = TextEditingController();
   bool _isSpecial = false;
 
   List<MealCategory> _categories = [];
@@ -42,6 +44,8 @@ class _PublishMealSheetState extends State<PublishMealSheet> {
     _subtitle.dispose();
     _price.dispose();
     _promoPrice.dispose();
+    _stockQty.dispose();
+    _prepMinutes.dispose();
     super.dispose();
   }
 
@@ -130,6 +134,8 @@ class _PublishMealSheetState extends State<PublishMealSheet> {
         setState(() => _submitting = false);
         return;
       }
+      final stock = int.tryParse(_stockQty.text.trim());
+      final prep = int.tryParse(_prepMinutes.text.trim());
       await CatalogApi.instance.createMeal(
         name: _name.text.trim(),
         categoryId: _selected!.id,
@@ -139,6 +145,8 @@ class _PublishMealSheetState extends State<PublishMealSheet> {
         price: price,
         promoPrice: promo,
         isSpecial: _isSpecial,
+        stockQty: stock,
+        prepTimeMinutes: prep,
       );
       if (!mounted) return;
       Navigator.of(context).pop(true);
@@ -234,6 +242,26 @@ class _PublishMealSheetState extends State<PublishMealSheet> {
               decoration: InputDecoration(
                 labelText: tr('publish.promoPrice'),
                 prefixIcon: const Icon(Icons.sell_rounded),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _stockQty,
+              keyboardType: TextInputType.number,
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              decoration: InputDecoration(
+                labelText: tr('publish.stockQty'),
+                prefixIcon: const Icon(Icons.inventory_2_outlined),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _prepMinutes,
+              keyboardType: TextInputType.number,
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              decoration: InputDecoration(
+                labelText: tr('publish.prepMinutes'),
+                prefixIcon: const Icon(Icons.timer_outlined),
               ),
             ),
             const SizedBox(height: 4),

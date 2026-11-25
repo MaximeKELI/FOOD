@@ -514,7 +514,11 @@ class OrderCreateSerializer(serializers.Serializer):
                 )
                 if meal.stock_qty is not None:
                     meal.stock_qty = max(0, meal.stock_qty - item["quantity"])
-                    meal.save(update_fields=["stock_qty"])
+                    fields = ["stock_qty"]
+                    if meal.stock_qty == 0 and meal.is_available:
+                        meal.is_available = False
+                        fields.append("is_available")
+                    meal.save(update_fields=fields)
 
             order.recompute_total()
             order.save()

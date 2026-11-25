@@ -152,8 +152,20 @@ class ApiConfig {
 
   static String get apiUrl => '$baseUrl/api';
 
-  /// Same host as [baseUrl]; socket_io_client uses http(s) + path `/socket.io/`.
-  static String get socketUrl => baseUrl;
+  /// Socket.IO gateway. Local Docker exposes it on :3001 (API is :8000).
+  static String get socketUrl {
+    final uri = Uri.tryParse(baseUrl);
+    if (uri == null) return baseUrl;
+    final host = uri.host;
+    final local = host == '127.0.0.1' ||
+        host == 'localhost' ||
+        host == '10.0.2.2' ||
+        (lanHost.isNotEmpty && host == lanHost);
+    if (local && (uri.port == port || uri.port == 0 || !uri.hasPort)) {
+      return uri.replace(port: 3001).toString().replaceAll(RegExp(r'/+$'), '');
+    }
+    return baseUrl;
+  }
 
   static bool get isProduction => baseUrl.startsWith('https://');
 

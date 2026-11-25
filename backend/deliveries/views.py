@@ -225,6 +225,39 @@ class DeliveryByOrderView(DeliveriesFeatureMixin, APIView):
         return Response(DeliverySerializer(delivery).data)
 
 
+@extend_schema(tags=["deliveries"], summary="Seller requests a driver for an order")
+class DeliveryRequestView(DeliveriesFeatureMixin, APIView):
+    """Creates (or returns) a pending delivery so drivers can accept it."""
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, order_id):
+        from orders.models import Order
+
+        from .services import create_delivery_for_order
+
+        order = get_object_or_404(Order, pk=order_id)
+        if not OrderItem.objects.filter(order=order, meal__seller=request.user).exists():
+            return Response(status=status.HTTP_403_FORBIDDEN)
+        if order.fulfillment != Order.Fulfillment.DELIVERY:
+            return Response(
+                {"detail": "Cette commande n'est pas en livraison."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        delivery = create_delivery_for_order(order)
+        if delivery is None:
+            return Response(
+                {"detail": "Impossible de créer la livraison."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        return Response(
+            DeliverySerializer(delivery).data,
+            status=status.HTTP_201_CREATED
+            if delivery.status == Delivery.Status.PENDING
+            else status.HTTP_200_OK,
+        )
+
+
 @extend_schema(tags=["deliveries"])
 class DeliveryLocationView(DeliveriesFeatureMixin, APIView):
     """Driver updates GPS position; emits realtime tracking event."""

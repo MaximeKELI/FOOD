@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 
 import '../../api/api_client.dart';
+import '../../api/deliveries_api.dart';
 import '../../api/orders_api.dart';
 import '../../api/platform_api.dart';
 import '../../api/support_api.dart';
+import '../../auth/auth_scope.dart';
 import '../../cart/cart_service.dart';
 import '../../l10n/app_strings.dart';
 import '../../ui/chezmama_theme.dart';
@@ -214,6 +216,24 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     }
   }
 
+  Future<void> _requestDriver() async {
+    setState(() => _busy = true);
+    try {
+      await DeliveriesApi.instance.requestDriver(widget.orderId);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(tr('delivery.requestSent'))),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(apiErrorMessage(e))),
+      );
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
   Future<void> _openDispute() async {
     final reasonCtrl = TextEditingController();
     final detailsCtrl = TextEditingController();
@@ -392,6 +412,15 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                 onPressed: _busy ? null : _reorder,
                 child: Text(tr('orders.reorder')),
               ),
+              if (AuthScope.of(context).isSeller &&
+                  order.fulfillment == 'delivery' &&
+                  order.status != 'delivered' &&
+                  order.status != 'cancelled')
+                FilledButton.tonalIcon(
+                  onPressed: _busy ? null : _requestDriver,
+                  icon: const Icon(Icons.delivery_dining_rounded),
+                  label: Text(tr('delivery.requestDriver')),
+                ),
               if (order.status == 'delivered')
                 Semantics(
                   label: tr('deliveryReview.title'),

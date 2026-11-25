@@ -6,10 +6,13 @@ import '../../auth/auth_scope.dart';
 import '../../cart/cart_service.dart';
 import '../../l10n/app_strings.dart';
 import '../../ui/chezmama_theme.dart';
+import '../../services/share_service.dart';
 import '../../widgets/empty_state_view.dart';
 
 class GroupOrderScreen extends StatefulWidget {
-  const GroupOrderScreen({super.key});
+  const GroupOrderScreen({super.key, this.initialCode});
+
+  final String? initialCode;
 
   @override
   State<GroupOrderScreen> createState() => _GroupOrderScreenState();
@@ -21,6 +24,16 @@ class _GroupOrderScreenState extends State<GroupOrderScreen> {
   final _sellerCtrl = TextEditingController();
   bool _busy = false;
   String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    final code = widget.initialCode?.trim();
+    if (code != null && code.isNotEmpty) {
+      _codeCtrl.text = code;
+      WidgetsBinding.instance.addPostFrameCallback((_) => _join());
+    }
+  }
 
   @override
   void dispose() {
@@ -243,6 +256,12 @@ class _GroupOrderScreenState extends State<GroupOrderScreen> {
                 Text(trf('groupOrder.statusLine', {'status': g.status})),
               ],
             ),
+          ),
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
+            onPressed: () => ShareService.instance.shareGroupOrder(g.code),
+            icon: const Icon(Icons.share_rounded),
+            label: Text(tr('groupOrder.share')),
           ),
           const SizedBox(height: 16),
           Text(

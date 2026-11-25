@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../api/api_client.dart';
 import '../../api/catalog_api.dart';
 import '../../api/platform_api.dart';
@@ -7,6 +8,7 @@ import '../../auth/auth_scope.dart';
 import '../../l10n/app_strings.dart';
 import '../../models/meal.dart';
 import '../../ui/chezmama_theme.dart';
+import '../../utils/currency_format.dart';
 import '../../widgets/empty_state_view.dart';
 import '../../widgets/food_network_image.dart';
 import '../../widgets/list_loading_skeleton.dart';
@@ -97,8 +99,60 @@ class _MyPublicationsScreenState extends State<MyPublicationsScreen>
   Future<void> _boostMeal(Meal meal) async {
     final id = int.tryParse(meal.id);
     if (id == null) return;
+    final hoursCtrl = TextEditingController(text: '24');
     try {
-      await PlatformApi.instance.createBoost(mealId: id);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setLocal) {
+            final hours = int.tryParse(hoursCtrl.text.trim()) ?? 0;
+            final price = hours * 100;
+            return AlertDialog(
+              title: Text(tr('boost.confirmTitle')),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(trf('boost.confirmBody', {
+                    'name': meal.name,
+                    'hours': hours,
+                    'price': formatFcfa(price),
+                  })),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: hoursCtrl,
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    decoration: InputDecoration(
+                      labelText: tr('boost.hours'),
+                    ),
+                    onChanged: (_) => setLocal(() {}),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx, false),
+                  child: Text(tr('action.cancel')),
+                ),
+                FilledButton(
+                  onPressed: hours > 0 ? () => Navigator.pop(ctx, true) : null,
+                  child: Text(tr('boost.action')),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+    if (confirmed != true || !mounted) return;
+    final hours = int.tryParse(hoursCtrl.text.trim()) ?? 24;
+      await PlatformApi.instance.createBoost(
+        mealId: id,
+        hours: hours,
+        paidAmount: hours * 100,
+      );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(tr('boost.done'))),
@@ -109,6 +163,75 @@ class _MyPublicationsScreenState extends State<MyPublicationsScreen>
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(apiErrorMessage(e))),
       );
+    } finally {
+      hoursCtrl.dispose();
+    }
+  }
+
+  Future<void> _editStock(Meal meal) async {
+    final qtyCtrl = TextEditingController(
+      text: meal.stockQty?.toString() ?? '',
+    );
+    var available = meal.isAvailable;
+    final saved = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setLocal) => AlertDialog(
+          title: Text(tr('publications.editStock')),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: qtyCtrl,
+                keyboardType: TextInputType.number,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                decoration: InputDecoration(
+                  labelText: tr('publications.stockQty'),
+                ),
+              ),
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                value: available,
+                onChanged: (v) => setLocal(() => available = v),
+                title: Text(tr('publications.markAvailable')),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text(tr('action.cancel')),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: Text(tr('action.save')),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (saved != true || !mounted) {
+      qtyCtrl.dispose();
+      return;
+    }
+    final stock = int.tryParse(qtyCtrl.text.trim());
+    qtyCtrl.dispose();
+    try {
+      final updated = await CatalogApi.instance.updateMealStock(
+        meal.id,
+        stockQty: stock,
+        isAvailable: available,
+      );
+      if (!mounted) return;
+      setState(() {
+        final i = _meals.indexWhere((m) => m.id == meal.id);
+        if (i != -1) _meals[i] = updated;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(tr('publications.stockSaved'))),
+      );
+    } catch (e) {
+      _showError(e);
     }
   }
 
@@ -192,6 +315,7 @@ class _MyPublicationsScreenState extends State<MyPublicationsScreen>
                       onDelete: _deleteMeal,
                       onUpdate: _updateMeal,
                       onBoost: _boostMeal,
+                      onEditStock: _editStock,
                     ),
                     _PostsTab(
                       posts: _videos,
@@ -215,11 +339,13 @@ class _MealsTab extends StatelessWidget {
     required this.onDelete,
     required this.onUpdate,
     required this.onBoost,
+    required this.onEditStock,
   });
   final List<Meal> meals;
   final ValueChanged<Meal> onDelete;
   final void Function(Meal, {bool? available, bool? special}) onUpdate;
   final ValueChanged<Meal> onBoost;
+  final ValueChanged<Meal> onEditStock;
 
   @override
   Widget build(BuildContext context) {
@@ -253,6 +379,8 @@ class _MealsTab extends StatelessWidget {
                   onUpdate(meal, available: !meal.isAvailable);
                 case 'special':
                   onUpdate(meal, special: !meal.isSpecial);
+                case 'stock':
+                  onEditStock(meal);
                 case 'boost':
                   onBoost(meal);
                 case 'delete':
@@ -260,6 +388,13 @@ class _MealsTab extends StatelessWidget {
               }
             },
             itemBuilder: (_) => [
+              PopupMenuItem(
+                value: 'stock',
+                child: ListTile(
+                  leading: const Icon(Icons.inventory_2_outlined),
+                  title: Text(tr('publications.editStock')),
+                ),
+              ),
               PopupMenuItem(
                 value: 'boost',
                 child: ListTile(

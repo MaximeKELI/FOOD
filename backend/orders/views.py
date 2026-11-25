@@ -335,6 +335,25 @@ class OrderStatusUpdateView(APIView):
                 related_id=order.id,
                 link="order",
             )
+            if new_status == Order.Status.DELIVERED:
+                notify(
+                    order.customer,
+                    Notification.Kind.REVIEW,
+                    "Donne ton avis",
+                    (
+                        f"Commande #{order.id} livrée — "
+                        "note le plat et la livraison pour aider la communauté."
+                    ),
+                    related_id=order.id,
+                    link="order",
+                )
+            if new_status == Order.Status.ON_THE_WAY:
+                try:
+                    from deliveries.services import create_delivery_for_order
+
+                    create_delivery_for_order(order)
+                except Exception:
+                    pass
             from payments.realtime import emit_order_status
 
             emit_order_status(order.id, new_status, vendor_id=request.user.id)

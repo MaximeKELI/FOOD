@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../api/api_client.dart';
 import '../../api/support_api.dart';
 import '../../auth/auth_scope.dart';
+import '../../auth/auth_service.dart';
 import '../../cart/cart_service.dart';
 import '../../l10n/app_strings.dart';
 import '../../services/app_media_picker.dart';
@@ -10,6 +11,7 @@ import '../../ui/chezmama_theme.dart';
 import '../../widgets/food_network_image.dart';
 import '../meal/meal_details_screen.dart';
 import '../../api/catalog_api.dart';
+import '../../models/meal.dart';
 
 /// Horizontal stories strip for home / social feed.
 class StoriesBar extends StatefulWidget {
@@ -43,34 +45,63 @@ class _StoriesBarState extends State<StoriesBar> {
     }
   }
 
+  Future<int?> _pickMealForStory(AuthService auth) async {
+    if (!auth.isSeller) return null;
+    List<Meal> meals = [];
+    try {
+      meals = await CatalogApi.instance.fetchMeals(sellerId: auth.userId);
+    } catch (_) {
+      meals = const [];
+    }
+    if (!mounted) return null;
+    return showDialog<int?>(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          title: Text(tr('stories.pickMeal')),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: meals.isEmpty
+                ? Text(tr('publications.noMeals'))
+                : ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: meals.length + 1,
+                    itemBuilder: (_, i) {
+                      if (i == 0) {
+                        return ListTile(
+                          leading: const Icon(Icons.skip_next_rounded),
+                          title: Text(tr('stories.noMeal')),
+                          onTap: () => Navigator.pop(ctx, null),
+                        );
+                      }
+                      final meal = meals[i - 1];
+                      final id = int.tryParse(meal.id);
+                      return ListTile(
+                        leading: const Icon(Icons.restaurant_rounded),
+                        title: Text(meal.name),
+                        subtitle: meal.category.isNotEmpty
+                            ? Text(meal.category)
+                            : null,
+                        onTap: () => Navigator.pop(ctx, id),
+                      );
+                    },
+                  ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, null),
+              child: Text(tr('onboarding.skip')),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   Future<void> _addStory() async {
     final auth = AuthScope.of(context);
     if (!auth.isAuthed) return;
-    final mealCtrl = TextEditingController();
-    final mealIdAsk = await showDialog<int?>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(tr('stories.add')),
-        content: TextField(
-          controller: mealCtrl,
-          decoration: InputDecoration(labelText: tr('stories.mealId')),
-          keyboardType: TextInputType.number,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, null),
-            child: Text(tr('onboarding.skip')),
-          ),
-          FilledButton(
-            onPressed: () {
-              final id = int.tryParse(mealCtrl.text.trim());
-              Navigator.pop(ctx, id);
-            },
-            child: Text(tr('action.save')),
-          ),
-        ],
-      ),
-    );
+    final mealIdAsk = await _pickMealForStory(auth);
     final path = await AppMediaPicker.instance.pickPhotoFromGallery();
     if (path == null || !mounted) return;
     try {

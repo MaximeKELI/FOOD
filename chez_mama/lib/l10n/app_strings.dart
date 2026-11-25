@@ -497,6 +497,16 @@ const Map<String, Map<AppLang, String>> _strings = {
   'publish.changePhoto': {AppLang.fr: 'Changer la photo', AppLang.en: 'Change photo', AppLang.wo: 'Soppi foto bi'},
   'publish.publishing': {AppLang.fr: 'Publication…', AppLang.en: 'Publishing…', AppLang.wo: 'Mi ngi yéene…'},
   'publish.submit': {AppLang.fr: 'Publier le plat', AppLang.en: 'Publish dish', AppLang.wo: 'Yéene ñam bi'},
+  'publish.stockQty': {
+    AppLang.fr: 'Stock (optionnel)',
+    AppLang.en: 'Stock qty (optional)',
+    AppLang.wo: 'Stock (optionnel)',
+  },
+  'publish.prepMinutes': {
+    AppLang.fr: 'Temps de préparation (min, optionnel)',
+    AppLang.en: 'Prep time (min, optional)',
+    AppLang.wo: 'Waxtu préparation (min)',
+  },
   'publish.vendorRequired': {
     AppLang.fr:
         'Seuls les vendeurs peuvent publier. Menu → Devenir vendeur, puis remplis ta boutique.',
@@ -1036,6 +1046,11 @@ const Map<String, Map<AppLang, String>> _strings = {
   'driver.active': {AppLang.fr: 'Livraison en cours', AppLang.en: 'Active delivery', AppLang.wo: 'Yónnee ci yoon'},
   'driver.pending': {AppLang.fr: 'Livraisons en attente', AppLang.en: 'Pending deliveries', AppLang.wo: 'Yónnee yu xaar'},
   'driver.pendingEmpty': {AppLang.fr: 'Rien en attente.', AppLang.en: 'Nothing pending.', AppLang.wo: 'Amul.'},
+  'driver.approvalPending': {
+    AppLang.fr: 'Votre compte livreur est en attente d’approbation.',
+    AppLang.en: 'Your driver account is pending approval.',
+    AppLang.wo: 'Sa compte yónneekat dafa xaar njëkkëm.',
+  },
   'driver.accept': {AppLang.fr: 'Accepter', AppLang.en: 'Accept', AppLang.wo: 'Nangu'},
   'driver.accepted': {AppLang.fr: 'Livraison acceptée', AppLang.en: 'Delivery accepted', AppLang.wo: 'Yónnee nangu na'},
   'driver.nextStatus': {AppLang.fr: 'Statut suivant', AppLang.en: 'Next status', AppLang.wo: 'Statut bi ci topp'},
@@ -1081,6 +1096,12 @@ const Map<String, Map<AppLang, String>> _strings = {
   'groupOrder.itemsAdded': {AppLang.fr: 'Articles ajoutés', AppLang.en: 'Items added', AppLang.wo: 'Yëf yokk na'},
   'groupOrder.hostOnly': {AppLang.fr: 'Seul l’hôte peut payer.', AppLang.en: 'Only the host can checkout.', AppLang.wo: 'Hôte rekk mën na fey.'},
   'groupOrder.checkedOut': {AppLang.fr: 'Commande groupée validée', AppLang.en: 'Group order checked out', AppLang.wo: 'Commande groupe dëgg na'},
+  'groupOrder.share': {AppLang.fr: 'Partager le code', AppLang.en: 'Share code', AppLang.wo: 'Sédd code bi'},
+  'groupOrder.shareText': {
+    AppLang.fr: 'Rejoins ma commande groupée sur Chez Mama',
+    AppLang.en: 'Join my group order on Chez Mama',
+    AppLang.wo: 'Bokk sama commande groupe ci Chez Mama',
+  },
   'report.title': {AppLang.fr: 'Signaler', AppLang.en: 'Report', AppLang.wo: 'Joxe'},
   'report.post': {AppLang.fr: 'Signaler la publication', AppLang.en: 'Report post', AppLang.wo: 'Joxe yéene bi'},
   'report.user': {AppLang.fr: 'Signaler / bloquer l’utilisateur', AppLang.en: 'Report / block user', AppLang.wo: 'Joxe / téye jëmm'},
@@ -1479,6 +1500,16 @@ const Map<String, Map<AppLang, String>> _strings = {
     AppLang.en: 'Capacity',
     AppLang.wo: 'Capacité',
   },
+  'delivery.requestDriver': {
+    AppLang.fr: 'Demander un livreur',
+    AppLang.en: 'Request a driver',
+    AppLang.wo: 'Laaj yónnee',
+  },
+  'delivery.requestSent': {
+    AppLang.fr: 'Livraison proposée aux livreurs.',
+    AppLang.en: 'Delivery offered to drivers.',
+    AppLang.wo: 'Yónnee jox nañu livreurs yi.',
+  },
   'deliveryReview.title': {
     AppLang.fr: 'Noter la livraison',
     AppLang.en: 'Rate delivery',
@@ -1508,6 +1539,96 @@ const Map<String, Map<AppLang, String>> _strings = {
     AppLang.fr: 'Plat mis en avant',
     AppLang.en: 'Meal boosted',
     AppLang.wo: 'Plat boost na',
+  },
+  'boost.confirmTitle': {
+    AppLang.fr: 'Confirmer le boost',
+    AppLang.en: 'Confirm boost',
+    AppLang.wo: 'Dëggal boost',
+  },
+  'boost.confirmBody': {
+    AppLang.fr: 'Booster « {name} » pendant {hours} h pour {price} ?',
+    AppLang.en: 'Boost "{name}" for {hours} h at {price}?',
+    AppLang.wo: 'Boost "{name}" {hours} waxtu ci {price} ?',
+  },
+  'boost.hours': {
+    AppLang.fr: 'Durée (heures)',
+    AppLang.en: 'Duration (hours)',
+    AppLang.wo: 'Waxtu (heures)',
+  },
+  'invoices.title': {
+    AppLang.fr: 'Factures plateforme',
+    AppLang.en: 'Platform invoices',
+    AppLang.wo: 'Facture plateforme',
+  },
+  'invoices.subtitle': {
+    AppLang.fr: 'Commissions et périodes',
+    AppLang.en: 'Commissions and billing periods',
+    AppLang.wo: 'Commission ak période',
+  },
+  'invoices.empty': {
+    AppLang.fr: 'Aucune facture pour le moment',
+    AppLang.en: 'No invoices yet',
+    AppLang.wo: 'Amul facture',
+  },
+  'invoices.period': {
+    AppLang.fr: 'Période : {start} → {end}',
+    AppLang.en: 'Period: {start} → {end}',
+    AppLang.wo: 'Période : {start} → {end}',
+  },
+  'invoices.gmv': {
+    AppLang.fr: 'CA : {amount}',
+    AppLang.en: 'GMV: {amount}',
+    AppLang.wo: 'CA : {amount}',
+  },
+  'invoices.commission': {
+    AppLang.fr: 'Commission : {amount}',
+    AppLang.en: 'Commission: {amount}',
+    AppLang.wo: 'Commission : {amount}',
+  },
+  'invoices.status': {
+    AppLang.fr: 'Statut : {status}',
+    AppLang.en: 'Status: {status}',
+    AppLang.wo: 'Statut : {status}',
+  },
+  'checkout.paymentsDisabled': {
+    AppLang.fr: 'Les paiements sont temporairement désactivés.',
+    AppLang.en: 'Payments are temporarily disabled.',
+    AppLang.wo: 'Fey dafa ngi tëddi.',
+  },
+  'checkout.ordersPaused': {
+    AppLang.fr: 'Les nouvelles commandes sont suspendues.',
+    AppLang.en: 'New orders are paused.',
+    AppLang.wo: 'Commande yu bees dañu ko taxaw.',
+  },
+  'stories.pickMeal': {
+    AppLang.fr: 'Associer un plat',
+    AppLang.en: 'Link a meal',
+    AppLang.wo: 'Tann ñam',
+  },
+  'stories.noMeal': {
+    AppLang.fr: 'Sans plat',
+    AppLang.en: 'No meal',
+    AppLang.wo: 'Amul ñam',
+  },
+  'seller.combos': {
+    AppLang.fr: 'Menus / combos',
+    AppLang.en: 'Combos',
+    AppLang.wo: 'Combo yi',
+  },
+  'publications.editStock': {
+    AppLang.fr: 'Modifier le stock',
+    AppLang.en: 'Edit stock',
+    AppLang.wo: 'Soppi stock',
+  },
+  'publications.stockQty': {
+    AppLang.fr: 'Quantité en stock',
+    AppLang.en: 'Stock quantity',
+    AppLang.wo: 'Lim stock',
+  },
+  'publications.stockSaved': {
+    AppLang.fr: 'Stock mis à jour',
+    AppLang.en: 'Stock updated',
+    AppLang.wo: 'Stock soppi na',
   },
   'favorites.wishlists': {
     AppLang.fr: 'Mes listes',

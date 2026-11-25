@@ -118,6 +118,15 @@ class MealListCreateView(generics.ListCreateAPIView):
         tag = (params.get("tag") or "").strip()
         if tag:
             qs = qs.filter(tags__contains=[tag])
+        # Hide out-of-stock meals from the public catalog (null = unlimited).
+        seller = params.get("seller")
+        own = (
+            self.request.user.is_authenticated
+            and seller
+            and str(seller) == str(self.request.user.id)
+        )
+        if not own:
+            qs = qs.filter(Q(stock_qty__isnull=True) | Q(stock_qty__gt=0))
         return qs
 
     def get_serializer_class(self):
@@ -126,11 +135,32 @@ class MealListCreateView(generics.ListCreateAPIView):
         return MealSerializer
 
     def perform_create(self, serializer):
+        from accounts.permissions import seller_kyc_approved
+        from ops.models import KycDocument
+        from rest_framework.exceptions import ValidationError
+
+        user = self.request.user
+        # Soft gate: if KYC was submitted but not approved, block publishing.
+        has_kyc = KycDocument.objects.filter(
+            user=user, subject=KycDocument.Subject.SELLER
+        ).exists()
+        if has_kyc and not seller_kyc_approved(user):
+            raise ValidationError(
+                {
+                    "detail": (
+                        "Tes documents KYC doivent être approuvés "
+                        "avant de publier des plats."
+                    )
+                }
+            )
         meal = serializer.save()
         try:
             meal.update_search_vector()
         except Exception:
             pass
+        if meal.stock_qty == 0:
+            meal.is_available = False
+            meal.save(update_fields=["is_available"])
 
 
 class MealShareView(APIView):

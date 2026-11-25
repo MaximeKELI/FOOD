@@ -76,6 +76,19 @@ class CatalogApi {
     return mealFromApiJson(res.data as Map<String, dynamic>);
   }
 
+  Future<Meal> updateMealStock(
+    String id, {
+    int? stockQty,
+    bool? isAvailable,
+  }) async {
+    final form = FormData.fromMap({
+      if (stockQty != null) 'stock_qty': stockQty,
+      if (isAvailable != null) 'is_available': isAvailable,
+    });
+    final res = await _dio.patch('/catalog/meals/$id/', data: form);
+    return mealFromApiJson(res.data as Map<String, dynamic>);
+  }
+
   Future<bool> toggleFavorite(String mealId) async {
     final res = await _dio.post('/catalog/meals/$mealId/favorite/');
     return res.data['favorited'] as bool? ?? false;
@@ -151,6 +164,8 @@ class CatalogApi {
     int? price,
     int? promoPrice,
     bool isSpecial = false,
+    int? stockQty,
+    int? prepTimeMinutes,
   }) async {
     final form = FormData.fromMap({
       'name': name,
@@ -159,6 +174,8 @@ class CatalogApi {
       if (price != null) 'price': price,
       if (promoPrice != null) 'promo_price': promoPrice,
       'is_special': isSpecial,
+      if (stockQty != null) 'stock_qty': stockQty,
+      if (prepTimeMinutes != null) 'prep_time_minutes': prepTimeMinutes,
       'image': await MultipartFile.fromFile(imagePath),
     });
     for (final path in extraImagePaths.take(4)) {
@@ -215,19 +232,26 @@ class MealCombo {
     required this.name,
     required this.price,
     required this.mealIds,
+    this.description = '',
+    this.image = '',
   });
 
   final int id;
   final String name;
   final int price;
   final List<int> mealIds;
+  final String description;
+  final String image;
 
   factory MealCombo.fromJson(Map<String, dynamic> json) {
     final meals = (json['meals'] as List?) ?? const [];
+    final imageRaw = (json['image'] as String?) ?? '';
     return MealCombo(
       id: json['id'] as int,
       name: json['name'] as String? ?? '',
       price: json['price'] as int? ?? 0,
+      description: json['description'] as String? ?? '',
+      image: imageRaw.isEmpty ? '' : ApiConfig.resolveMediaUrl(imageRaw),
       mealIds: meals.map((e) {
         if (e is int) return e;
         if (e is Map) return e['id'] as int? ?? 0;

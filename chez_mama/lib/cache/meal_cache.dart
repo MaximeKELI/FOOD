@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 
@@ -14,69 +15,93 @@ class MealCache {
   static const cacheTtl = Duration(hours: 24);
 
   Database? _db;
+  bool _disabled = false;
 
-  Future<Database> get db async {
+  Future<Database?> get db async {
+    if (_disabled) return null;
     if (_db != null) return _db!;
-    _db = await openDatabase(
-      join(await getDatabasesPath(), 'food_meals_cache.db'),
-      version: 1,
-      onCreate: (d, _) async {
-        await d.execute('''
-          CREATE TABLE meals_cache (
-            id INTEGER PRIMARY KEY,
-            payload TEXT NOT NULL,
-            cached_at INTEGER NOT NULL
-          )
-        ''');
-      },
-    );
-    return _db!;
+    try {
+      _db = await openDatabase(
+        join(await getDatabasesPath(), 'food_meals_cache.db'),
+        version: 1,
+        onCreate: (d, _) async {
+          await d.execute('''
+            CREATE TABLE meals_cache (
+              id INTEGER PRIMARY KEY,
+              payload TEXT NOT NULL,
+              cached_at INTEGER NOT NULL
+            )
+          ''');
+        },
+      );
+      return _db!;
+    } catch (e) {
+      _disabled = true;
+      debugPrint('MealCache disabled: $e');
+      return null;
+    }
   }
 
   Future<void> saveMeals(List<Meal> meals) async {
     final database = await db;
-    final batch = database.batch();
-    batch.delete('meals_cache');
-    final now = DateTime.now().millisecondsSinceEpoch;
-    for (final m in meals) {
-      batch.insert('meals_cache', {
-        'id': int.tryParse(m.id) ?? m.id.hashCode,
-        'payload': jsonEncode(_mealToJson(m)),
-        'cached_at': now,
-      });
+    if (database == null) return;
+    try {
+      final batch = database.batch();
+      batch.delete('meals_cache');
+      final now = DateTime.now().millisecondsSinceEpoch;
+      for (final m in meals) {
+        batch.insert('meals_cache', {
+          'id': int.tryParse(m.id) ?? m.id.hashCode,
+          'payload': jsonEncode(_mealToJson(m)),
+          'cached_at': now,
+        });
+      }
+      await batch.commit(noResult: true);
+    } catch (e) {
+      debugPrint('MealCache save failed: $e');
     }
-    await batch.commit(noResult: true);
   }
 
   Future<List<Meal>> loadMeals() async {
     final database = await db;
-    final rows = await database.query('meals_cache', orderBy: 'id DESC');
-    if (rows.isEmpty) return [];
-    final latest = rows
-        .map((r) => r['cached_at'] as int? ?? 0)
-        .reduce((a, b) => a > b ? a : b);
-    final age = DateTime.now().millisecondsSinceEpoch - latest;
-    if (age > cacheTtl.inMilliseconds) {
-      await database.delete('meals_cache');
+    if (database == null) return [];
+    try {
+      final rows = await database.query('meals_cache', orderBy: 'id DESC');
+      if (rows.isEmpty) return [];
+      final latest = rows
+          .map((r) => r['cached_at'] as int? ?? 0)
+          .reduce((a, b) => a > b ? a : b);
+      final age = DateTime.now().millisecondsSinceEpoch - latest;
+      if (age > cacheTtl.inMilliseconds) {
+        await database.delete('meals_cache');
+        return [];
+      }
+      return rows
+          .map((r) => _mealFromJson(jsonDecode(r['payload'] as String)))
+          .toList();
+    } catch (e) {
+      debugPrint('MealCache load failed: $e');
       return [];
     }
-    return rows
-        .map((r) => _mealFromJson(jsonDecode(r['payload'] as String)))
-        .toList();
   }
 
   Future<bool> isStale() async {
     final database = await db;
-    final row = await database.query(
-      'meals_cache',
-      columns: ['cached_at'],
-      orderBy: 'cached_at DESC',
-      limit: 1,
-    );
-    if (row.isEmpty) return true;
-    final cachedAt = row.first['cached_at'] as int? ?? 0;
-    return DateTime.now().millisecondsSinceEpoch - cachedAt >
-        cacheTtl.inMilliseconds;
+    if (database == null) return true;
+    try {
+      final row = await database.query(
+        'meals_cache',
+        columns: ['cached_at'],
+        orderBy: 'cached_at DESC',
+        limit: 1,
+      );
+      if (row.isEmpty) return true;
+      final cachedAt = row.first['cached_at'] as int? ?? 0;
+      return DateTime.now().millisecondsSinceEpoch - cachedAt >
+          cacheTtl.inMilliseconds;
+    } catch (_) {
+      return true;
+    }
   }
 
   Map<String, dynamic> _mealToJson(Meal m) => {

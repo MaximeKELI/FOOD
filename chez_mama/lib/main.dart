@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io' show Platform;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -6,6 +7,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import 'analytics/event_tracker.dart';
 import 'api/api_client.dart';
@@ -29,8 +31,17 @@ import 'widgets/offline_banner_host.dart';
 
 late final AuthService _authService;
 
+void _initDesktopSqlite() {
+  if (kIsWeb) return;
+  if (Platform.isLinux || Platform.isWindows) {
+    sqfliteFfiInit();
+    databaseFactory = databaseFactoryFfi;
+  }
+}
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  _initDesktopSqlite();
   if (!kIsWeb) {
     Stripe.merchantIdentifier = 'merchant.com.chez_mama';
   }
@@ -91,6 +102,7 @@ class _ChezMamaAppState extends ConsumerState<ChezMamaApp> {
     ApiReachabilityService.instance.check();
     _authService.init().then((_) {
       SocketService.instance.bindAuth(_authService);
+      PushService.instance.bindAuth(_authService);
     });
     _lifecycle = AppLifecycleListener(
       onResume: () {

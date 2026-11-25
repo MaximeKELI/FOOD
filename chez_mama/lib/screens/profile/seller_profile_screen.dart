@@ -5,7 +5,9 @@ import '../../api/catalog_api.dart';
 import '../../l10n/app_strings.dart';
 import '../../models/meal.dart';
 import '../../ui/chezmama_theme.dart';
+import '../../utils/currency_format.dart';
 import '../../widgets/empty_state_view.dart';
+import '../../widgets/food_network_image.dart';
 import '../../widgets/list_loading_skeleton.dart';
 import '../home/meal_card.dart';
 import '../meal/meal_details_screen.dart';
@@ -27,6 +29,7 @@ class SellerProfileScreen extends StatefulWidget {
 class _SellerProfileScreenState extends State<SellerProfileScreen> {
   SellerProfileView? _seller;
   List<Meal> _meals = [];
+  List<MealCombo> _combos = [];
   bool _loading = true;
   String? _error;
   bool _followBusy = false;
@@ -46,11 +49,13 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> {
       final results = await Future.wait([
         AccountsApi.instance.fetchSeller(widget.sellerId),
         CatalogApi.instance.fetchMeals(sellerId: widget.sellerId),
+        CatalogApi.instance.fetchCombos(sellerId: widget.sellerId),
       ]);
       if (!mounted) return;
       setState(() {
         _seller = results[0] as SellerProfileView;
         _meals = results[1] as List<Meal>;
+        _combos = results[2] as List<MealCombo>;
         _loading = false;
       });
     } catch (e) {
@@ -144,6 +149,95 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> {
             onToggleFollow: _toggleFollow,
           ),
           const SizedBox(height: 18),
+          if (_combos.isNotEmpty) ...[
+            Text(
+              tr('seller.combos'),
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w900,
+                  ),
+            ),
+            const SizedBox(height: 10),
+            SizedBox(
+              height: 132,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: _combos.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 10),
+                itemBuilder: (context, i) {
+                  final combo = _combos[i];
+                  return Container(
+                    width: 200,
+                    padding: const EdgeInsets.all(12),
+                    decoration: ChezMamaTheme.cardDecoration(context),
+                    child: Row(
+                      children: [
+                        if (combo.image.isNotEmpty)
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(10),
+                            child: SizedBox(
+                              width: 52,
+                              height: 52,
+                              child: FoodNetworkImage(
+                                url: combo.image,
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                          )
+                        else
+                          Container(
+                            width: 52,
+                            height: 52,
+                            decoration: BoxDecoration(
+                              color: ChezMamaTheme.brandOrange
+                                  .withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: const Icon(
+                              Icons.layers_rounded,
+                              color: ChezMamaTheme.brandOrange,
+                            ),
+                          ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                combo.name,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                              if (combo.description.isNotEmpty) ...[
+                                const SizedBox(height: 2),
+                                Text(
+                                  combo.description,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: Theme.of(context).textTheme.bodySmall,
+                                ),
+                              ],
+                              Text(
+                                formatFcfa(combo.price),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w900,
+                                  color: ChezMamaTheme.brandBrown,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: 18),
+          ],
           Text(
             trf('seller.theirMeals', {'count': _meals.length}),
             style: Theme.of(context).textTheme.titleMedium?.copyWith(

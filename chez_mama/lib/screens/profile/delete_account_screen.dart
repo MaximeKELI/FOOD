@@ -23,7 +23,7 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
     if (!_confirmed || _busy) return;
     setState(() => _busy = true);
     try {
-      await ApiClient.instance.dio.delete('/accounts/me/');
+      await ApiClient.instance.dio.delete('/auth/me/');
       if (!mounted) return;
       await AuthScope.of(context).signOut();
       if (!mounted) return;

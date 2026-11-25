@@ -7,6 +7,7 @@ import '../../ui/chezmama_theme.dart';
 import '../../utils/currency_format.dart';
 import '../../widgets/empty_state_view.dart';
 import '../../widgets/list_loading_skeleton.dart';
+import 'seller_invoices_screen.dart';
 import 'seller_promos_screen.dart';
 import 'seller_shop_settings_screen.dart';
 
@@ -244,6 +245,21 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
                 color: ChezMamaTheme.brandAmber,
               ),
             ],
+          ),
+          const SizedBox(height: 12),
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: const Icon(Icons.receipt_long_rounded),
+            title: Text(tr('invoices.title')),
+            subtitle: Text(tr('invoices.subtitle')),
+            trailing: const Icon(Icons.chevron_right_rounded),
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => const SellerInvoicesScreen(),
+                ),
+              );
+            },
           ),
           const SizedBox(height: 20),
           Text(

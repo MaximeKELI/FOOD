@@ -11,6 +11,17 @@ def user_is_vendor(user) -> bool:
     return bool((profile.shop_name or "").strip())
 
 
+def seller_kyc_approved(user) -> bool:
+    """True when the user has at least one approved seller KYC document."""
+    from ops.models import KycDocument
+
+    return KycDocument.objects.filter(
+        user=user,
+        subject=KycDocument.Subject.SELLER,
+        status=KycDocument.Status.APPROVED,
+    ).exists()
+
+
 class IsVendor(permissions.BasePermission):
     """Allows publishing only for users with a configured seller shop."""
 

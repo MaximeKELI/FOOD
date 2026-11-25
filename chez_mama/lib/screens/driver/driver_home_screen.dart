@@ -182,6 +182,30 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
       child: ListView(
         padding: const EdgeInsets.all(14),
         children: [
+          if (_driver != null && !_driver!.isApproved)
+            Container(
+              width: double.infinity,
+              margin: const EdgeInsets.only(bottom: 14),
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: ChezMamaTheme.brandAmber.withValues(alpha: 0.25),
+                borderRadius: BorderRadius.circular(ChezMamaTheme.rCard),
+                border: Border.all(color: ChezMamaTheme.brandBrown),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.hourglass_top_rounded,
+                      color: ChezMamaTheme.brandBrown),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      tr('driver.approvalPending'),
+                      style: const TextStyle(fontWeight: FontWeight.w800),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           if (_active != null) ...[
             Text(
               tr('driver.active'),
