@@ -1,36 +1,22 @@
 """100 register + login cycles (client + seller)."""
 
+from unittest.mock import patch
+
 from django.contrib.auth import get_user_model
-from django.test import TestCase, override_settings
+from django.test import TestCase
 from rest_framework.test import APIClient
+
+from accounts.views import RegisterView, ThrottledTokenObtainPairView
 
 User = get_user_model()
 
-_REST = {
-    "DEFAULT_AUTHENTICATION_CLASSES": (
-        "rest_framework_simplejwt.authentication.JWTAuthentication",
-    ),
-    "DEFAULT_PERMISSION_CLASSES": (
-        "rest_framework.permissions.IsAuthenticatedOrReadOnly",
-    ),
-    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
-    "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
-    "PAGE_SIZE": 20,
-    "DEFAULT_THROTTLE_CLASSES": (),
-    "DEFAULT_THROTTLE_RATES": {
-        "anon": "10000/min",
-        "user": "10000/min",
-        "analytics": "10000/min",
-        "auth": "10000/min",
-    },
-}
 
-
-@override_settings(REST_FRAMEWORK=_REST)
 class AuthBulkRegisterLoginTests(TestCase):
     """One assertion suite covering 100 full register→login flows."""
 
-    def test_100_register_and_login(self):
+    @patch.object(RegisterView, "throttle_classes", [])
+    @patch.object(ThrottledTokenObtainPairView, "throttle_classes", [])
+    def test_100_register_and_login(self, *_patches):
         client = APIClient()
         passed = 0
         failures = []
