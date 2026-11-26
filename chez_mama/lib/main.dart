@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+import 'package:video_player_media_kit/video_player_media_kit.dart';
 
 import 'analytics/event_tracker.dart';
 import 'api/api_client.dart';
@@ -39,9 +40,19 @@ void _initDesktopSqlite() {
   }
 }
 
+void _initDesktopVideo() {
+  if (kIsWeb) return;
+  // Enables inline video_player on Linux/Windows via libmpv (media_kit).
+  VideoPlayerMediaKit.ensureInitialized(
+    linux: true,
+    windows: true,
+  );
+}
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   _initDesktopSqlite();
+  _initDesktopVideo();
   if (!kIsWeb) {
     Stripe.merchantIdentifier = 'merchant.com.chez_mama';
   }

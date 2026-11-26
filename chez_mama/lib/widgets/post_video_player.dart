@@ -128,15 +128,18 @@ class _PostVideoPlayerState extends State<PostVideoPlayer> {
 
     VideoPlayerController? controller;
     try {
-      String playPath = widget.path;
-      if (widget.isRemote) {
-        playPath = await RemoteVideoCache.instance.ensureLocal(widget.path);
-      } else if (!await File(widget.path).exists()) {
-        throw StateError('Fichier vidéo introuvable');
+      final isHttp = widget.path.startsWith('http://') ||
+          widget.path.startsWith('https://');
+      if (widget.isRemote || isHttp) {
+        // media_kit / mobile: stream directly — no local download required.
+        controller = VideoPlayerController.networkUrl(Uri.parse(widget.path));
+      } else {
+        if (!await File(widget.path).exists()) {
+          throw StateError('Fichier vidéo introuvable');
+        }
+        controller = VideoPlayerController.file(File(widget.path));
       }
-
-      controller = VideoPlayerController.file(File(playPath));
-      await controller.initialize();
+      await controller.initialize().timeout(const Duration(seconds: 45));
       controller.setLooping(true);
       controller.addListener(_onControllerUpdate);
       if (widget.active) {
@@ -154,6 +157,35 @@ class _PostVideoPlayerState extends State<PostVideoPlayer> {
       setState(() => _loading = false);
     } catch (e) {
       await controller?.dispose();
+      // Fallback: download then open externally on desktop if inline fails.
+      if (!supportsInlineVideo ||
+          widget.isRemote ||
+          widget.path.startsWith('http')) {
+        try {
+          final local = await RemoteVideoCache.instance.ensureLocal(widget.path);
+          if (!supportsInlineVideo) {
+            await openVideoExternally(local);
+            if (mounted) setState(() => _loading = false);
+            return;
+          }
+          controller = VideoPlayerController.file(File(local));
+          await controller.initialize();
+          controller.setLooping(true);
+          controller.addListener(_onControllerUpdate);
+          if (widget.active) {
+            await controller.play();
+            _hasPlayedOnce = true;
+          }
+          if (!mounted) {
+            await controller.dispose();
+            return;
+          }
+          await _controller?.dispose();
+          _controller = controller;
+          setState(() => _loading = false);
+          return;
+        } catch (_) {}
+      }
       if (!mounted) return;
       setState(() {
         _error = trf('social.videoPlayFailed', {'error': '$e'});

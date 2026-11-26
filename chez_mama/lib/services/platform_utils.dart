@@ -11,8 +11,12 @@ bool get isMobilePlatform {
   return Platform.isAndroid || Platform.isIOS;
 }
 
-/// Inline [video_player] works on Android, iOS, macOS and web — not Linux/Windows.
+/// Inline video via [video_player] (+ [video_player_media_kit] on Linux/Windows).
 bool get supportsInlineVideo {
   if (kIsWeb) return true;
-  return Platform.isAndroid || Platform.isIOS || Platform.isMacOS;
+  return Platform.isAndroid ||
+      Platform.isIOS ||
+      Platform.isMacOS ||
+      Platform.isLinux ||
+      Platform.isWindows;
 }

@@ -69,7 +69,12 @@ class _VideoThumbBackgroundState extends State<VideoThumbBackground> {
         }
 
         if (snap.connectionState == ConnectionState.done && path == null) {
-          _retryIfNeeded();
+          if (_retries < 2) {
+            _retryIfNeeded();
+            return const _ThumbLoading();
+          }
+          // Thumbnail unavailable (common on Linux) — still show a playable look.
+          return const _ThumbFallback();
         }
 
         return const _ThumbLoading();
@@ -93,6 +98,30 @@ class _ThumbLoading extends StatelessWidget {
             strokeWidth: 2,
             color: Colors.white38,
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ThumbFallback extends StatelessWidget {
+  const _ThumbFallback();
+
+  @override
+  Widget build(BuildContext context) {
+    return const DecoratedBox(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF2A1A12), Color(0xFF1A1A1E), Color(0xFF3D2415)],
+        ),
+      ),
+      child: Center(
+        child: Icon(
+          Icons.videocam_rounded,
+          size: 42,
+          color: Colors.white38,
         ),
       ),
     );

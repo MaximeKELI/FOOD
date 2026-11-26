@@ -70,6 +70,8 @@ dependencies:
   socket_io_client: ^3.0.2
   sentry_flutter: ^8.14.2
   sqflite_common_ffi: ^2.4.7
+  video_player_media_kit: ^2.0.0
+  media_kit_libs_linux: ^1.2.1
 
 dev_dependencies:
   flutter_test:
