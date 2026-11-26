@@ -59,6 +59,7 @@ class _MealDetailsScreenState extends State<MealDetailsScreen>
 
   Future<void> _toggleFavorite() async {
     if (_favBusy) return;
+    if (!await requireAuth(context)) return;
     setState(() => _favBusy = true);
     try {
       final fav = await CatalogApi.instance.toggleFavorite(widget.meal.id);
@@ -71,6 +72,61 @@ class _MealDetailsScreenState extends State<MealDetailsScreen>
       );
     } finally {
       if (mounted) setState(() => _favBusy = false);
+    }
+  }
+
+  Future<void> _addToWishlist() async {
+    if (!await requireAuth(context)) return;
+    try {
+      final lists = await PlatformApi.instance.fetchWishlists();
+      if (!mounted) return;
+      WishList? target;
+      if (lists.isEmpty) {
+        target = await PlatformApi.instance.createWishlist(tr('wishlist.defaultName'));
+      } else if (lists.length == 1) {
+        target = lists.first;
+      } else {
+        target = await showModalBottomSheet<WishList>(
+          context: context,
+          showDragHandle: true,
+          builder: (ctx) => SafeArea(
+            child: ListView(
+              shrinkWrap: true,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+                  child: Text(
+                    tr('wishlist.pick'),
+                    style: Theme.of(ctx).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w900,
+                        ),
+                  ),
+                ),
+                for (final list in lists)
+                  ListTile(
+                    leading: const Icon(Icons.bookmark_border_rounded),
+                    title: Text(list.name),
+                    subtitle: Text(trf('wishlist.itemCount', {'count': list.itemsCount})),
+                    onTap: () => Navigator.pop(ctx, list),
+                  ),
+              ],
+            ),
+          ),
+        );
+      }
+      if (target == null || !mounted) return;
+      final mealId = int.tryParse(widget.meal.id);
+      if (mealId == null) return;
+      await PlatformApi.instance.addWishlistItem(target.id, mealId);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(tr('wishlist.added'))),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(apiErrorMessage(e))),
+      );
     }
   }
 
@@ -153,6 +209,11 @@ class _MealDetailsScreenState extends State<MealDetailsScreen>
                 tooltip: tr('action.share'),
                 onPressed: () => ShareService.instance.shareMeal(meal),
                 icon: const Icon(Icons.share_rounded),
+              ),
+              IconButton(
+                tooltip: tr('wishlist.add'),
+                onPressed: _addToWishlist,
+                icon: const Icon(Icons.bookmark_add_outlined),
               ),
               IconButton(
                 tooltip: _favorited

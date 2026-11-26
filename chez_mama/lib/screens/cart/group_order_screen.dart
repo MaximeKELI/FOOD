@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../api/api_client.dart';
+import '../../api/platform_api.dart';
 import '../../api/support_api.dart';
 import '../../auth/auth_scope.dart';
 import '../../cart/cart_service.dart';
@@ -24,6 +25,9 @@ class _GroupOrderScreenState extends State<GroupOrderScreen> {
   final _sellerCtrl = TextEditingController();
   bool _busy = false;
   String? _error;
+  PlatformSettings? _settings;
+  String _payment = 'cash';
+  String _fulfillment = 'delivery';
 
   @override
   void initState() {
@@ -33,6 +37,22 @@ class _GroupOrderScreenState extends State<GroupOrderScreen> {
       _codeCtrl.text = code;
       WidgetsBinding.instance.addPostFrameCallback((_) => _join());
     }
+    _loadSettings();
+  }
+
+  Future<void> _loadSettings() async {
+    try {
+      final s = await PlatformApi.instance.fetchSettings();
+      if (!mounted) return;
+      setState(() {
+        _settings = s;
+        if (!s.cashEnabled && s.digitalPaymentsEnabled) {
+          _payment = 'wave';
+        } else if (!s.cashEnabled) {
+          _payment = 'orange_money';
+        }
+      });
+    } catch (_) {}
   }
 
   @override
@@ -130,12 +150,25 @@ class _GroupOrderScreenState extends State<GroupOrderScreen> {
       );
       return;
     }
+    final s = _settings;
+    if (s != null && (!s.paymentsEnabled || !s.newOrdersEnabled)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            !s.paymentsEnabled
+                ? tr('checkout.paymentsDisabled')
+                : tr('checkout.ordersPaused'),
+          ),
+        ),
+      );
+      return;
+    }
     setState(() => _busy = true);
     try {
       await SupportApi.instance.checkoutGroupOrder(
         g.code,
-        fulfillment: 'delivery',
-        paymentMethod: 'cash',
+        fulfillment: _fulfillment,
+        paymentMethod: _payment,
       );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -293,6 +326,56 @@ class _GroupOrderScreenState extends State<GroupOrderScreen> {
               child: Text(tr('groupOrder.addFromCart')),
             ),
             if (me == g.hostId) ...[
+              const SizedBox(height: 12),
+              Text(
+                tr('checkout.fulfillment'),
+                style: const TextStyle(fontWeight: FontWeight.w800),
+              ),
+              const SizedBox(height: 6),
+              SegmentedButton<String>(
+                segments: [
+                  ButtonSegment(
+                    value: 'delivery',
+                    label: Text(tr('checkout.delivery')),
+                    icon: const Icon(Icons.delivery_dining_rounded),
+                  ),
+                  ButtonSegment(
+                    value: 'pickup',
+                    label: Text(tr('checkout.pickup')),
+                    icon: const Icon(Icons.storefront_rounded),
+                  ),
+                ],
+                selected: {_fulfillment},
+                onSelectionChanged: (v) =>
+                    setState(() => _fulfillment = v.first),
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<String>(
+                value: _payment,
+                decoration: InputDecoration(
+                  labelText: tr('checkout.payment'),
+                ),
+                items: [
+                  if (_settings?.cashEnabled != false)
+                    DropdownMenuItem(
+                      value: 'cash',
+                      child: Text(tr('payment.cash')),
+                    ),
+                  if (_settings?.digitalPaymentsEnabled != false) ...[
+                    DropdownMenuItem(
+                      value: 'wave',
+                      child: Text(tr('payment.wave')),
+                    ),
+                    DropdownMenuItem(
+                      value: 'orange_money',
+                      child: Text(tr('payment.orange_money')),
+                    ),
+                  ],
+                ],
+                onChanged: (v) {
+                  if (v != null) setState(() => _payment = v);
+                },
+              ),
               const SizedBox(height: 8),
               FilledButton(
                 onPressed: _busy ? null : _checkout,

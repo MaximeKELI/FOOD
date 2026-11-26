@@ -12,6 +12,7 @@ import '../../utils/currency_format.dart';
 import '../../widgets/empty_state_view.dart';
 import '../../widgets/food_network_image.dart';
 import '../../widgets/list_loading_skeleton.dart';
+import '../meal/meal_options_editor_sheet.dart';
 
 class MyPublicationsScreen extends StatefulWidget {
   const MyPublicationsScreen({super.key});
@@ -316,6 +317,8 @@ class _MyPublicationsScreenState extends State<MyPublicationsScreen>
                       onUpdate: _updateMeal,
                       onBoost: _boostMeal,
                       onEditStock: _editStock,
+                      onEditOptions: (meal) =>
+                          showMealOptionsEditor(context, meal),
                     ),
                     _PostsTab(
                       posts: _videos,
@@ -340,12 +343,14 @@ class _MealsTab extends StatelessWidget {
     required this.onUpdate,
     required this.onBoost,
     required this.onEditStock,
+    required this.onEditOptions,
   });
   final List<Meal> meals;
   final ValueChanged<Meal> onDelete;
   final void Function(Meal, {bool? available, bool? special}) onUpdate;
   final ValueChanged<Meal> onBoost;
   final ValueChanged<Meal> onEditStock;
+  final ValueChanged<Meal> onEditOptions;
 
   @override
   Widget build(BuildContext context) {
@@ -381,6 +386,8 @@ class _MealsTab extends StatelessWidget {
                   onUpdate(meal, special: !meal.isSpecial);
                 case 'stock':
                   onEditStock(meal);
+                case 'options':
+                  onEditOptions(meal);
                 case 'boost':
                   onBoost(meal);
                 case 'delete':
@@ -393,6 +400,13 @@ class _MealsTab extends StatelessWidget {
                 child: ListTile(
                   leading: const Icon(Icons.inventory_2_outlined),
                   title: Text(tr('publications.editStock')),
+                ),
+              ),
+              PopupMenuItem(
+                value: 'options',
+                child: ListTile(
+                  leading: const Icon(Icons.tune_rounded),
+                  title: Text(tr('meal.optionsManage')),
                 ),
               ),
               PopupMenuItem(

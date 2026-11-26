@@ -343,6 +343,66 @@ const Map<String, Map<AppLang, String>> _strings = {
     AppLang.en: 'Too many options for "{name}".',
     AppLang.wo: 'Option yu bare ci « {name} ».',
   },
+  'meal.optionsManage': {
+    AppLang.fr: 'Options du plat',
+    AppLang.en: 'Meal options',
+    AppLang.wo: 'Option yi',
+  },
+  'meal.optionsManageTitle': {
+    AppLang.fr: 'Options — {name}',
+    AppLang.en: 'Options — {name}',
+    AppLang.wo: 'Option — {name}',
+  },
+  'meal.optionsAddGroup': {
+    AppLang.fr: 'Ajouter un groupe',
+    AppLang.en: 'Add option group',
+    AppLang.wo: 'Yokk groupe',
+  },
+  'meal.optionsGroupName': {
+    AppLang.fr: 'Nom du groupe (ex. Sauce)',
+    AppLang.en: 'Group name (e.g. Sauce)',
+    AppLang.wo: 'Tur groupe',
+  },
+  'meal.optionsChoiceName': {
+    AppLang.fr: 'Choix (ex. Piment)',
+    AppLang.en: 'Choice (e.g. Spicy)',
+    AppLang.wo: 'Tànneef',
+  },
+  'meal.optionsChoiceExtra': {
+    AppLang.fr: 'Supplément (FCFA)',
+    AppLang.en: 'Extra (FCFA)',
+    AppLang.wo: 'Yokk (FCFA)',
+  },
+  'meal.optionsRequiredToggle': {
+    AppLang.fr: 'Obligatoire',
+    AppLang.en: 'Required',
+    AppLang.wo: 'Wara',
+  },
+  'meal.optionsEmpty': {
+    AppLang.fr: 'Aucune option pour ce plat.',
+    AppLang.en: 'No options on this meal yet.',
+    AppLang.wo: 'Amul option.',
+  },
+  'meal.optionsNoChoices': {
+    AppLang.fr: 'Aucun choix',
+    AppLang.en: 'No choices',
+    AppLang.wo: 'Amul tànneef',
+  },
+  'combo.empty': {
+    AppLang.fr: 'Ce combo n’a pas de plats.',
+    AppLang.en: 'This combo has no meals.',
+    AppLang.wo: 'Combo bi amul ñam.',
+  },
+  'combo.added': {
+    AppLang.fr: '{count} plat(s) du combo « {name} » ajoutés.',
+    AppLang.en: 'Added {count} meal(s) from "{name}".',
+    AppLang.wo: '{count} ñam ci « {name} » yokk na.',
+  },
+  'combo.addFailed': {
+    AppLang.fr: 'Impossible d’ajouter le combo.',
+    AppLang.en: 'Could not add the combo.',
+    AppLang.wo: 'Mënul yokk combo bi.',
+  },
   'action.unavailable': {AppLang.fr: 'Indisponible', AppLang.en: 'Unavailable', AppLang.wo: 'Amul'},
   'action.contactSeller': {AppLang.fr: 'Contacter le vendeur', AppLang.en: 'Contact seller', AppLang.wo: 'Jokkoo ak jaaykat bi'},
   'seller.paused': {
@@ -531,6 +591,16 @@ const Map<String, Map<AppLang, String>> _strings = {
   'checkout.title': {AppLang.fr: 'Finaliser la commande', AppLang.en: 'Complete order', AppLang.wo: 'Jeexal commande bi'},
   'checkout.delivery': {AppLang.fr: 'Livraison', AppLang.en: 'Delivery', AppLang.wo: 'Yónnee'},
   'checkout.pickup': {AppLang.fr: 'Retrait', AppLang.en: 'Pickup', AppLang.wo: 'Jël'},
+  'checkout.fulfillment': {
+    AppLang.fr: 'Mode de réception',
+    AppLang.en: 'Fulfillment',
+    AppLang.wo: 'Anamu jot',
+  },
+  'checkout.payment': {
+    AppLang.fr: 'Paiement',
+    AppLang.en: 'Payment',
+    AppLang.wo: 'Fey',
+  },
   'checkout.confirm': {AppLang.fr: 'Confirmer la commande', AppLang.en: 'Confirm order', AppLang.wo: 'Dëggël commande bi'},
   'checkout.submitting': {AppLang.fr: 'Envoi…', AppLang.en: 'Submitting…', AppLang.wo: 'Yónnee…'},
   'checkout.address': {AppLang.fr: 'Adresse de livraison', AppLang.en: 'Delivery address', AppLang.wo: 'Adresse yónnee'},
@@ -1301,6 +1371,26 @@ const Map<String, Map<AppLang, String>> _strings = {
     AppLang.fr: 'Liste vide',
     AppLang.en: 'Empty list',
     AppLang.wo: 'Liste bu leer',
+  },
+  'wishlist.add': {
+    AppLang.fr: 'Ajouter à une liste',
+    AppLang.en: 'Add to wishlist',
+    AppLang.wo: 'Yokk ci liste',
+  },
+  'wishlist.added': {
+    AppLang.fr: 'Ajouté à la liste',
+    AppLang.en: 'Added to wishlist',
+    AppLang.wo: 'Yokk na ci liste',
+  },
+  'wishlist.pick': {
+    AppLang.fr: 'Choisir une liste',
+    AppLang.en: 'Pick a list',
+    AppLang.wo: 'Tànn liste',
+  },
+  'wishlist.defaultName': {
+    AppLang.fr: 'Mes envies',
+    AppLang.en: 'My wishlist',
+    AppLang.wo: 'Sama bëgg',
   },
   'kyc.title': {
     AppLang.fr: 'Vérification',
