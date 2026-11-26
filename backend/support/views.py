@@ -171,6 +171,7 @@ class StoryListCreateView(generics.ListCreateAPIView):
             author=request.user,
             media=serializer.validated_data["media"],
             caption=serializer.validated_data.get("caption", ""),
+            meal=serializer.validated_data.get("meal"),
             expires_at=timezone.now() + timedelta(hours=24),
         )
         return Response(
@@ -461,10 +462,44 @@ class GroupOrderCheckoutView(APIView):
                 {"detail": "Ce groupe a déjà été finalisé."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+        from ops.models import PlatformSettings
+
+        cfg = PlatformSettings.get()
+        if not cfg.new_orders_enabled:
+            return Response(
+                {"detail": "Les nouvelles commandes sont temporairement suspendues."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        if not cfg.payments_enabled:
+            return Response(
+                {"detail": "Les paiements sont temporairement désactivés."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
         items = list(group.items.select_related("meal"))
         if not items:
             return Response(
                 {"detail": "Le panier de groupe est vide."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        fulfillment = request.data.get("fulfillment", Order.Fulfillment.DELIVERY)
+        if fulfillment not in Order.Fulfillment.values:
+            fulfillment = Order.Fulfillment.DELIVERY
+        payment_method = request.data.get("payment_method", Order.Payment.CASH)
+        if payment_method not in Order.Payment.values:
+            payment_method = Order.Payment.CASH
+        if payment_method == Order.Payment.CASH and not cfg.cash_enabled:
+            return Response(
+                {"detail": "Le paiement cash est désactivé."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if (
+            payment_method != Order.Payment.CASH
+            and not cfg.digital_payments_enabled
+        ):
+            return Response(
+                {"detail": "Les paiements digitaux sont désactivés."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -485,11 +520,16 @@ class GroupOrderCheckoutView(APIView):
         subtotal = sum(
             b["meal"].effective_price * b["quantity"] for b in aggregated.values()
         )
+        payment_status = (
+            Order.PaymentStatus.NOT_REQUIRED
+            if payment_method == Order.Payment.CASH
+            else Order.PaymentStatus.PENDING
+        )
         order = Order.objects.create(
             customer=request.user,
-            fulfillment=Order.Fulfillment.DELIVERY,
-            payment_method=Order.Payment.CASH,
-            payment_status=Order.PaymentStatus.NOT_REQUIRED,
+            fulfillment=fulfillment,
+            payment_method=payment_method,
+            payment_status=payment_status,
             address=request.data.get("address", ""),
             phone=request.data.get("phone", ""),
             note=request.data.get("note", f"Commande de groupe {group.code}"),
@@ -497,8 +537,10 @@ class GroupOrderCheckoutView(APIView):
             delivery_fee=0,
             discount=0,
         )
+        seller_ids = set()
         for bucket in aggregated.values():
             meal = bucket["meal"]
+            seller_ids.add(meal.seller_id)
             OrderItem.objects.create(
                 order=order,
                 meal=meal,
@@ -509,7 +551,11 @@ class GroupOrderCheckoutView(APIView):
             )
             if meal.stock_qty is not None:
                 meal.stock_qty = max(0, meal.stock_qty - bucket["quantity"])
-                meal.save(update_fields=["stock_qty"])
+                fields = ["stock_qty"]
+                if meal.stock_qty == 0 and meal.is_available:
+                    meal.is_available = False
+                    fields.append("is_available")
+                meal.save(update_fields=fields)
 
         order.recompute_total()
         order.save()
@@ -523,9 +569,21 @@ class GroupOrderCheckoutView(APIView):
         group.order = order
         group.save(update_fields=["status", "order", "updated_at"])
 
+        for seller_id in seller_ids:
+            if seller_id:
+                notify(
+                    user_id=seller_id,
+                    kind=Notification.Kind.ORDER,
+                    title="Nouvelle commande groupée",
+                    body=f"Commande #{order.id} (groupe {group.code})",
+                    link="received_order",
+                    related_id=order.id,
+                )
+
         from deliveries.services import create_delivery_for_order
 
-        create_delivery_for_order(order)
+        if fulfillment == Order.Fulfillment.DELIVERY:
+            create_delivery_for_order(order)
 
         from orders.serializers import OrderSerializer
 
