@@ -3,7 +3,7 @@ from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from drf_spectacular.utils import extend_schema, extend_schema_view
 from rest_framework import generics, permissions, status
-from rest_framework.parsers import FormParser, MultiPartParser
+from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -316,7 +316,7 @@ class MealOptionsView(APIView):
     """GET/POST option groups for a meal (vendor owner)."""
 
     permission_classes = [permissions.IsAuthenticated]
-    parser_classes = [MultiPartParser, FormParser]
+    parser_classes = [JSONParser, MultiPartParser, FormParser]
 
     def get(self, request, meal_id):
         meal = get_object_or_404(Meal, pk=meal_id)
@@ -340,6 +340,7 @@ class MealOptionsView(APIView):
 
 class MealOptionDetailView(APIView):
     permission_classes = [permissions.IsAuthenticated]
+    parser_classes = [JSONParser, MultiPartParser, FormParser]
 
     def patch(self, request, meal_id, group_id):
         meal = get_object_or_404(Meal, pk=meal_id)
