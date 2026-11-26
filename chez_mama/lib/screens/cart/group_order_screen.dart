@@ -351,6 +351,7 @@ class _GroupOrderScreenState extends State<GroupOrderScreen> {
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
+                // ignore: deprecated_member_use — controlled selection after settings load
                 value: _payment,
                 decoration: InputDecoration(
                   labelText: tr('checkout.payment'),

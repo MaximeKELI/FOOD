@@ -175,6 +175,7 @@ class _PostVideoPlayerState extends State<PostVideoPlayer> {
           controller = VideoPlayerController.file(File(local));
           await controller.initialize();
           controller.setLooping(true);
+          await controller.setVolume(widget.muted ? 0 : 1);
           controller.addListener(_onControllerUpdate);
           if (widget.active) {
             await controller.play();

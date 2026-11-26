@@ -63,3 +63,5 @@ service-account*.json
 # Misc
 *.log
 dist/
+
+.local-libs/
