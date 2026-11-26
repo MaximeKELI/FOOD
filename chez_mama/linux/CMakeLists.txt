@@ -13,6 +13,32 @@ set(APPLICATION_ID "com.example.food")
 # versions of CMake.
 cmake_policy(SET CMP0063 NEW)
 
+# --- Local libmpv (media_kit / video_player_media_kit) without system apt ---
+# Workspace extract lives at FOOD/.local-libs (see chez_mama/run_linux.sh).
+# Makes plain `flutter run -d linux` work when libmpv-dev is not installed.
+set(FOOD_LOCAL_LIBS "${CMAKE_CURRENT_SOURCE_DIR}/../../.local-libs/usr")
+set(FOOD_LOCAL_LIBDIR "${FOOD_LOCAL_LIBS}/lib/x86_64-linux-gnu")
+set(FOOD_LOCAL_PCDIR "${FOOD_LOCAL_LIBDIR}/pkgconfig")
+if(EXISTS "${FOOD_LOCAL_PCDIR}/mpv.pc" AND EXISTS "${FOOD_LOCAL_LIBS}/include/mpv/client.h")
+  file(WRITE "${FOOD_LOCAL_PCDIR}/mpv.pc"
+"prefix=${FOOD_LOCAL_LIBS}
+exec_prefix=\${prefix}
+libdir=\${prefix}/lib/x86_64-linux-gnu
+includedir=\${prefix}/include
+
+Name: mpv
+Description: mpv media player client library
+Version: 2.5.0
+Libs: -L\${libdir} -lmpv
+Cflags: -I\${includedir}
+")
+  set(ENV{PKG_CONFIG_PATH} "${FOOD_LOCAL_PCDIR}:$ENV{PKG_CONFIG_PATH}")
+  include_directories(BEFORE SYSTEM "${FOOD_LOCAL_LIBS}/include")
+  link_directories(BEFORE "${FOOD_LOCAL_LIBDIR}")
+  list(PREPEND CMAKE_BUILD_RPATH "${FOOD_LOCAL_LIBDIR}")
+  message(STATUS "Using local libmpv from ${FOOD_LOCAL_LIBS}")
+endif()
+
 # Load bundled libraries from the lib/ directory relative to the binary.
 set(CMAKE_INSTALL_RPATH "$ORIGIN/lib")
 
@@ -107,6 +133,15 @@ foreach(bundled_library ${PLUGIN_BUNDLED_LIBRARIES})
     DESTINATION "${INSTALL_BUNDLE_LIB_DIR}"
     COMPONENT Runtime)
 endforeach(bundled_library)
+
+# Bundle local libmpv next to the app so runtime finds it without LD_LIBRARY_PATH.
+if(EXISTS "${FOOD_LOCAL_LIBDIR}/libmpv.so.2")
+  install(FILES
+    "${FOOD_LOCAL_LIBDIR}/libmpv.so.2"
+    "${FOOD_LOCAL_LIBDIR}/libmpv.so.2.5.0"
+    DESTINATION "${INSTALL_BUNDLE_LIB_DIR}"
+    COMPONENT Runtime)
+endif()
 
 # Copy the native assets provided by the build.dart from all packages.
 set(NATIVE_ASSETS_DIR "${PROJECT_BUILD_DIR}native_assets/linux/")

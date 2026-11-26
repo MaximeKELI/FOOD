@@ -570,15 +570,19 @@ class GroupOrderCheckoutView(APIView):
         group.save(update_fields=["status", "order", "updated_at"])
 
         for seller_id in seller_ids:
-            if seller_id:
-                notify(
-                    user_id=seller_id,
-                    kind=Notification.Kind.ORDER,
-                    title="Nouvelle commande groupée",
-                    body=f"Commande #{order.id} (groupe {group.code})",
-                    link="received_order",
-                    related_id=order.id,
-                )
+            if not seller_id:
+                continue
+            seller = User.objects.filter(pk=seller_id).first()
+            if seller is None:
+                continue
+            notify(
+                seller,
+                Notification.Kind.ORDER,
+                "Nouvelle commande groupée",
+                f"Commande #{order.id} (groupe {group.code})",
+                related_id=order.id,
+                link="received_order",
+            )
 
         from deliveries.services import create_delivery_for_order
 

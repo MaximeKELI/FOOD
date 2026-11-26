@@ -2,7 +2,7 @@ from datetime import timedelta
 
 from django.contrib.auth import get_user_model
 from django.db import transaction
-from django.db.models import Count, ExpressionWrapper, F, IntegerField, Sum
+from django.db.models import Count, ExpressionWrapper, F, IntegerField, Q, Sum
 from django.db.models.functions import TruncDate
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
@@ -104,10 +104,15 @@ class OrderDetailView(generics.RetrieveAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
+        user = self.request.user
+        # Customer owns the order; seller owns at least one line item.
         return (
-            Order.objects.filter(customer=self.request.user)
+            Order.objects.filter(
+                Q(customer=user) | Q(items__meal__seller=user)
+            )
             .select_related("customer")
             .prefetch_related("items", "items__meal")
+            .distinct()
         )
 
 

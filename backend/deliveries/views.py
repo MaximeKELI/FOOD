@@ -128,11 +128,10 @@ class DeliveryAcceptView(DeliveriesFeatureMixin, APIView):
 
     @transaction.atomic
     def post(self, request, pk):
+        # Lock the delivery row only — select_related + FOR UPDATE breaks on
+        # nullable outer joins (driver) under PostgreSQL.
         delivery = (
-            Delivery.objects.select_for_update()
-            .select_related("order", "driver__user")
-            .filter(pk=pk)
-            .first()
+            Delivery.objects.select_for_update().filter(pk=pk).first()
         )
         if delivery is None:
             return Response(
@@ -171,12 +170,7 @@ class DeliveryStatusView(DeliveriesFeatureMixin, APIView):
 
     @transaction.atomic
     def patch(self, request, pk):
-        delivery = (
-            Delivery.objects.select_for_update()
-            .select_related("order", "driver__user")
-            .filter(pk=pk)
-            .first()
-        )
+        delivery = Delivery.objects.select_for_update().filter(pk=pk).first()
         if delivery is None:
             return Response(
                 {"detail": "Livraison introuvable."},
