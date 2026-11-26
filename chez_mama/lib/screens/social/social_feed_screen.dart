@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
 import '../../api/api_client.dart';
 import '../../api/social_api.dart';
+import '../../auth/auth_gate.dart';
 import '../../auth/auth_scope.dart';
 import '../../analytics/event_tracker.dart';
 import '../../l10n/app_strings.dart';
@@ -131,6 +132,7 @@ class _SocialFeedScreenState extends State<SocialFeedScreen> {
   }
 
   Future<void> _toggleLike(ApiPost post) async {
+    if (!await requireAuth(context)) return;
     try {
       final result = await _api.toggleLike(post.id);
       if (!mounted) return;
@@ -147,18 +149,41 @@ class _SocialFeedScreenState extends State<SocialFeedScreen> {
   }
 
   Future<void> _toggleFavorite(ApiPost post) async {
+    if (!await requireAuth(context)) return;
+    final previous = post.favoritedByMe;
+    setState(() => post.favoritedByMe = !previous);
     try {
       final fav = await _api.toggleFavorite(post.id);
       if (!mounted) return;
       setState(() => post.favoritedByMe = fav);
-    } catch (_) {}
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => post.favoritedByMe = previous);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(apiErrorMessage(e))),
+      );
+    }
   }
 
   Future<void> _toggleFollow(ApiPost post) async {
+    if (!await requireAuth(context)) return;
+    final previous = post.authorFollowedByMe;
+    setState(() => post.authorFollowedByMe = !previous);
     try {
-      await _api.toggleFollow(post.authorId);
+      final following = await _api.toggleFollow(post.authorId);
+      if (!mounted) return;
+      setState(() {
+        post.authorFollowedByMe = following;
+        // Keep other posts by same author in sync.
+        for (final p in _posts) {
+          if (p.authorId == post.authorId) {
+            p.authorFollowedByMe = following;
+          }
+        }
+      });
     } catch (e) {
       if (!mounted) return;
+      setState(() => post.authorFollowedByMe = previous);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(apiErrorMessage(e))),
       );
@@ -227,9 +252,14 @@ class _SocialFeedScreenState extends State<SocialFeedScreen> {
                     ),
                   ],
                   selected: {_feedFollowing},
-                  onSelectionChanged: (s) {
-                    setState(() => _feedFollowing = s.first);
-                    _load();
+                  onSelectionChanged: (s) async {
+                    final next = s.first;
+                    if (next && !AuthScope.of(context).isAuthed) {
+                      final ok = await requireAuth(context);
+                      if (!ok || !mounted) return;
+                    }
+                    setState(() => _feedFollowing = next);
+                    await _load();
                   },
                 ),
                 const SizedBox(height: 8),
@@ -521,7 +551,9 @@ class _ReelPostCard extends StatelessWidget {
                     FilledButton(
                       onPressed: onFollow,
                       style: FilledButton.styleFrom(
-                        backgroundColor: ChezMamaTheme.brandOrange,
+                        backgroundColor: post.authorFollowedByMe
+                            ? Colors.white24
+                            : ChezMamaTheme.brandOrange,
                         foregroundColor: Colors.white,
                         visualDensity: VisualDensity.compact,
                         padding: const EdgeInsets.symmetric(
@@ -529,7 +561,11 @@ class _ReelPostCard extends StatelessWidget {
                           vertical: 6,
                         ),
                       ),
-                      child: Text(tr('social.subscribe')),
+                      child: Text(
+                        post.authorFollowedByMe
+                            ? tr('social.subscribed')
+                            : tr('social.subscribe'),
+                      ),
                     ),
                   ],
                 ),
@@ -731,11 +767,17 @@ class _FeedPostCard extends StatelessWidget {
                         FilledButton(
                           onPressed: onFollow,
                           style: FilledButton.styleFrom(
-                            backgroundColor: ChezMamaTheme.brandOrange,
+                            backgroundColor: post.authorFollowedByMe
+                                ? Colors.white24
+                                : ChezMamaTheme.brandOrange,
                             foregroundColor: Colors.white,
                             visualDensity: VisualDensity.compact,
                           ),
-                          child: Text(tr('social.subscribe')),
+                          child: Text(
+                            post.authorFollowedByMe
+                                ? tr('social.subscribed')
+                                : tr('social.subscribe'),
+                          ),
                         ),
                       ],
                     ),
@@ -1115,6 +1157,7 @@ class _CommentsSheetState extends State<_CommentsSheet> {
   List<ApiComment> _comments = [];
   bool _loading = true;
   bool _sending = false;
+  String? _error;
 
   @override
   void initState() {
@@ -1129,17 +1172,24 @@ class _CommentsSheetState extends State<_CommentsSheet> {
   }
 
   Future<void> _load() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
     try {
       final comments = await _api.fetchComments(widget.post.id);
       if (!mounted) return;
       setState(() {
         _comments = comments;
         _loading = false;
-        widget.post.commentCount = comments.length;
+        // Don't overwrite server total with a possibly partial list length.
       });
-    } catch (_) {
+    } catch (e) {
       if (!mounted) return;
-      setState(() => _loading = false);
+      setState(() {
+        _loading = false;
+        _error = apiErrorMessage(e);
+      });
     }
   }
 
@@ -1150,6 +1200,7 @@ class _CommentsSheetState extends State<_CommentsSheet> {
       _comments.where((c) => c.parentId == id).toList();
 
   Future<void> _addComment({int? parentId, TextEditingController? source}) async {
+    if (!await requireAuth(context)) return;
     final ctrl = source ?? controller;
     final text = ctrl.text.trim();
     if (text.isEmpty || _sending) return;
@@ -1160,7 +1211,7 @@ class _CommentsSheetState extends State<_CommentsSheet> {
       if (!mounted) return;
       setState(() {
         _comments.add(comment);
-        widget.post.commentCount = _comments.length;
+        widget.post.commentCount = widget.post.commentCount + 1;
         ctrl.clear();
       });
     } catch (e) {
@@ -1232,6 +1283,20 @@ class _CommentsSheetState extends State<_CommentsSheet> {
             Expanded(
               child: _loading
                   ? const Center(child: CircularProgressIndicator())
+                  : _error != null
+                      ? Center(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(_error!, textAlign: TextAlign.center),
+                              const SizedBox(height: 12),
+                              FilledButton.tonal(
+                                onPressed: _load,
+                                child: Text(tr('action.retry')),
+                              ),
+                            ],
+                          ),
+                        )
                   : _topLevel.isEmpty
                       ? Center(child: Text(tr('social.noComments')))
                       : ListView.separated(

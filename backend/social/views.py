@@ -32,19 +32,26 @@ class PostListCreateView(generics.ListCreateAPIView):
     permission_classes = [permissions.IsAuthenticatedOrReadOnly, IsVendor]
 
     def get_queryset(self):
-        qs = Post.objects.select_related("author").all()
+        qs = Post.objects.select_related("author").all().order_by("-created_at")
         user = self.request.user
         qs = qs.annotate(
             likes_count_annotated=Count("likes", distinct=True),
             comments_count_annotated=Count("comments", distinct=True),
         )
         if user.is_authenticated:
+            from accounts.models import Follow
+
             qs = qs.annotate(
                 liked_by_me_annotated=Exists(
                     Like.objects.filter(post_id=OuterRef("pk"), user_id=user.id)
                 ),
                 favorited_by_me_annotated=Exists(
                     Favorite.objects.filter(post_id=OuterRef("pk"), user_id=user.id)
+                ),
+                author_followed_by_me_annotated=Exists(
+                    Follow.objects.filter(
+                        seller_id=OuterRef("author_id"), follower_id=user.id
+                    )
                 ),
             )
             # Exclude posts from blocked users
@@ -56,12 +63,15 @@ class PostListCreateView(generics.ListCreateAPIView):
             qs = qs.exclude(author_id__in=blocked_ids)
             feed = self.request.query_params.get("feed")
             if feed == "following":
-                from accounts.models import Follow
-
                 following_ids = Follow.objects.filter(follower=user).values_list(
                     "seller_id", flat=True
                 )
                 qs = qs.filter(author_id__in=following_ids)
+        else:
+            feed = self.request.query_params.get("feed")
+            if feed == "following":
+                # Anonymous users have no follows — return empty rather than Discover.
+                return qs.none()
         kind = self.request.query_params.get("kind")
         if kind in (Post.Kind.SHORT, Post.Kind.VIDEO):
             qs = qs.filter(kind=kind)
@@ -125,11 +135,12 @@ class FavoriteToggleView(APIView):
 
 class CommentListCreateView(generics.ListCreateAPIView):
     serializer_class = CommentSerializer
+    pagination_class = None
 
     def get_queryset(self):
         return Comment.objects.select_related("author").filter(
             post_id=self.kwargs["post_id"]
-        )
+        ).order_by("created_at")
 
     def get_serializer_context(self):
         ctx = super().get_serializer_context()

@@ -41,6 +41,7 @@ class ApiPost {
     required this.commentCount,
     required this.likedByMe,
     required this.favoritedByMe,
+    required this.authorFollowedByMe,
   });
 
   final int id;
@@ -54,22 +55,25 @@ class ApiPost {
   int commentCount;
   bool likedByMe;
   bool favoritedByMe;
+  bool authorFollowedByMe;
 
   factory ApiPost.fromJson(Map<String, dynamic> json) {
     final mediaUrl = _absolute(json['media'] as String? ?? '');
     final mediaType = json['media_type'] as String? ?? '';
+    int asInt(Object? v) => v is num ? v.toInt() : int.tryParse('$v') ?? 0;
     return ApiPost(
-      id: json['id'] as int,
-      authorId: json['author'] as int? ?? 0,
+      id: asInt(json['id']),
+      authorId: asInt(json['author']),
       authorName: json['author_name'] as String? ?? 'Utilisateur',
       caption: json['caption'] as String? ?? '',
       mediaUrl: mediaUrl,
       isShort: json['kind'] == 'short',
       isVideo: mediaType == 'video' || isVideoUrl(mediaUrl),
-      likeCount: json['like_count'] as int? ?? 0,
-      commentCount: json['comment_count'] as int? ?? 0,
+      likeCount: asInt(json['like_count']),
+      commentCount: asInt(json['comment_count']),
       likedByMe: json['liked_by_me'] as bool? ?? false,
       favoritedByMe: json['favorited_by_me'] as bool? ?? false,
+      authorFollowedByMe: json['author_followed_by_me'] as bool? ?? false,
     );
   }
 

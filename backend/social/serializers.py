@@ -46,6 +46,7 @@ class PostSerializer(serializers.ModelSerializer):
     comment_count = serializers.SerializerMethodField()
     liked_by_me = serializers.SerializerMethodField()
     favorited_by_me = serializers.SerializerMethodField()
+    author_followed_by_me = serializers.SerializerMethodField()
 
     class Meta:
         model = Post
@@ -61,6 +62,7 @@ class PostSerializer(serializers.ModelSerializer):
             "comment_count",
             "liked_by_me",
             "favorited_by_me",
+            "author_followed_by_me",
             "created_at",
         )
         read_only_fields = ("author",)
@@ -92,6 +94,16 @@ class PostSerializer(serializers.ModelSerializer):
             return obj.favorited_by_me_annotated
         user = self._user()
         return bool(user and obj.favorites.filter(user=user).exists())
+
+    def get_author_followed_by_me(self, obj):
+        if hasattr(obj, "author_followed_by_me_annotated"):
+            return obj.author_followed_by_me_annotated
+        user = self._user()
+        if not user:
+            return False
+        from accounts.models import Follow
+
+        return Follow.objects.filter(follower=user, seller_id=obj.author_id).exists()
 
 
 class PostCreateSerializer(serializers.ModelSerializer):

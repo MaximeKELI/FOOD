@@ -962,6 +962,26 @@ const Map<String, Map<AppLang, String>> _strings = {
     AppLang.wo: 'Yéene sa wideo bu njëkk.',
   },
   'social.subscribe': {AppLang.fr: 'S’abonner', AppLang.en: 'Follow', AppLang.wo: 'Topp'},
+  'social.subscribed': {
+    AppLang.fr: 'Abonné',
+    AppLang.en: 'Following',
+    AppLang.wo: 'Topp na',
+  },
+  'social.newFollower': {
+    AppLang.fr: 'Nouvel abonné',
+    AppLang.en: 'New follower',
+    AppLang.wo: 'Toppkat bu bees',
+  },
+  'social.newFollowerBody': {
+    AppLang.fr: 'Quelqu’un s’est abonné à ta boutique.',
+    AppLang.en: 'Someone followed your shop.',
+    AppLang.wo: 'Kenn topp na sa boutique.',
+  },
+  'auth.loginRequiredAction': {
+    AppLang.fr: 'Connecte-toi pour continuer.',
+    AppLang.en: 'Sign in to continue.',
+    AppLang.wo: 'Dugg ngir kontinue.',
+  },
   'social.favorite': {AppLang.fr: 'Favori', AppLang.en: 'Save', AppLang.wo: 'Aar'},
   'social.shareOpened': {AppLang.fr: 'Partage ouvert', AppLang.en: 'Share opened', AppLang.wo: 'Seddoo ubbi na'},
   'social.comments': {AppLang.fr: 'Commentaires', AppLang.en: 'Comments', AppLang.wo: 'Commentaire yi'},

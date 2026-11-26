@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../api/accounts_api.dart';
 import '../../api/api_client.dart';
 import '../../api/catalog_api.dart';
+import '../../auth/auth_gate.dart';
 import '../../l10n/app_strings.dart';
 import '../../models/meal.dart';
 import '../../ui/chezmama_theme.dart';
@@ -70,10 +71,12 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> {
   Future<void> _toggleFollow() async {
     final seller = _seller;
     if (seller == null || _followBusy) return;
+    if (!await requireAuth(context)) return;
     setState(() => _followBusy = true);
     try {
       final following = await AccountsApi.instance.toggleFollow(seller.id);
       if (!mounted) return;
+      final delta = following ? 1 : -1;
       setState(() {
         _seller = SellerProfileView(
           id: seller.id,
@@ -88,8 +91,7 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> {
           closesAt: seller.closesAt,
           acceptsDelivery: seller.acceptsDelivery,
           acceptsPickup: seller.acceptsPickup,
-          followersCount:
-              seller.followersCount + (following ? 1 : -1),
+          followersCount: (seller.followersCount + delta).clamp(0, 1 << 30),
           mealsCount: seller.mealsCount,
           followedByMe: following,
           badges: seller.badges,

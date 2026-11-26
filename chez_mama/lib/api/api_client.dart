@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:dio/dio.dart';
 
 import '../l10n/app_strings.dart';
@@ -26,9 +28,11 @@ class ApiClient {
         },
         onError: (error, handler) async {
           final response = error.response;
-          final isAuthEndpoint =
-              error.requestOptions.path.contains('/auth/login') ||
-                  error.requestOptions.path.contains('/auth/token/refresh');
+          final path = error.requestOptions.path;
+          final isAuthEndpoint = path.contains('/auth/login') ||
+              path.contains('/auth/register') ||
+              path.contains('/auth/token/refresh') ||
+              path.contains('/auth/google');
           if (response?.statusCode == 401 && !isAuthEndpoint) {
             final refreshed = await _tryRefresh();
             if (refreshed) {
@@ -52,6 +56,9 @@ class ApiClient {
 
   late final Dio _dio;
   void Function()? onSessionExpired;
+
+  /// Single-flight refresh so concurrent 401s don't burn a rotated refresh token.
+  Completer<bool>? _refreshLock;
 
   Dio get dio => _dio;
 
@@ -81,19 +88,43 @@ class ApiClient {
   }
 
   Future<bool> _tryRefresh() async {
-    final refresh = await TokenStorage.instance.readRefresh();
-    if (refresh == null || refresh.isEmpty) return false;
+    final inFlight = _refreshLock;
+    if (inFlight != null) return inFlight.future;
+
+    final lock = Completer<bool>();
+    _refreshLock = lock;
     try {
+      final refresh = await TokenStorage.instance.readRefresh();
+      if (refresh == null || refresh.isEmpty) {
+        lock.complete(false);
+        return false;
+      }
       final res = await Dio(BaseOptions(baseUrl: ApiConfig.apiUrl)).post(
         '/auth/token/refresh/',
         data: {'refresh': refresh},
       );
       final access = res.data['access'] as String?;
-      if (access == null) return false;
-      await TokenStorage.instance.write(access: access, refresh: refresh);
+      if (access == null || access.isEmpty) {
+        lock.complete(false);
+        return false;
+      }
+      // ROTATE_REFRESH_TOKENS=True → response includes a new refresh; old one is blacklisted.
+      final newRefresh = (res.data['refresh'] as String?)?.trim();
+      await TokenStorage.instance.write(
+        access: access,
+        refresh: (newRefresh != null && newRefresh.isNotEmpty)
+            ? newRefresh
+            : refresh,
+      );
+      lock.complete(true);
       return true;
     } catch (_) {
+      lock.complete(false);
       return false;
+    } finally {
+      if (identical(_refreshLock, lock)) {
+        _refreshLock = null;
+      }
     }
   }
 

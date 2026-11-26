@@ -11,7 +11,6 @@ import '../../widgets/list_loading_skeleton.dart';
 import '../cart/orders_screen.dart';
 import '../chat/conversation_screen.dart';
 import '../profile/received_orders_screen.dart';
-import '../profile/seller_profile_screen.dart';
 import '../tracking/tracking_screen.dart';
 
 class NotificationsScreen extends StatefulWidget {
@@ -150,16 +149,22 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           );
         }
       case 'follower':
-        if (n.relatedId != null) {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (_) => SellerProfileScreen(
-                sellerId: n.relatedId!,
-                sellerName: n.title,
-              ),
+        // related_id is the follower user id (often a client, not a seller shop).
+        showDialog<void>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: Text(n.title.isNotEmpty ? n.title : tr('social.newFollower')),
+            content: Text(
+              n.body.isNotEmpty ? n.body : tr('social.newFollowerBody'),
             ),
-          );
-        }
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: Text(tr('action.close')),
+              ),
+            ],
+          ),
+        );
       case 'meal':
         break;
       default:
