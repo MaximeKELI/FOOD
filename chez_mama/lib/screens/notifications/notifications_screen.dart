@@ -8,8 +8,10 @@ import '../../ui/chezmama_theme.dart';
 import '../../widgets/entrance.dart';
 import '../../widgets/empty_state_view.dart';
 import '../../widgets/list_loading_skeleton.dart';
+import '../../api/catalog_api.dart';
 import '../cart/orders_screen.dart';
 import '../chat/conversation_screen.dart';
+import '../meal/meal_details_screen.dart';
 import '../profile/received_orders_screen.dart';
 import '../tracking/tracking_screen.dart';
 
@@ -166,7 +168,23 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           ),
         );
       case 'meal':
-        break;
+        if (n.relatedId != null) {
+          try {
+            final meal =
+                await CatalogApi.instance.fetchMeal('${n.relatedId}');
+            if (!mounted) return;
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => MealDetailsScreen(meal: meal),
+              ),
+            );
+          } catch (e) {
+            if (!mounted) return;
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(apiErrorMessage(e))),
+            );
+          }
+        }
       default:
         if (n.kind == 'order' || n.kind == 'order_status') {
           Navigator.of(context).push(

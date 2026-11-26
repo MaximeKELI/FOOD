@@ -123,6 +123,39 @@ class CatalogApi {
         .toList();
   }
 
+  Future<List<MealOptionGroup>> fetchMealOptions(String mealId) async {
+    final res = await _dio.get('/catalog/meals/$mealId/options/');
+    final list = (res.data as List?) ?? const [];
+    return list
+        .map((e) => MealOptionGroup.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<MealOptionGroup> createMealOptionGroup(
+    String mealId, {
+    required String name,
+    bool required = false,
+    int minSelect = 0,
+    int maxSelect = 1,
+    List<Map<String, dynamic>> choices = const [],
+  }) async {
+    final res = await _dio.post(
+      '/catalog/meals/$mealId/options/',
+      data: {
+        'name': name,
+        'required': required,
+        'min_select': minSelect,
+        'max_select': maxSelect,
+        'choices': choices,
+      },
+    );
+    return MealOptionGroup.fromJson(res.data as Map<String, dynamic>);
+  }
+
+  Future<void> deleteMealOptionGroup(String mealId, int groupId) async {
+    await _dio.delete('/catalog/meals/$mealId/options/$groupId/');
+  }
+
   Future<List<MealReview>> fetchReviews(String mealId) async {
     final res = await _dio.get('/catalog/meals/$mealId/reviews/');
     final list = (res.data as List?) ?? const [];

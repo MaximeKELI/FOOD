@@ -10,6 +10,7 @@ import '../../services/app_media_picker.dart';
 import '../../ui/chezmama_theme.dart';
 import '../../widgets/food_network_image.dart';
 import '../meal/meal_details_screen.dart';
+import '../meal/meal_options_sheet.dart';
 import '../../api/catalog_api.dart';
 import '../../models/meal.dart';
 
@@ -151,7 +152,14 @@ class _StoriesBarState extends State<StoriesBar> {
                     try {
                       final meal =
                           await CatalogApi.instance.fetchMeal('${story.mealId}');
-                      CartService.instance.addMeal(meal);
+                      if (!ctx.mounted) return;
+                      final opts = await showMealOptionsSheet(ctx, meal);
+                      if (opts == null) return;
+                      CartService.instance.addMeal(
+                        meal,
+                        optionIds: (opts['ids'] as List<int>?) ?? const [],
+                        optionsExtra: (opts['extra'] as int?) ?? 0,
+                      );
                       if (ctx.mounted) Navigator.pop(ctx);
                       if (!mounted) return;
                       ScaffoldMessenger.of(context).showSnackBar(

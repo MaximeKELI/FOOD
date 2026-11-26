@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../../analytics/engagement_tracker.dart';
 import '../../api/api_client.dart';
 import '../../api/catalog_api.dart';
+import '../../api/platform_api.dart';
+import '../../auth/auth_gate.dart';
 import '../../auth/auth_scope.dart';
 import '../../cart/cart_fly_service.dart';
 import '../../cart/cart_service.dart';

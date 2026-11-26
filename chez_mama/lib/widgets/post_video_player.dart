@@ -32,6 +32,7 @@ class PostVideoPlayer extends StatefulWidget {
     this.fillScreen = false,
     this.immersive = false,
     this.scrollFriendly = false,
+    this.muted = false,
   });
 
   final String path;
@@ -45,6 +46,8 @@ class PostVideoPlayer extends StatefulWidget {
   final bool immersive;
   /// Allows vertical PageView swipe (tap-only, no full-screen InkWell).
   final bool scrollFriendly;
+  /// Mute audio (feed previews).
+  final bool muted;
 
   @override
   State<PostVideoPlayer> createState() => _PostVideoPlayerState();
@@ -141,6 +144,7 @@ class _PostVideoPlayerState extends State<PostVideoPlayer> {
       }
       await controller.initialize().timeout(const Duration(seconds: 45));
       controller.setLooping(true);
+      await controller.setVolume(widget.muted ? 0 : 1);
       controller.addListener(_onControllerUpdate);
       if (widget.active) {
         await controller.play();
