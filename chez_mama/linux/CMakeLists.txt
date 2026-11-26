@@ -35,12 +35,19 @@ Cflags: -I\${includedir}
   set(ENV{PKG_CONFIG_PATH} "${FOOD_LOCAL_PCDIR}:$ENV{PKG_CONFIG_PATH}")
   include_directories(BEFORE SYSTEM "${FOOD_LOCAL_LIBS}/include")
   link_directories(BEFORE "${FOOD_LOCAL_LIBDIR}")
+  # Absolute rpath only for the configure/compile machine; runtime uses $ORIGIN/lib.
   list(PREPEND CMAKE_BUILD_RPATH "${FOOD_LOCAL_LIBDIR}")
   message(STATUS "Using local libmpv from ${FOOD_LOCAL_LIBS}")
 endif()
 
+# Use classic DT_RPATH (not DT_RUNPATH) so transitive deps of libmpv
+# (libmujs, liblua, …) are also resolved via the executable rpath.
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--disable-new-dtags")
+set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--disable-new-dtags")
+
 # Load bundled libraries from the lib/ directory relative to the binary.
 set(CMAKE_INSTALL_RPATH "$ORIGIN/lib")
+set(CMAKE_BUILD_RPATH_USE_ORIGIN TRUE)
 
 # Root filesystem for cross-building.
 if(FLUTTER_TARGET_PLATFORM_SYSROOT)
@@ -134,13 +141,48 @@ foreach(bundled_library ${PLUGIN_BUNDLED_LIBRARIES})
     COMPONENT Runtime)
 endforeach(bundled_library)
 
-# Bundle local libmpv next to the app so runtime finds it without LD_LIBRARY_PATH.
+# Bundle local libmpv + its non-system deps so runtime needs no LD_LIBRARY_PATH.
 if(EXISTS "${FOOD_LOCAL_LIBDIR}/libmpv.so.2")
-  install(FILES
-    "${FOOD_LOCAL_LIBDIR}/libmpv.so.2"
-    "${FOOD_LOCAL_LIBDIR}/libmpv.so.2.5.0"
+  file(GLOB FOOD_LOCAL_RUNTIME_LIBS
+    "${FOOD_LOCAL_LIBDIR}/libmpv.so*"
+    "${FOOD_LOCAL_LIBDIR}/libmujs.so*"
+    "${FOOD_LOCAL_LIBDIR}/liblua5.2.so*"
+    "${FOOD_LOCAL_LIBDIR}/libsixel.so*"
+    "${FOOD_LOCAL_LIBDIR}/libXpresent.so*"
+    "${FOOD_LOCAL_LIBDIR}/libva-wayland.so*"
+  )
+  install(FILES ${FOOD_LOCAL_RUNTIME_LIBS}
     DESTINATION "${INSTALL_BUNDLE_LIB_DIR}"
     COMPONENT Runtime)
+  # Prefer workspace patchelf (no sudo); fall back to PATH.
+  set(_FOOD_PATCHELF "${FOOD_LOCAL_LIBS}/../bin/patchelf")
+  if(NOT EXISTS "${_FOOD_PATCHELF}")
+    set(_FOOD_PATCHELF "${CMAKE_CURRENT_SOURCE_DIR}/../../.local-libs/usr/bin/patchelf")
+  endif()
+  if(NOT EXISTS "${_FOOD_PATCHELF}")
+    find_program(_FOOD_PATCHELF patchelf)
+  endif()
+  if(_FOOD_PATCHELF)
+    # libmpv must resolve mujs/lua/… next to itself ($ORIGIN), not only via
+    # the executable RUNPATH (which does not apply to transitive NEEDED).
+    install(CODE "
+      set(_pe \"${_FOOD_PATCHELF}\")
+      set(_libdir \"${INSTALL_BUNDLE_LIB_DIR}\")
+      set(_bin \"${CMAKE_INSTALL_PREFIX}/${BINARY_NAME}\")
+      if(EXISTS \"\${_pe}\" AND EXISTS \"\${_libdir}/libmpv.so.2\")
+        execute_process(COMMAND \"\${_pe}\" --force-rpath --set-rpath \"\$ORIGIN\"
+          \"\${_libdir}/libmpv.so.2\" ERROR_QUIET)
+        if(EXISTS \"\${_libdir}/libmpv.so.2.5.0\")
+          execute_process(COMMAND \"\${_pe}\" --force-rpath --set-rpath \"\$ORIGIN\"
+            \"\${_libdir}/libmpv.so.2.5.0\" ERROR_QUIET)
+        endif()
+        if(EXISTS \"\${_bin}\")
+          execute_process(COMMAND \"\${_pe}\" --force-rpath --set-rpath \"\$ORIGIN/lib\"
+            \"\${_bin}\" ERROR_QUIET)
+        endif()
+      endif()
+    " COMPONENT Runtime)
+  endif()
 endif()
 
 # Copy the native assets provided by the build.dart from all packages.
