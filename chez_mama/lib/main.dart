@@ -42,11 +42,14 @@ void _initDesktopSqlite() {
 
 void _initDesktopVideo() {
   if (kIsWeb) return;
-  // Enables inline video_player on Linux/Windows via libmpv (media_kit).
-  VideoPlayerMediaKit.ensureInitialized(
-    linux: true,
-    windows: true,
-  );
+  // Linux: do NOT register media_kit — libmpv VideoOutput aborts the process
+  // (m_config_cache_from_shadow / OpenGL). Videos open externally instead.
+  if (Platform.isLinux) return;
+  try {
+    VideoPlayerMediaKit.ensureInitialized(windows: true);
+  } catch (e, st) {
+    debugPrint('Desktop video init skipped: $e\n$st');
+  }
 }
 
 Future<void> main() async {

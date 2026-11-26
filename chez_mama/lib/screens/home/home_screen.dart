@@ -18,6 +18,7 @@ import '../../widgets/shell_toolbar_actions.dart';
 import '../meal/meal_details_screen.dart';
 import '../profile/seller_profile_screen.dart';
 import 'hero_carousel.dart';
+import 'home_video_rail.dart';
 import 'meal_card.dart';
 import 'publish_meal_sheet.dart';
 import 'recent_meals_section.dart';
@@ -63,6 +64,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final ScrollController scroll = ScrollController();
+  final _videoRailKey = GlobalKey<HomeVideoRailState>();
 
   bool loading = true;
   String? error;
@@ -307,7 +309,13 @@ class _HomeScreenState extends State<HomeScreen> {
             )
           : null,
       body: RefreshIndicator(
-        onRefresh: _loadMeals,
+        onRefresh: () async {
+          await Future.wait([
+            _loadMeals(),
+            _loadPlatformHome(),
+            _videoRailKey.currentState?.reload() ?? Future.value(),
+          ]);
+        },
         edgeOffset: 280,
         child: CustomScrollView(
         controller: scroll,
@@ -349,9 +357,14 @@ class _HomeScreenState extends State<HomeScreen> {
                 StretchMode.fadeTitle,
               ],
               background: HeroCarousel(
+                mealImages: _allMeals
+                    .where((m) => m.image.isNotEmpty)
+                    .map((m) => (url: m.image, title: m.name, seller: m.sellerName))
+                    .take(8)
+                    .toList(),
                 onExplore: () {
                   scroll.animateTo(
-                    MediaQuery.sizeOf(context).height * 0.38,
+                    MediaQuery.sizeOf(context).height * 0.42,
                     duration: ChezMamaTheme.dMed,
                     curve: ChezMamaTheme.easeLuxe,
                   );
@@ -418,6 +431,8 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
               child: Column(
                 children: [
+                  HomeVideoRail(key: _videoRailKey),
+                  const SizedBox(height: 16),
                   if (_openNow.isNotEmpty) ...[
                     Align(
                       alignment: Alignment.centerLeft,
@@ -480,7 +495,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     Align(
                       alignment: Alignment.centerLeft,
                       child: Text(
-                        tr('home.forYou'),
+                        tr('home.mealsForYou'),
                         style: ChezMamaTheme.sectionTitle(
                           Theme.of(context),
                           context,
@@ -491,7 +506,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     Align(
                       alignment: Alignment.centerLeft,
                       child: Text(
-                        tr('home.forYouHint'),
+                        tr('home.mealsForYouHint'),
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                               color: ChezMamaTheme.mutedInk(context),
                               fontWeight: FontWeight.w600,

@@ -1,5 +1,20 @@
-from django.db.models import Count, Exists, OuterRef, Q
+from django.db.models import (
+    Case,
+    Count,
+    Exists,
+    ExpressionWrapper,
+    F,
+    FloatField,
+    IntegerField,
+    OuterRef,
+    Subquery,
+    Sum,
+    Value,
+    When,
+)
+from django.db.models.functions import Coalesce
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
 from drf_spectacular.utils import extend_schema, extend_schema_view
 from rest_framework import generics, permissions, status
 from rest_framework.parsers import FormParser, MultiPartParser
@@ -14,6 +29,62 @@ from .serializers import (
     PostCreateSerializer,
     PostSerializer,
 )
+
+
+def _apply_influence_rank(qs, *, user):
+    """TikTok-style discover rank: engagement + watch time + follows + recency."""
+    from datetime import timedelta
+
+    from analytics.models import ContentEngagement
+
+    watch_sq = (
+        ContentEngagement.objects.filter(
+            content_id=OuterRef("pk"),
+            content_type__in=["video", "short"],
+        )
+        .values("content_id")
+        .annotate(total=Sum("duration_seconds"))
+        .values("total")[:1]
+    )
+
+    now = timezone.now()
+    follow_boost = (
+        Case(
+            When(author_followed_by_me_annotated=True, then=Value(40.0)),
+            default=Value(0.0),
+            output_field=FloatField(),
+        )
+        if getattr(user, "is_authenticated", False)
+        else Value(0.0, output_field=FloatField())
+    )
+    qs = qs.annotate(
+        favorites_count_annotated=Count("favorites", distinct=True),
+        watch_seconds_annotated=Coalesce(
+            Subquery(watch_sq, output_field=IntegerField()),
+            Value(0),
+        ),
+        recency_boost=Case(
+            When(created_at__gte=now - timedelta(hours=6), then=Value(48.0)),
+            When(created_at__gte=now - timedelta(hours=24), then=Value(28.0)),
+            When(created_at__gte=now - timedelta(hours=72), then=Value(12.0)),
+            When(created_at__gte=now - timedelta(days=14), then=Value(4.0)),
+            default=Value(0.0),
+            output_field=FloatField(),
+        ),
+        follow_boost=follow_boost,
+    )
+    qs = qs.annotate(
+        influence_score=ExpressionWrapper(
+            F("likes_count_annotated") * 2.0
+            + F("comments_count_annotated") * 4.0
+            + F("favorites_count_annotated") * 3.0
+            + F("watch_seconds_annotated") / 12.0
+            + F("recency_boost")
+            + F("follow_boost"),
+            output_field=FloatField(),
+        )
+    )
+    return qs.order_by("-influence_score", "-created_at")
 
 
 class IsAuthorOrReadOnly(permissions.BasePermission):
@@ -34,6 +105,7 @@ class PostListCreateView(generics.ListCreateAPIView):
     def get_queryset(self):
         qs = Post.objects.select_related("author").all().order_by("-created_at")
         user = self.request.user
+        feed = self.request.query_params.get("feed") or "discover"
         qs = qs.annotate(
             likes_count_annotated=Count("likes", distinct=True),
             comments_count_annotated=Count("comments", distinct=True),
@@ -61,14 +133,17 @@ class PostListCreateView(generics.ListCreateAPIView):
                 "blocked_id", flat=True
             )
             qs = qs.exclude(author_id__in=blocked_ids)
-            feed = self.request.query_params.get("feed")
             if feed == "following":
                 following_ids = Follow.objects.filter(follower=user).values_list(
                     "seller_id", flat=True
                 )
                 qs = qs.filter(author_id__in=following_ids)
         else:
-            feed = self.request.query_params.get("feed")
+            qs = qs.annotate(
+                author_followed_by_me_annotated=Value(
+                    False, output_field=IntegerField()
+                ),
+            )
             if feed == "following":
                 # Anonymous users have no follows — return empty rather than Discover.
                 return qs.none()
@@ -78,6 +153,9 @@ class PostListCreateView(generics.ListCreateAPIView):
         author = self.request.query_params.get("author")
         if author:
             qs = qs.filter(author_id=author)
+        # Discover (default): influence ranking. Following / chronological: recent first.
+        if feed not in ("following", "chronological"):
+            qs = _apply_influence_rank(qs, user=user)
         return qs
 
     def get_serializer_class(self):

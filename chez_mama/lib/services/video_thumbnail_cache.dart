@@ -5,6 +5,7 @@ import 'package:video_player/video_player.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
 
 import '../api/api_config.dart';
+import 'platform_utils.dart';
 import 'remote_video_cache.dart';
 
 /// Caches JPEG thumbnails (frame from the video) for feed / preview backgrounds.
@@ -93,9 +94,12 @@ class VideoThumbnailCache {
   }
 
   Future<int> _middleTimeMs(String videoSource) async {
+    // Avoid VideoPlayerController on Linux: media_kit EGL path aborts the app.
+    if (!supportsInlineVideo) return 1500;
     VideoPlayerController? c;
     try {
-      if (videoSource.startsWith('http://') || videoSource.startsWith('https://')) {
+      if (videoSource.startsWith('http://') ||
+          videoSource.startsWith('https://')) {
         c = VideoPlayerController.networkUrl(Uri.parse(videoSource));
       } else {
         c = VideoPlayerController.file(File(videoSource));

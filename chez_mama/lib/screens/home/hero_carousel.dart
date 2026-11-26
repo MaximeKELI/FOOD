@@ -2,18 +2,18 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../l10n/app_strings.dart';
 import '../../ui/chezmama_theme.dart';
+import '../../widgets/food_network_image.dart';
 
-/// Full-bleed appetite hero: brand first, one dish visual plane, soft crossfade.
-///
-/// Studies on OFD apps link large, warm, textured food imagery to desire and
-/// conversion — inset “promo cards” fight that. This stays edge-to-edge.
+/// Full-bleed appetite hero: brand first, real seller dishes when available.
 class HeroCarousel extends StatefulWidget {
   const HeroCarousel({
     super.key,
     this.onExplore,
+    this.mealImages = const [],
   });
 
   final VoidCallback? onExplore;
+  final List<({String url, String title, String seller})> mealImages;
 
   @override
   State<HeroCarousel> createState() => _HeroCarouselState();
@@ -43,6 +43,10 @@ class _HeroCarouselState extends State<HeroCarousel>
     'assets/images/food_hero_ndole.png',
   ];
 
+  bool get _useMeals => widget.mealImages.isNotEmpty;
+
+  int get _count => _useMeals ? widget.mealImages.length : _assets.length;
+
   @override
   void initState() {
     super.initState();
@@ -51,9 +55,17 @@ class _HeroCarouselState extends State<HeroCarousel>
       duration: const Duration(seconds: 8),
     )..repeat(reverse: true);
     _timer = Timer.periodic(const Duration(seconds: 5), (_) {
-      if (!mounted) return;
-      setState(() => _index = (_index + 1) % _assets.length);
+      if (!mounted || _count == 0) return;
+      setState(() => _index = (_index + 1) % _count);
     });
+  }
+
+  @override
+  void didUpdateWidget(covariant HeroCarousel oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (_count > 0 && _index >= _count) {
+      _index = 0;
+    }
   }
 
   @override
@@ -66,7 +78,9 @@ class _HeroCarouselState extends State<HeroCarousel>
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context);
-    final key = _slideKeys[_index];
+    final safeIndex = _count == 0 ? 0 : _index % _count;
+    final meal = _useMeals ? widget.mealImages[safeIndex] : null;
+    final key = _slideKeys[safeIndex % _slideKeys.length];
 
     return Stack(
       fit: StackFit.expand,
@@ -76,25 +90,31 @@ class _HeroCarouselState extends State<HeroCarousel>
           switchInCurve: Curves.easeOut,
           switchOutCurve: Curves.easeIn,
           child: AnimatedBuilder(
-            key: ValueKey(_index),
+            key: ValueKey('${_useMeals}_$safeIndex'),
             animation: _ken,
             builder: (context, child) {
               final scale = 1.0 + (_ken.value * 0.06);
               return Transform.scale(scale: scale, child: child);
             },
-            child: Image.asset(
-              _assets[_index],
-              fit: BoxFit.cover,
-              width: double.infinity,
-              height: double.infinity,
-              filterQuality: FilterQuality.medium,
-              errorBuilder: (_, __, ___) => Container(
-                color: ChezMamaTheme.brandBrown,
-              ),
-            ),
+            child: meal != null
+                ? SizedBox.expand(
+                    child: FoodNetworkImage(
+                      url: meal.url,
+                      memCacheWidth: 1200,
+                    ),
+                  )
+                : Image.asset(
+                    _assets[safeIndex],
+                    fit: BoxFit.cover,
+                    width: double.infinity,
+                    height: double.infinity,
+                    filterQuality: FilterQuality.medium,
+                    errorBuilder: (_, __, ___) => Container(
+                      color: ChezMamaTheme.brandBrown,
+                    ),
+                  ),
           ),
         ),
-        // Warm vignette keeps food vivid while protecting text contrast.
         DecoratedBox(
           decoration: BoxDecoration(
             gradient: LinearGradient(
@@ -149,8 +169,10 @@ class _HeroCarouselState extends State<HeroCarousel>
                 AnimatedSwitcher(
                   duration: ChezMamaTheme.dFast,
                   child: Text(
-                    tr('hero.$key.title'),
-                    key: ValueKey('t$key'),
+                    meal?.title.isNotEmpty == true
+                        ? meal!.title
+                        : tr('hero.$key.title'),
+                    key: ValueKey('t$safeIndex'),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: t.textTheme.titleLarge?.copyWith(
@@ -164,8 +186,12 @@ class _HeroCarouselState extends State<HeroCarousel>
                 AnimatedSwitcher(
                   duration: ChezMamaTheme.dFast,
                   child: Text(
-                    tr('hero.$key.subtitle'),
-                    key: ValueKey('s$key'),
+                    meal != null && meal.seller.isNotEmpty
+                        ? trf('home.heroSeller', {'name': meal.seller})
+                        : meal != null
+                            ? tr('home.localSeller')
+                            : tr('hero.$key.subtitle'),
+                    key: ValueKey('s$safeIndex'),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: t.textTheme.bodyMedium?.copyWith(
@@ -228,8 +254,8 @@ class _HeroCarouselState extends State<HeroCarousel>
                     ),
                     const Spacer(),
                     Row(
-                      children: List.generate(_assets.length, (i) {
-                        final active = i == _index;
+                      children: List.generate(_count.clamp(0, 8), (i) {
+                        final active = i == safeIndex;
                         return AnimatedContainer(
                           duration: ChezMamaTheme.dFast,
                           margin: const EdgeInsets.only(left: 4),

@@ -11,12 +11,16 @@ bool get isMobilePlatform {
   return Platform.isAndroid || Platform.isIOS;
 }
 
-/// Inline video via [video_player] (+ [video_player_media_kit] on Linux/Windows).
+/// Inline [video_player] works on Android / iOS / macOS / web.
+///
+/// Linux: media_kit/libmpv crashes the process (`m_config_cache_from_shadow`)
+/// when creating EGL video outputs — keep false and use external playback.
+/// Windows: media_kit is OK when libs are present.
 bool get supportsInlineVideo {
   if (kIsWeb) return true;
+  if (Platform.isLinux) return false;
   return Platform.isAndroid ||
       Platform.isIOS ||
       Platform.isMacOS ||
-      Platform.isLinux ||
       Platform.isWindows;
 }

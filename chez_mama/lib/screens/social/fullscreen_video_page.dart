@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../../analytics/engagement_tracker.dart';
 import '../../api/social_api.dart';
-import '../../services/platform_utils.dart';
 import '../../ui/chezmama_theme.dart';
 import '../../widgets/post_video_player.dart';
 import '../../widgets/video_post_badge.dart';
@@ -342,22 +341,9 @@ class _VideoFeedTileState extends State<VideoFeedTile> {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            // Live muted preview when inline video works (incl. Linux via media_kit).
-            if (supportsInlineVideo)
-              IgnorePointer(
-                child: PostVideoPlayer(
-                  key: ValueKey('preview_${widget.post.mediaUrl}'),
-                  path: widget.post.mediaUrl,
-                  isRemote: true,
-                  autoPlay: true,
-                  active: true,
-                  fillScreen: true,
-                  immersive: true,
-                  muted: true,
-                ),
-              )
-            else
-              VideoThumbBackground(videoUrl: widget.post.mediaUrl),
+            // Thumb only in the grid — autoplay previews spawn many mpv/GL
+            // contexts on Linux and can crash the engine (OpenGL timeout).
+            VideoThumbBackground(videoUrl: widget.post.mediaUrl),
             DecoratedBox(
               decoration: BoxDecoration(
                 gradient: LinearGradient(

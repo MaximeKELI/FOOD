@@ -251,3 +251,33 @@ class SocialSocialFlowTests(APITestCase):
         self.assertEqual(res.status_code, 200)
         results = res.data["results"] if isinstance(res.data, dict) else res.data
         self.assertEqual(results, [])
+
+    def test_discover_ranks_by_engagement(self):
+        quiet = Post(
+            author=self.seller,
+            caption="Quiet",
+            kind=Post.Kind.VIDEO,
+            media_type=Post.MediaType.IMAGE,
+        )
+        quiet.media.save(
+            "q.jpg", SimpleUploadedFile("q.jpg", _JPEG, "image/jpeg"), save=False
+        )
+        quiet.save()
+
+        hot = Post(
+            author=self.seller,
+            caption="Hot",
+            kind=Post.Kind.VIDEO,
+            media_type=Post.MediaType.IMAGE,
+        )
+        hot.media.save(
+            "h.jpg", SimpleUploadedFile("h.jpg", _JPEG, "image/jpeg"), save=False
+        )
+        hot.save()
+        Like.objects.create(post=hot, user=self.client_user)
+        Comment.objects.create(post=hot, author=self.client_user, text="🔥")
+
+        res = self.client.get("/api/social/posts/?kind=video&feed=discover")
+        self.assertEqual(res.status_code, 200)
+        ids = [row["id"] for row in res.data["results"]]
+        self.assertLess(ids.index(hot.id), ids.index(quiet.id))

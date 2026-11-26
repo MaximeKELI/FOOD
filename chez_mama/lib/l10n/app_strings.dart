@@ -1297,24 +1297,39 @@ const Map<String, Map<AppLang, String>> _strings = {
     AppLang.wo: 'Jënd ci ñu toog di tog.',
   },
   'home.forYou': {
-    AppLang.fr: 'Pour vous',
+    AppLang.fr: 'Pour toi',
     AppLang.en: 'For you',
     AppLang.wo: 'Ngir yaw',
   },
   'home.forYouHint': {
-    AppLang.fr: 'Choisis selon tes envies du moment.',
-    AppLang.en: 'Picks matched to what you crave.',
-    AppLang.wo: 'Ñam yi nga bëgg léegi.',
+    AppLang.fr: 'Vidéos des vendeurs, classées selon l’engagement.',
+    AppLang.en: 'Seller videos, ranked by engagement.',
+    AppLang.wo: 'Wideo jaaykat yi, yu ñu tereel.',
+  },
+  'home.mealsForYou': {
+    AppLang.fr: 'Plats suggérés',
+    AppLang.en: 'Suggested dishes',
+    AppLang.wo: 'Ñam yuñu digal',
+  },
+  'home.mealsForYouHint': {
+    AppLang.fr: 'Selon tes goûts et les boosts vendeurs.',
+    AppLang.en: 'Based on your tastes and seller boosts.',
+    AppLang.wo: 'Ci sa peexe ak boost jaaykat.',
   },
   'home.exploreCta': {
-    AppLang.fr: 'Voir les plats',
-    AppLang.en: 'Browse dishes',
-    AppLang.wo: 'Gis ñam yi',
+    AppLang.fr: 'Voir les vidéos',
+    AppLang.en: 'Watch videos',
+    AppLang.wo: 'Xool wideo yi',
   },
   'home.localSeller': {
     AppLang.fr: 'Vendeur local',
     AppLang.en: 'Local seller',
     AppLang.wo: 'Jaaykat local',
+  },
+  'home.heroSeller': {
+    AppLang.fr: 'Par {name}',
+    AppLang.en: 'By {name}',
+    AppLang.wo: 'Ci {name}',
   },
   'home.filter.openNow': {
     AppLang.fr: 'Ouverts',

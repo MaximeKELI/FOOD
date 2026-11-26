@@ -101,22 +101,40 @@ class SocialApi {
   final _dio = ApiClient.instance.dio;
 
   Future<List<ApiPost>> fetchPosts({
-    required bool isShort,
+    bool? isShort,
     int? authorId,
     bool feedFollowing = false,
+    bool ranked = true,
   }) async {
     final res = await _dio.get(
       '/social/posts/',
       queryParameters: {
-        'kind': isShort ? 'short' : 'video',
+        if (isShort != null) 'kind': isShort ? 'short' : 'video',
         if (authorId != null) 'author': authorId,
-        if (feedFollowing) 'feed': 'following',
+        if (feedFollowing)
+          'feed': 'following'
+        else if (ranked)
+          'feed': 'discover'
+        else
+          'feed': 'chronological',
       },
     );
     final results = (res.data['results'] as List?) ?? const [];
     return results
         .map((e) => ApiPost.fromJson(e as Map<String, dynamic>))
         .toList();
+  }
+
+  /// Seller videos + shorts ranked for the home "Pour toi" rail (TikTok-style).
+  Future<List<ApiPost>> fetchHomeDiscoverFeed({int limit = 24}) async {
+    final posts = await fetchPosts(ranked: true);
+    final videos = posts
+        .where((p) => p.isVideo || isVideoUrl(p.mediaUrl))
+        .toList();
+    if (videos.length >= limit) return videos.take(limit).toList();
+    // Prefer real video media; if thin, keep image posts as fallback thumbs.
+    final rest = posts.where((p) => !videos.any((v) => v.id == p.id));
+    return [...videos, ...rest].take(limit).toList();
   }
 
   Future<void> deletePost(int postId) async {

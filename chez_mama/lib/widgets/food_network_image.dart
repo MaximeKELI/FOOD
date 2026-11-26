@@ -36,8 +36,11 @@ class FoodNetworkImage extends StatelessWidget {
     if (!url.startsWith('http')) {
       return placeholder ?? _gradientPlaceholder(context);
     }
+    // Bust stale disk cache when media files were replaced server-side
+    // (same path, new bytes) — common after demo image reseeds.
+    final cacheUrl = url.contains('?') ? '$url&cmv=2' : '$url?cmv=2';
     final image = CachedNetworkImage(
-      imageUrl: url,
+      imageUrl: cacheUrl,
       fit: fit,
       filterQuality: filterQuality,
       memCacheWidth: memCacheWidth,
